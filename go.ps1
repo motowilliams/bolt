@@ -16,6 +16,9 @@ param(
     [Parameter()]
     [switch]$ListTasks,
     
+    [Parameter()]
+    [switch]$Only,
+    
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Arguments
 )
@@ -238,7 +241,8 @@ function Invoke-Task {
         [hashtable]$TaskInfo,
         [hashtable]$AllTasks,
         [array]$Arguments,
-        [hashtable]$ExecutedTasks = @{}
+        [hashtable]$ExecutedTasks = @{},
+        [bool]$SkipDependencies = $false
     )
     
     $primaryName = $TaskInfo.Names[0]
@@ -248,23 +252,28 @@ function Invoke-Task {
         return $true
     }
     
-    # Execute dependencies first
+    # Execute dependencies first (unless skipped)
     if ($TaskInfo.Dependencies.Count -gt 0) {
-        Write-Host "Dependencies for '$primaryName': $($TaskInfo.Dependencies -join ', ')" -ForegroundColor Gray
-        foreach ($dep in $TaskInfo.Dependencies) {
-            if ($AllTasks.ContainsKey($dep)) {
-                Write-Host "`nExecuting dependency: $dep" -ForegroundColor Yellow
-                $depResult = Invoke-Task -TaskInfo $AllTasks[$dep] -AllTasks $AllTasks -Arguments $Arguments -ExecutedTasks $ExecutedTasks
-                if (-not $depResult) {
-                    Write-Error "Dependency '$dep' failed"
-                    return $false
+        if ($SkipDependencies) {
+            Write-Host "Skipping dependencies for '$primaryName': $($TaskInfo.Dependencies -join ', ')" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "Dependencies for '$primaryName': $($TaskInfo.Dependencies -join ', ')" -ForegroundColor Gray
+            foreach ($dep in $TaskInfo.Dependencies) {
+                if ($AllTasks.ContainsKey($dep)) {
+                    Write-Host "`nExecuting dependency: $dep" -ForegroundColor Yellow
+                    $depResult = Invoke-Task -TaskInfo $AllTasks[$dep] -AllTasks $AllTasks -Arguments $Arguments -ExecutedTasks $ExecutedTasks
+                    if (-not $depResult) {
+                        Write-Error "Dependency '$dep' failed"
+                        return $false
+                    }
+                }
+                else {
+                    Write-Warning "Dependency '$dep' not found, skipping"
                 }
             }
-            else {
-                Write-Warning "Dependency '$dep' not found, skipping"
-            }
+            Write-Host ""
         }
-        Write-Host ""
     }
     
     # Mark as executed
@@ -350,6 +359,7 @@ if ([string]::IsNullOrWhiteSpace($Task)) {
     Write-Host "Error: No task specified" -ForegroundColor Red
     Write-Host ""
     Write-Host "Usage: .\go.ps1 <task> [arguments]" -ForegroundColor Yellow
+    Write-Host "       .\go.ps1 <task> -NoDeps [arguments]  (skip dependencies)" -ForegroundColor Yellow
     Write-Host "       .\go.ps1 -ListTasks" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Available tasks: $($availableTasks.Keys | Sort-Object -Unique | Join-String -Separator ', ')" -ForegroundColor Cyan
@@ -373,7 +383,7 @@ Write-Host ""
 
 # Execute the task with dependency resolution
 $executedTasks = @{}
-$result = Invoke-Task -TaskInfo $taskInfo -AllTasks $availableTasks -Arguments $Arguments -ExecutedTasks $executedTasks
+$result = Invoke-Task -TaskInfo $taskInfo -AllTasks $availableTasks -Arguments $Arguments -ExecutedTasks $executedTasks -SkipDependencies $Only
 
 if (-not $result) {
     Write-Host "`nTask '$Task' failed" -ForegroundColor Red
