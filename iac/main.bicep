@@ -35,11 +35,11 @@ param sqlAdminPassword string
 param appServicePlanSku string = 'B1'
 
 // Variables
-    var resourcePrefix = '${appName}-${environment}'
+var resourcePrefix = '${appName}-${environment}'
 var appServicePlanName = '${resourcePrefix}-plan'
-        var webAppName = '${resourcePrefix}-web'
-     var sqlServerName = '${resourcePrefix}-sql'
-   var sqlDatabaseName = '${appName}db'
+var webAppName = '${resourcePrefix}-web'
+var sqlServerName = '${resourcePrefix}-sql'
+var sqlDatabaseName = '${appName}db'
 
 // Deploy App Service Plan
 module appServicePlan 'modules/app-service-plan.bicep' = {
