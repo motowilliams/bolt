@@ -200,10 +200,10 @@ Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
 
 ## Known Limitations & Quirks
 
-1. **`-ListTasks` flag shows header but no tasks** - hashtable iteration issue, but tasks execute correctly when called directly
-2. **No parameter forwarding yet** - `.\go.ps1 format -Check` doesn't pass `-Check` to task script (planned enhancement)
-3. **PowerShell 7.0+ required** - uses `#Requires -Version 7.0` and `using namespace` syntax
-4. **Tab completion requires shell restart** - after adding new tasks, restart PowerShell for completions to update
+1. **No parameter forwarding yet** - `.\go.ps1 format -Check` doesn't pass `-Check` to task script (planned enhancement)
+2. **PowerShell 7.0+ required** - uses `#Requires -Version 7.0` and `using namespace` syntax
+3. **Tab completion requires shell restart** - after adding new tasks, restart PowerShell for completions to update
+4. **Variable naming in tasks** - Avoid using `$Task` variable name in task scripts (collides with go.ps1 parameter)
 
 ## Testing & Validation
 
@@ -256,6 +256,7 @@ exit ($result.FailedCount -eq 0 ? 0 : 1)
 ```powershell
 # Common tasks
 .\go.ps1 -ListTasks              # List all available tasks
+.\go.ps1 -Help                   # Same as -ListTasks
 .\go.ps1 build                   # Full pipeline
 .\go.ps1 build -Only             # Build only (skip format/lint)
 .\go.ps1 format lint             # Multiple tasks (space-separated)

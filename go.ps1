@@ -14,6 +14,7 @@ param(
     [string[]]$Task,
     
     [Parameter()]
+    [Alias('Help')]
     [switch]$ListTasks,
     
     [Parameter()]
@@ -70,8 +71,6 @@ $taskCompleter = {
 
 Register-ArgumentCompleter -CommandName 'go.ps1' -ParameterName 'Task' -ScriptBlock $taskCompleter
 
-#region Core Tasks
-
 function Invoke-CheckGitIndex {
     <#
     .SYNOPSIS
@@ -114,10 +113,6 @@ function Invoke-CheckGitIndex {
         return $false
     }
 }
-
-#endregion Core Tasks
-
-#region Task Discovery and Execution
 
 function Get-CoreTasks {
     <#
@@ -297,10 +292,6 @@ function Invoke-Task {
     }
 }
 
-#endregion Task Discovery and Execution
-
-#region Main Execution
-
 # Discover all available tasks
 $availableTasks = Get-AllTasks
 
@@ -310,30 +301,35 @@ if ($ListTasks) {
     Write-Host ""
     
     $uniqueTasks = @{}
-    foreach ($key in $availableTasks.Keys) {
-        $task = $availableTasks[$key]
-        if ($null -eq $task) {
-            Write-Warning "Task key '$key' has null value"
+    foreach ($taskKey in $availableTasks.Keys) {
+        $taskInfo = $availableTasks[$taskKey]
+        if ($null -eq $taskInfo) {
+            Write-Warning "Task key '$taskKey' has null value"
             continue
         }
-        if ($null -eq $task.Names) {
-            Write-Warning "Task '$key' has null Names property"
+        if ($taskInfo -isnot [hashtable]) {
+            Write-Warning "Task '$taskKey' is not a hashtable (type: $($taskInfo.GetType().Name))"
             continue
         }
-        if ($task.Names.Count -eq 0) {
-            Write-Warning "Task '$key' has empty Names array"
+        if (-not $taskInfo.ContainsKey('Names')) {
+            Write-Warning "Task '$taskKey' missing Names property"
             continue
         }
-        $primaryName = $task.Names[0]
+        $names = $taskInfo['Names']
+        if ($null -eq $names -or $names.Count -eq 0) {
+            Write-Warning "Task '$taskKey' has empty Names"
+            continue
+        }
+        $primaryName = $names[0]
         if (-not $uniqueTasks.ContainsKey($primaryName)) {
-            $uniqueTasks[$primaryName] = $task
+            $uniqueTasks[$primaryName] = $taskInfo
         }
     }
     
     foreach ($taskName in ($uniqueTasks.Keys | Sort-Object)) {
-        $task = $uniqueTasks[$taskName]
-        $aliases = $task.Names | Where-Object { $_ -ne $taskName }
-        $source = if ($task.IsCore) { "core" } else { "project" }
+        $taskInfo = $uniqueTasks[$taskName]
+        $aliases = $taskInfo['Names'] | Where-Object { $_ -ne $taskName }
+        $source = if ($taskInfo['IsCore']) { "core" } else { "project" }
         
         Write-Host "  $taskName" -ForegroundColor Green -NoNewline
         if ($aliases.Count -gt 0) {
@@ -341,12 +337,12 @@ if ($ListTasks) {
         }
         Write-Host " [$source]" -ForegroundColor DarkGray
         
-        if ($task.Description) {
-            Write-Host "    $($task.Description)" -ForegroundColor Gray
+        if ($taskInfo['Description']) {
+            Write-Host "    $($taskInfo['Description'])" -ForegroundColor Gray
         }
         
-        if ($task.Dependencies.Count -gt 0) {
-            Write-Host "    Dependencies: $($task.Dependencies -join ', ')" -ForegroundColor DarkGray
+        if ($taskInfo['Dependencies'].Count -gt 0) {
+            Write-Host "    Dependencies: $($taskInfo['Dependencies'] -join ', ')" -ForegroundColor DarkGray
         }
         Write-Host ""
     }
@@ -361,7 +357,7 @@ if ($null -eq $Task -or $Task.Count -eq 0 -or [string]::IsNullOrWhiteSpace($Task
     Write-Host "Usage: .\go.ps1 <task> [task2 task3...] [arguments]" -ForegroundColor Yellow
     Write-Host "       .\go.ps1 <task>,<task2>,<task3> [arguments]  (comma-separated)" -ForegroundColor Yellow
     Write-Host "       .\go.ps1 <task> -Only [arguments]  (skip dependencies)" -ForegroundColor Yellow
-    Write-Host "       .\go.ps1 -ListTasks" -ForegroundColor Yellow
+    Write-Host "       .\go.ps1 -ListTasks  (or -Help)" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Available tasks: $($availableTasks.Keys | Sort-Object -Unique | Join-String -Separator ', ')" -ForegroundColor Cyan
     exit 1
@@ -450,5 +446,3 @@ if (-not $allSucceeded) {
 }
 
 exit 0
-
-#endregion Main Execution
