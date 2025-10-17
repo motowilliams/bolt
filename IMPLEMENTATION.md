@@ -1,8 +1,10 @@
-# PowerShell Build System - Implementation Summary
+# Gosh! - Implementation Summary
+
+> **Go** + **Shell** = **Gosh!** 🎉
 
 ## ✅ Fully Implemented Features
 
-### 1. Core Build System (`go.ps1`)
+### 1. Core Build System (`gosh.ps1`)
 - **Task Discovery**: Automatically finds tasks in `.build/` directory
 - **Dependency Resolution**: Executes dependencies before main tasks
 - **Tab Completion**: Task names auto-complete in PowerShell
@@ -12,7 +14,7 @@
 
 ### 2. Build Tasks
 
-#### **Format Task** (`.\go.ps1 format` or `.\go.ps1 fmt`)
+#### **Format Task** (`.\gosh.ps1 format` or `.\gosh.ps1 fmt`)
 - Formats all Bicep files using `bicep format`
 - Recursively finds all `.bicep` files in `iac/` directory
 - Supports `-Check` mode for CI/CD validation (coming soon)
@@ -30,9 +32,9 @@ Found 4 Bicep file(s)
 ✓ Successfully formatted 4 Bicep file(s)
 ```
 
-#### **Lint Task** (`.\go.ps1 lint`)
+#### **Lint Task** (`.\gosh.ps1 lint`)
 - Validates all Bicep files for syntax errors
-- Runs Bicep linter using `bicep build --stdout`
+- Runs Bicep linter using `bicep lint`
 - Detects and reports errors and warnings
 - Shows detailed error messages with file locations
 - Returns exit code 1 if linting fails
@@ -51,7 +53,7 @@ Lint Summary:
 ✓ All Bicep files passed linting with no issues!
 ```
 
-#### **Build Task** (`.\go.ps1 build`)
+#### **Build Task** (`.\gosh.ps1 build`)
 - **Dependencies**: `format`, `lint` (auto-executed first)
 - Compiles Bicep files to ARM JSON templates
 - Only compiles `main*.bicep` files (not modules)
@@ -108,23 +110,27 @@ The system properly detects and reports errors:
 
 ```powershell
 # List all available tasks
-.\go.ps1 -ListTasks
+.\gosh.ps1 -ListTasks
+.\gosh.ps1 -Help
 
 # Format all Bicep files
-.\go.ps1 format
+.\gosh.ps1 format
 
 # Check formatting without making changes
-.\go.ps1 format -Check
+.\gosh.ps1 format -Check
 
 # Lint/validate Bicep files
-.\go.ps1 lint
+.\gosh.ps1 lint
 
 # Full build (format → lint → compile)
-.\go.ps1 build
+.\gosh.ps1 build
+
+# Skip dependencies
+.\gosh.ps1 build -Only
 
 # Use task aliases
-.\go.ps1 fmt           # Same as format
-.\go.ps1 check         # Check git index
+.\gosh.ps1 fmt           # Same as format
+.\gosh.ps1 check         # Check git index
 ```
 
 ## Task Dependency Chain
@@ -135,7 +141,7 @@ build
 └── lint    (auto-executed second)
 ```
 
-When you run `.\go.ps1 build`, it automatically:
+When you run `.\gosh.ps1 build`, it automatically:
 1. Formats all Bicep files
 2. Validates all Bicep files
 3. Compiles main Bicep files to JSON
@@ -161,7 +167,7 @@ The build system is CI/CD ready:
 ```yaml
 # Example GitHub Actions
 - name: Run build
-  run: .\go.ps1 build
+  run: .\gosh.ps1 build
   
 # Exit code 0 = success
 # Exit code 1 = failure (lint errors, format issues, build failures)
@@ -172,3 +178,8 @@ The build system is CI/CD ready:
 - PowerShell 7.0+
 - Azure Bicep CLI (`bicep`)
 - Git (for `check` task)
+
+---
+
+**Gosh, that was easy!** 🎉
+

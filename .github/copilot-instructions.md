@@ -1,10 +1,12 @@
-# PowerShell Build System - AI Agent Instructions
+# Gosh! - AI Agent Instructions
+
+> **Go** + **Shell** = **Gosh!** 🎉
 
 ## Project Overview
 
-This is a **self-contained PowerShell build system** (`go.ps1`) designed for Azure Bicep infrastructure projects. It provides extensible task orchestration with automatic dependency resolution, similar to Make or Rake, but pure PowerShell with no external dependencies.
+This is **Gosh**, a self-contained PowerShell build system (`gosh.ps1`) designed for Azure Bicep infrastructure projects. It provides extensible task orchestration with automatic dependency resolution, similar to Make or Rake, but pure PowerShell with no external dependencies.
 
-**Architecture Pattern**: Monolithic orchestrator (`go.ps1`) + modular task scripts (`.build/*.ps1`)
+**Architecture Pattern**: Monolithic orchestrator (`gosh.ps1`) + modular task scripts (`.build/*.ps1`)
 
 ## Core Architecture
 
@@ -37,21 +39,21 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
 
 ```powershell
 # Single task with dependencies
-.\go.ps1 build              # Runs: format → lint → build
+.\gosh.ps1 build              # Runs: format → lint → build
 
 # Multiple tasks in sequence
-.\go.ps1 lint format        # Runs: lint, then format
-.\go.ps1 format,lint,build  # Comma-separated also works
+.\gosh.ps1 lint format        # Runs: lint, then format
+.\gosh.ps1 format,lint,build  # Comma-separated also works
 
 # Skip dependencies (faster iteration)
-.\go.ps1 build -Only        # Runs: build only (no format/lint)
+.\gosh.ps1 build -Only        # Runs: build only (no format/lint)
 
 # Multiple tasks without dependencies
-.\go.ps1 format lint build -Only  # Runs all three, skipping build's deps
+.\gosh.ps1 format lint build -Only  # Runs all three, skipping build's deps
 
 # Individual steps
-.\go.ps1 format            # Format all .bicep files
-.\go.ps1 lint              # Validate all .bicep files
+.\gosh.ps1 format            # Format all .bicep files
+.\gosh.ps1 lint              # Validate all .bicep files
 ```
 
 **Important**: 
@@ -255,13 +257,13 @@ exit ($result.FailedCount -eq 0 ? 0 : 1)
 
 ```powershell
 # Common tasks
-.\go.ps1 -ListTasks              # List all available tasks
-.\go.ps1 -Help                   # Same as -ListTasks
-.\go.ps1 build                   # Full pipeline
-.\go.ps1 build -Only             # Build only (skip format/lint)
-.\go.ps1 format lint             # Multiple tasks (space-separated)
-.\go.ps1 format,lint             # Multiple tasks (comma-separated)
-.\go.ps1 format lint build -Only # Multiple tasks without deps
+.\gosh.ps1 -ListTasks              # List all available tasks
+.\gosh.ps1 -Help                   # Same as -ListTasks
+.\gosh.ps1 build                   # Full pipeline
+.\gosh.ps1 build -Only             # Build only (skip format/lint)
+.\gosh.ps1 format lint             # Multiple tasks (space-separated)
+.\gosh.ps1 format,lint             # Multiple tasks (comma-separated)
+.\gosh.ps1 format lint build -Only # Multiple tasks without deps
 
 # Task discovery
 Get-ChildItem .build        # See all project tasks
@@ -274,3 +276,4 @@ Select-String "# TASK:" .build/*.ps1  # See task names
 - `.build/Invoke-*.ps1` - Project task implementations
 - `iac/main.bicep` - Main infrastructure template
 - `iac/modules/*.bicep` - Reusable infrastructure modules
+- `README.md` - Project overview and quick start guide

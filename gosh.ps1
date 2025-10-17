@@ -3,10 +3,13 @@ using namespace System.Management.Automation
 
 <#
 .SYNOPSIS
-    Universal build script with extensible task system
+    Gosh! Build orchestration for PowerShell
 .DESCRIPTION
+    A self-contained PowerShell build system with extensible task orchestration.
     Core build tasks are built into this script. Project-specific tasks can be
     added by placing PowerShell scripts in a .build directory.
+    
+    "Go" + "Shell" = Gosh! 🎉
 #>
 
 param(
@@ -69,7 +72,7 @@ $taskCompleter = {
     }
 }
 
-Register-ArgumentCompleter -CommandName 'go.ps1' -ParameterName 'Task' -ScriptBlock $taskCompleter
+Register-ArgumentCompleter -CommandName 'gosh.ps1' -ParameterName 'Task' -ScriptBlock $taskCompleter
 
 function Invoke-CheckGitIndex {
     <#
@@ -354,10 +357,10 @@ if ($ListTasks) {
 if ($null -eq $Task -or $Task.Count -eq 0 -or [string]::IsNullOrWhiteSpace($Task[0])) {
     Write-Host "Error: No task specified" -ForegroundColor Red
     Write-Host ""
-    Write-Host "Usage: .\go.ps1 <task> [task2 task3...] [arguments]" -ForegroundColor Yellow
-    Write-Host "       .\go.ps1 <task>,<task2>,<task3> [arguments]  (comma-separated)" -ForegroundColor Yellow
-    Write-Host "       .\go.ps1 <task> -Only [arguments]  (skip dependencies)" -ForegroundColor Yellow
-    Write-Host "       .\go.ps1 -ListTasks  (or -Help)" -ForegroundColor Yellow
+    Write-Host "Usage: .\gosh.ps1 <task> [task2 task3...] [arguments]" -ForegroundColor Yellow
+    Write-Host "       .\gosh.ps1 <task>,<task2>,<task3> [arguments]  (comma-separated)" -ForegroundColor Yellow
+    Write-Host "       .\gosh.ps1 <task> -Only [arguments]  (skip dependencies)" -ForegroundColor Yellow
+    Write-Host "       .\gosh.ps1 -ListTasks  (or -Help)" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Available tasks: $($availableTasks.Keys | Sort-Object -Unique | Join-String -Separator ', ')" -ForegroundColor Cyan
     exit 1
