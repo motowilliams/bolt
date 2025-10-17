@@ -1,0 +1,8 @@
+# Bicep build outputs
+*.json
+
+# Don't ignore parameter files
+!*.parameters.json
+
+# Don't ignore bicepconfig
+!bicepconfig.json
