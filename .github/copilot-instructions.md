@@ -36,18 +36,29 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
 ### Building & Testing
 
 ```powershell
-# Full pipeline with dependencies
+# Single task with dependencies
 .\go.ps1 build              # Runs: format → lint → build
+
+# Multiple tasks in sequence
+.\go.ps1 lint format        # Runs: lint, then format
+.\go.ps1 format,lint,build  # Comma-separated also works
 
 # Skip dependencies (faster iteration)
 .\go.ps1 build -Only        # Runs: build only (no format/lint)
+
+# Multiple tasks without dependencies
+.\go.ps1 format lint build -Only  # Runs all three, skipping build's deps
 
 # Individual steps
 .\go.ps1 format            # Format all .bicep files
 .\go.ps1 lint              # Validate all .bicep files
 ```
 
-**Important**: Use `-Only` switch (not `-NoDeps`) to skip dependencies - recently renamed for clarity.
+**Important**: 
+- Use `-Only` switch to skip dependencies for all tasks in the sequence
+- Tasks execute in the order specified
+- If any task fails, execution stops
+- The `$ExecutedTasks` hashtable prevents duplicate task execution across the sequence
 
 ### Creating New Tasks
 
@@ -244,11 +255,12 @@ exit ($result.FailedCount -eq 0 ? 0 : 1)
 
 ```powershell
 # Common tasks
-.\go.ps1 -ListTasks         # List all available tasks
-.\go.ps1 build              # Full pipeline
-.\go.ps1 build -Only        # Build only (skip format/lint)
-.\go.ps1 format             # Format all bicep files
-.\go.ps1 lint               # Validate all bicep files
+.\go.ps1 -ListTasks              # List all available tasks
+.\go.ps1 build                   # Full pipeline
+.\go.ps1 build -Only             # Build only (skip format/lint)
+.\go.ps1 format lint             # Multiple tasks (space-separated)
+.\go.ps1 format,lint             # Multiple tasks (comma-separated)
+.\go.ps1 format lint build -Only # Multiple tasks without deps
 
 # Task discovery
 Get-ChildItem .build        # See all project tasks

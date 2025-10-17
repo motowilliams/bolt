@@ -11,7 +11,7 @@ using namespace System.Management.Automation
 
 param(
     [Parameter(Mandatory = $false, Position = 0)]
-    [string]$Task,
+    [string[]]$Task,
     
     [Parameter()]
     [switch]$ListTasks,
@@ -355,42 +355,100 @@ if ($ListTasks) {
 }
 
 # Check if task was provided
-if ([string]::IsNullOrWhiteSpace($Task)) {
+if ($null -eq $Task -or $Task.Count -eq 0 -or [string]::IsNullOrWhiteSpace($Task[0])) {
     Write-Host "Error: No task specified" -ForegroundColor Red
     Write-Host ""
-    Write-Host "Usage: .\go.ps1 <task> [arguments]" -ForegroundColor Yellow
-    Write-Host "       .\go.ps1 <task> -NoDeps [arguments]  (skip dependencies)" -ForegroundColor Yellow
+    Write-Host "Usage: .\go.ps1 <task> [task2 task3...] [arguments]" -ForegroundColor Yellow
+    Write-Host "       .\go.ps1 <task>,<task2>,<task3> [arguments]  (comma-separated)" -ForegroundColor Yellow
+    Write-Host "       .\go.ps1 <task> -Only [arguments]  (skip dependencies)" -ForegroundColor Yellow
     Write-Host "       .\go.ps1 -ListTasks" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Available tasks: $($availableTasks.Keys | Sort-Object -Unique | Join-String -Separator ', ')" -ForegroundColor Cyan
     exit 1
 }
 
-# Check if requested task exists
-if (-not $availableTasks.ContainsKey($Task)) {
-    Write-Error "Task '$Task' not found. Available tasks: $($availableTasks.Keys | Sort-Object -Unique | Join-String -Separator ', ')"
-    exit 1
+# Parse task list - support comma-separated or space-separated tasks
+$taskList = @()
+$remainingArgs = @()
+$collectingTasks = $true
+
+# Process Task parameter - could be array or single string with commas
+foreach ($taskArg in $Task) {
+    if ($taskArg -match ',') {
+        # Comma-separated tasks in a single string
+        $taskList += $taskArg -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+    }
+    else {
+        $taskList += $taskArg.Trim()
+    }
 }
 
-# Get the task metadata
-$taskInfo = $availableTasks[$Task]
-
-Write-Host "Executing task: $Task" -ForegroundColor Cyan
-if ($taskInfo.Description) {
-    Write-Host "Description: $($taskInfo.Description)" -ForegroundColor Gray
+# Check Arguments for additional tasks or actual arguments
+foreach ($arg in $Arguments) {
+    if ($collectingTasks) {
+        # Check if this looks like a task name (exists in available tasks) or contains comma
+        if ($arg -match ',') {
+            # Comma-separated tasks
+            $taskList += $arg -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+        }
+        elseif ($availableTasks.ContainsKey($arg)) {
+            # Valid task name
+            $taskList += $arg
+        }
+        else {
+            # Not a task, must be an argument
+            $collectingTasks = $false
+            $remainingArgs += $arg
+        }
+    }
+    else {
+        $remainingArgs += $arg
+    }
 }
-Write-Host ""
 
-# Execute the task with dependency resolution
+# Validate all tasks exist
+foreach ($taskName in $taskList) {
+    if (-not $availableTasks.ContainsKey($taskName)) {
+        Write-Error "Task '$taskName' not found. Available tasks: $($availableTasks.Keys | Sort-Object -Unique | Join-String -Separator ', ')"
+        exit 1
+    }
+}
+
+# Execute all tasks in sequence
 $executedTasks = @{}
-$result = Invoke-Task -TaskInfo $taskInfo -AllTasks $availableTasks -Arguments $Arguments -ExecutedTasks $executedTasks -SkipDependencies $Only
+$allSucceeded = $true
 
-if (-not $result) {
-    Write-Host "`nTask '$Task' failed" -ForegroundColor Red
+foreach ($taskName in $taskList) {
+    $taskInfo = $availableTasks[$taskName]
+    
+    Write-Host "Executing task: $taskName" -ForegroundColor Cyan
+    if ($taskInfo.Description) {
+        Write-Host "Description: $($taskInfo.Description)" -ForegroundColor Gray
+    }
+    Write-Host ""
+    
+    # Execute the task with dependency resolution
+    $result = Invoke-Task -TaskInfo $taskInfo -AllTasks $availableTasks -Arguments $remainingArgs -ExecutedTasks $executedTasks -SkipDependencies $Only
+    
+    if (-not $result) {
+        Write-Host "`nTask '$taskName' failed" -ForegroundColor Red
+        $allSucceeded = $false
+        break
+    }
+    
+    Write-Host "`nTask '$taskName' completed successfully" -ForegroundColor Green
+    
+    if ($taskList.Count -gt 1 -and $taskName -ne $taskList[-1]) {
+        Write-Host ""
+        Write-Host ("=" * 60) -ForegroundColor DarkGray
+        Write-Host ""
+    }
+}
+
+if (-not $allSucceeded) {
     exit 1
 }
 
-Write-Host "`nTask '$Task' completed successfully" -ForegroundColor Green
 exit 0
 
 #endregion Main Execution
