@@ -22,6 +22,32 @@ BeforeAll {
     $script:LintTaskPath = Join-Path $script:BuildPath 'Invoke-Lint.ps1'
     $script:BuildTaskPath = Join-Path $script:BuildPath 'Invoke-Build.ps1'
 
+    # Helper function for robust file/directory removal with retries
+    function Remove-ItemWithRetry {
+        param(
+            [string]$Path,
+            [int]$MaxRetries = 5,
+            [int]$DelayMs = 200
+        )
+
+        for ($i = 0; $i -lt $MaxRetries; $i++) {
+            try {
+                if (Test-Path $Path) {
+                    Remove-Item $Path -Recurse -Force -ErrorAction Stop
+                }
+                return $true
+            }
+            catch {
+                if ($i -eq ($MaxRetries - 1)) {
+                    Write-Warning "Failed to remove $Path after $MaxRetries attempts: $_"
+                    return $false
+                }
+                Start-Sleep -Milliseconds $DelayMs
+            }
+        }
+        return $true
+    }
+
     # Helper function to invoke gosh with captured output
     function Invoke-Gosh {
         param(
@@ -123,7 +149,7 @@ exit 0
 
         AfterAll {
             if (Test-Path $script:TestBuildPath) {
-                Remove-Item $script:TestBuildPath -Recurse -Force
+                Remove-ItemWithRetry -Path $script:TestBuildPath
             }
         }
 
@@ -191,10 +217,10 @@ exit 0
 
     Context 'New Task Creation' {
         AfterEach {
-            # Clean up any test-generated files
-            Start-Sleep -Milliseconds 100  # Brief delay for file handles
-            Get-ChildItem $script:BuildPath -Filter "Invoke-Test*.ps1" -ErrorAction SilentlyContinue |
-                Remove-Item -Force -ErrorAction SilentlyContinue
+            # Clean up any test-generated files with retry logic
+            Get-ChildItem $script:BuildPath -Filter "Invoke-Test*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
+                Remove-ItemWithRetry -Path $_.FullName
+            }
         }
 
         It 'Should create a new task file with -NewTask' {
