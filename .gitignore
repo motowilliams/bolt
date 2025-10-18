@@ -1,8 +1,8 @@
 # Bicep build outputs
-*.json
+iac/*.json
 
 # Don't ignore parameter files
-!*.parameters.json
+!iac/*.parameters.json
 
 # Don't ignore bicepconfig
-!bicepconfig.json
+!iac/bicepconfig.json
