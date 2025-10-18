@@ -76,6 +76,7 @@ Before submitting changes:
 - **Run the test suite**: `Invoke-Pester` to ensure all tests pass (43 tests)
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
+- **Test with custom directories**: Verify `-TaskDirectory` parameter works correctly
 - **Verify exit codes**: Ensure tasks return 0 for success, 1 for failure
 - **Test cross-platform**: If applicable, test on Windows, Linux, and macOS
 - **Add new tests**: Choose the appropriate test file:
@@ -87,29 +88,24 @@ Before submitting changes:
 
 When adding new functionality, include Pester tests in the appropriate file:
 
-**For core Gosh features** (use mock fixtures from `tests/fixtures/`):
+**For core Gosh features** (use `-TaskDirectory` parameter with mock fixtures):
 ```powershell
 # Add to tests/gosh.Tests.ps1
 Describe "Your New Feature" {
-    BeforeAll {
-        # Copy fixtures to .build-test/
-        $fixtureSource = Join-Path $PSScriptRoot "fixtures"
-        $fixtureDest = Join-Path $PSScriptRoot ".." ".build-test"
-        Copy-Item "$fixtureSource\*.ps1" -Destination $fixtureDest -Force
-    }
-    
     It "Should do something correctly" {
-        # Test using mock-simple, mock-with-dep, or mock-complex
-        $result = & $goshScript "mock-simple"
-        $LASTEXITCODE | Should -Be 0
-    }
-    
-    AfterAll {
-        # Clean up .build-test/
-        Remove-Item $fixtureDest -Recurse -Force -ErrorAction SilentlyContinue
+        # Tests use -TaskDirectory to point to fixtures
+        $result = Invoke-Gosh -Arguments @('mock-simple') `
+                              -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
+        $result.ExitCode | Should -Be 0
     }
 }
 ```
+
+**Mock Fixtures Pattern:**
+- Tests use `tests/fixtures/` directory containing mock tasks
+- Tests explicitly pass `-TaskDirectory 'tests/fixtures'` parameter
+- This achieves clean separation between production tasks and test infrastructure
+- No need to copy fixtures—they're referenced directly
 
 **For new project tasks**:
 ```powershell

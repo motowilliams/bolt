@@ -70,6 +70,9 @@ A self-contained PowerShell build system with extensible task orchestration and 
 
 # Create a new task
 .\gosh.ps1 -NewTask deploy
+
+# Use a custom task directory
+.\gosh.ps1 -TaskDirectory "infra-tasks" -ListTasks
 ```
 
 ## 📁 Project Structure
@@ -105,6 +108,27 @@ The project includes a complete Azure infrastructure example:
 All modules are parameterized and support multiple environments (dev, staging, prod).
 
 ## 🛠️ Creating Tasks
+
+### Task Directory Flexibility
+
+By default, Gosh discovers tasks from the `.build/` directory. You can customize this location using the `-TaskDirectory` parameter:
+
+```powershell
+# Use a different directory for tasks
+.\gosh.ps1 -TaskDirectory "custom-tasks" -ListTasks
+
+# Execute tasks from custom directory
+.\gosh.ps1 deploy -TaskDirectory "infra-tasks"
+
+# Create new tasks in custom directory
+.\gosh.ps1 -NewTask validate -TaskDirectory "validation-tasks"
+```
+
+This is useful for:
+- **Organizing tasks by category** (build, deploy, test, etc.)
+- **Separating concerns** (infrastructure vs. application tasks)
+- **Testing task behavior** (using fixture directories)
+- **Multi-project workflows** (different task sets per project)
 
 ### Quick Method
 
@@ -330,10 +354,20 @@ Mock tasks in `tests/fixtures/` are used to test Gosh orchestration without exte
 - `Invoke-MockComplex.ps1` - Task with multiple dependencies
 - `Invoke-MockFail.ps1` - Task that intentionally fails
 
-These fixtures are automatically discovered when tests run and allow testing of:
+These fixtures enable testing with the `-TaskDirectory` parameter:
+
+```powershell
+# Tests explicitly specify the fixture directory
+.\gosh.ps1 mock-simple -TaskDirectory 'tests/fixtures'
+
+# This allows clean separation between production tasks and test mocks
+```
+
+The fixtures allow testing of:
 - Dependency resolution chains
 - Error handling
 - Task execution order
+- Gosh orchestration without relying on real project tasks
 
 ### Test Requirements
 

@@ -125,23 +125,6 @@ Describe 'Gosh Core Functionality' {
     }
 
     Context 'Task Discovery' {
-        BeforeAll {
-            # Copy fixtures to a temporary test location
-            $script:TestBuildPath = Join-Path $projectRoot '.build-test'
-            if (-not (Test-Path $script:TestBuildPath)) {
-                New-Item -ItemType Directory -Path $script:TestBuildPath -Force | Out-Null
-            }
-
-            # Copy mock tasks from fixtures
-            Copy-Item "$script:FixturesPath\*.ps1" -Destination $script:TestBuildPath -Force
-        }
-
-        AfterAll {
-            if (Test-Path $script:TestBuildPath) {
-                Remove-ItemWithRetry -Path $script:TestBuildPath
-            }
-        }
-
         It 'Should discover tasks from .build directory' {
             if (Test-Path $script:BuildPath) {
                 $buildFiles = Get-ChildItem $script:BuildPath -Filter "*.ps1" -File -ErrorAction SilentlyContinue
@@ -159,21 +142,6 @@ Describe 'Gosh Core Functionality' {
     }
 
     Context 'Task Execution' {
-        BeforeAll {
-            # Copy fixtures to test location
-            $script:TestBuildPath = Join-Path $projectRoot '.build-test'
-            if (-not (Test-Path $script:TestBuildPath)) {
-                New-Item -ItemType Directory -Path $script:TestBuildPath -Force | Out-Null
-            }
-            Copy-Item "$script:FixturesPath\*.ps1" -Destination $script:TestBuildPath -Force
-        }
-
-        AfterAll {
-            if (Test-Path $script:TestBuildPath) {
-                Remove-ItemWithRetry -Path $script:TestBuildPath
-            }
-        }
-
         It 'Should execute a valid core task' {
             # check-index requires git, skip if not available
             $gitAvailable = $null -ne (Get-Command git -ErrorAction SilentlyContinue)
@@ -190,42 +158,27 @@ Describe 'Gosh Core Functionality' {
         }
 
         It 'Should execute mock task successfully' {
-            $result = Invoke-Gosh -Arguments @('mock-simple') -Parameters @{ Only = $true }
+            $result = Invoke-Gosh -Arguments @('mock-simple') -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
             $result.ExitCode | Should -Be 0
             $result.Success | Should -Be $true
         }
     }
 
     Context 'Dependency Resolution' {
-        BeforeAll {
-            # Copy fixtures to test location
-            $script:TestBuildPath = Join-Path $projectRoot '.build-test'
-            if (-not (Test-Path $script:TestBuildPath)) {
-                New-Item -ItemType Directory -Path $script:TestBuildPath -Force | Out-Null
-            }
-            Copy-Item "$script:FixturesPath\*.ps1" -Destination $script:TestBuildPath -Force
-        }
-
-        AfterAll {
-            if (Test-Path $script:TestBuildPath) {
-                Remove-ItemWithRetry -Path $script:TestBuildPath
-            }
-        }
-
         It 'Should respect -Only flag to skip dependencies' {
-            $result = Invoke-Gosh -Arguments @('mock-with-dep') -Parameters @{ Only = $true }
+            $result = Invoke-Gosh -Arguments @('mock-with-dep') -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
             # Should run without executing mock-simple dependency
             $result.ExitCode | Should -Be 0
         }
 
         It 'Should execute dependencies when not using -Only' {
-            $result = Invoke-Gosh -Arguments @('mock-with-dep')
+            $result = Invoke-Gosh -Arguments @('mock-with-dep') -Parameters @{ TaskDirectory = 'tests/fixtures' }
             # Should execute mock-simple first, then mock-with-dep
             $result.ExitCode | Should -Be 0
         }
 
         It 'Should handle complex dependency chains' {
-            $result = Invoke-Gosh -Arguments @('mock-complex')
+            $result = Invoke-Gosh -Arguments @('mock-complex') -Parameters @{ TaskDirectory = 'tests/fixtures' }
             # Should execute: mock-simple, then mock-with-dep, then mock-complex
             $result.ExitCode | Should -Be 0
         }
@@ -305,7 +258,7 @@ Describe 'Gosh Core Functionality' {
         }
 
         It 'Should handle task failures correctly' {
-            $result = Invoke-Gosh -Arguments @('mock-fail') -Parameters @{ Only = $true }
+            $result = Invoke-Gosh -Arguments @('mock-fail') -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
             $result.ExitCode | Should -Be 1
             $result.Success | Should -Be $false
         }

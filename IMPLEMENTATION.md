@@ -5,12 +5,13 @@
 ## ✅ Fully Implemented Features
 
 ### 1. Core Build System (`gosh.ps1`)
-- **Task Discovery**: Automatically finds tasks in `.build/` directory
+- **Task Discovery**: Automatically finds tasks in `.build/` directory (or custom directory via `-TaskDirectory`)
 - **Dependency Resolution**: Executes dependencies before main tasks
-- **Tab Completion**: Task names auto-complete in PowerShell
+- **Tab Completion**: Task names auto-complete in PowerShell (respects `-TaskDirectory`)
 - **Metadata Support**: Tasks defined via comment-based metadata
 - **Circular Dependency Prevention**: Tracks executed tasks
 - **Exit Code Handling**: Properly propagates errors
+- **Parameterized Task Directory**: Use `-TaskDirectory` to specify custom task locations
 
 ### 2. Build Tasks
 
@@ -173,6 +174,13 @@ Invoke-Pester -Output Detailed
 # Use task aliases
 .\gosh.ps1 fmt           # Same as format
 .\gosh.ps1 check         # Check git index
+
+# Use custom task directory
+.\gosh.ps1 -TaskDirectory "infra-tasks" -ListTasks
+.\gosh.ps1 deploy -TaskDirectory "deployment"
+
+# Create new task in custom directory
+.\gosh.ps1 -NewTask validate -TaskDirectory "validation"
 ```
 
 ## Task Dependency Chain
@@ -221,7 +229,21 @@ Mock tasks in `tests/fixtures/` allow testing Gosh orchestration without externa
 - `Invoke-MockComplex.ps1` - Task with multiple dependencies
 - `Invoke-MockFail.ps1` - Task that intentionally fails for error handling tests
 
-These fixtures are automatically discovered by gosh.ps1 when running tests via the `.build-test/` directory mechanism.
+These fixtures are used by tests via the `-TaskDirectory` parameter to achieve clean separation between test infrastructure and production tasks:
+
+```powershell
+# Tests explicitly specify the fixture directory
+.\gosh.ps1 mock-simple -TaskDirectory 'tests/fixtures'
+
+# This parameterization removes hardcoded test paths from gosh.ps1
+# allowing it to focus solely on task orchestration
+```
+
+**Architecture Benefits:**
+- ✅ No test-specific code in `gosh.ps1` (clean production code)
+- ✅ Tests explicitly declare their fixture location
+- ✅ Easy to add new test scenarios by creating new fixture tasks
+- ✅ Fixtures can be reused across different test contexts
 
 ### Running Tests
 

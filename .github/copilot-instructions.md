@@ -28,7 +28,7 @@ The project is a **working example** that includes:
 
 ### Task System Design
 
-Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
+Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files (or custom directory via `-TaskDirectory` parameter):
 
 ```powershell
 # TASK: build, compile          # Task names (comma-separated for aliases)
@@ -38,6 +38,7 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
 
 **Key architectural decisions:**
 - **No task registration required** - tasks auto-discovered via filesystem scan
+- **Parameterized task directory** - use `-TaskDirectory` to specify custom locations (default: `.build`)
 - **Dependency resolution happens at runtime** - `Invoke-Task` recursively executes deps with circular dependency prevention via `$ExecutedTasks` hashtable
 - **Exit codes propagate correctly** - `$LASTEXITCODE` checked after script execution, returns boolean for orchestration
 - **Project tasks override core tasks** - allows customization without modifying `gosh.ps1`
@@ -45,9 +46,9 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
 ### Task Discovery Flow
 
 1. `Get-CoreTasks()` - returns hashtable of built-in tasks (check-index, check)
-2. `Get-ProjectTasks()` - scans `.build/*.ps1`, parses metadata using regex on first 30 lines
-3. `Get-AllTasks()` - merges both, project tasks win conflicts
-4. Tab completion (`Register-ArgumentCompleter`) queries same discovery logic
+2. `Get-ProjectTasks($BuildPath)` - scans specified directory, parses metadata using regex on first 30 lines
+3. `Get-AllTasks($TaskDirectory)` - merges both, project tasks win conflicts, uses `$TaskDirectory` parameter (default: `.build`)
+4. Tab completion (`Register-ArgumentCompleter`) queries same discovery logic, respects `-TaskDirectory` from command line
 
 ## Critical Developer Workflows
 
@@ -67,6 +68,10 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
 # Multiple tasks without dependencies
 .\gosh.ps1 format lint build -Only  # Runs all three, skipping build's deps
 
+# Custom task directory
+.\gosh.ps1 -TaskDirectory "infra-tasks" -ListTasks
+.\gosh.ps1 deploy -TaskDirectory "deployment-tasks"
+
 # Individual steps
 .\gosh.ps1 format            # Format all .bicep files
 .\gosh.ps1 lint              # Validate all .bicep files
@@ -74,6 +79,7 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
 
 **Important**: 
 - Use `-Only` switch to skip dependencies for all tasks in the sequence
+- Use `-TaskDirectory` to specify custom task locations (default: `.build`)
 - Tasks execute in the order specified
 - If any task fails, execution stops
 - The `$ExecutedTasks` hashtable prevents duplicate task execution across the sequence
@@ -85,9 +91,13 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
 ```powershell
 .\gosh.ps1 -NewTask deploy
 # Creates .build/Invoke-Deploy.ps1 with proper metadata structure
+
+# Or in a custom directory:
+.\gosh.ps1 -NewTask validate -TaskDirectory "quality-tasks"
+# Creates quality-tasks/Invoke-Validate.ps1
 ```
 
-**Manual method** - Add a script to `.build/` with metadata header:
+**Manual method** - Add a script to `.build/` (or custom directory) with metadata header:
 
 ```powershell
 # .build/Invoke-Deploy.ps1
@@ -281,6 +291,7 @@ Invoke-Pester -Path tests/gosh.Tests.ps1  # Run specific test file
    - Error handling for invalid tasks
    - Parameter validation (comma/space-separated)
    - Documentation consistency
+   - **Uses `-TaskDirectory 'tests/fixtures'` to test with mock tasks**
 
 2. **Project Task Tests** (`tests/ProjectTasks.Tests.ps1`):
    - Format task: structure, metadata, aliases
@@ -298,6 +309,18 @@ Invoke-Pester -Path tests/gosh.Tests.ps1  # Run specific test file
    - `Invoke-MockWithDep.ps1` - Single dependency
    - `Invoke-MockComplex.ps1` - Multiple dependencies
    - `Invoke-MockFail.ps1` - Intentional failure
+
+**Test Architecture Pattern:**
+```powershell
+# Tests use -TaskDirectory parameter to reference fixtures directly
+$result = Invoke-Gosh -Arguments @('mock-simple') `
+                      -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
+
+# This achieves clean separation:
+# - No test-specific code in gosh.ps1
+# - Tests explicitly declare fixture location
+# - No file copying or temporary directories needed
+```
 
 **Test Results**:
 ```

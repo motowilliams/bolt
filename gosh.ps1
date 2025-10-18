@@ -16,9 +16,12 @@ using namespace System.Management.Automation
     Display all available tasks with their descriptions and dependencies.
 .PARAMETER Only
     Skip task dependencies and execute only the specified tasks.
+.PARAMETER TaskDirectory
+    Directory containing task scripts. Defaults to .build in the script's directory.
+    Relative paths are resolved relative to the script location.
 .PARAMETER NewTask
     Create a new task file with the specified name. Creates a stubbed file in
-    the .build directory with proper metadata structure.
+    the task directory with proper metadata structure.
 .PARAMETER Arguments
     Additional arguments to pass to the task scripts.
 .EXAMPLE
@@ -28,11 +31,14 @@ using namespace System.Management.Automation
     .\gosh.ps1 format lint build -Only
     Executes format, lint, and build tasks without their dependencies.
 .EXAMPLE
+    .\gosh.ps1 -TaskDirectory "custom-tasks"
+    Lists and executes tasks from the custom-tasks directory instead of .build.
+.EXAMPLE
     .\gosh.ps1 -ListTasks
     Shows all available tasks.
 .EXAMPLE
     .\gosh.ps1 -NewTask clean
-    Creates a new task file named Invoke-Clean.ps1 in the .build directory.
+    Creates a new task file named Invoke-Clean.ps1 in the task directory.
 #>param(
     [Parameter(Mandatory = $false, Position = 0)]
     [string[]]$Task,
@@ -43,6 +49,9 @@ using namespace System.Management.Automation
 
     [Parameter()]
     [switch]$Only,
+
+    [Parameter()]
+    [string]$TaskDirectory = ".build",
 
     [Parameter()]
     [string]$NewTask,
@@ -62,9 +71,15 @@ $taskCompleter = {
 
     if (-not $scriptDir) { return }
 
-    # Scan for project-specific tasks in .build directory
+    # Check if -TaskDirectory was specified in the command
+    $taskDir = ".build"  # Default
+    if ($fakeBoundParameters.ContainsKey('TaskDirectory')) {
+        $taskDir = $fakeBoundParameters['TaskDirectory']
+    }
+
+    # Scan for project-specific tasks in task directory
     $projectTasks = @()
-    $buildPath = Join-Path $scriptDir ".build"
+    $buildPath = Join-Path $scriptDir $taskDir
     if (Test-Path $buildPath) {
         $buildFiles = Get-ChildItem $buildPath -Filter "*.ps1" -File
         foreach ($file in $buildFiles) {
@@ -232,6 +247,10 @@ function Get-AllTasks {
     .SYNOPSIS
         Returns all available tasks (core + project-specific)
     #>
+    param(
+        [string]$TaskDirectory
+    )
+
     $allTasks = @{}
 
     # Get core tasks
@@ -240,8 +259,8 @@ function Get-AllTasks {
         $allTasks[$key] = $coreTasks[$key]
     }
 
-    # Get project-specific tasks from .build directory
-    $buildPath = Join-Path $PSScriptRoot ".build"
+    # Get project-specific tasks from specified directory
+    $buildPath = Join-Path $PSScriptRoot $TaskDirectory
     $projectTasks = Get-ProjectTasks -BuildPath $buildPath
 
     # Project tasks override core tasks if there's a naming conflict
@@ -250,42 +269,6 @@ function Get-AllTasks {
             Write-Warning "Project task '$key' is overriding core task"
         }
         $allTasks[$key] = $projectTasks[$key]
-    }
-
-    # Get test tasks from tests directory (for Gosh development)
-    $testsPath = Join-Path $PSScriptRoot "tests"
-    $testTasks = Get-ProjectTasks -BuildPath $testsPath
-
-    # Add test tasks
-    foreach ($key in $testTasks.Keys) {
-        if ($allTasks.ContainsKey($key)) {
-            Write-Warning "Test task '$key' is overriding existing task"
-        }
-        $allTasks[$key] = $testTasks[$key]
-    }
-
-    # Get test build tasks from .build-test directory (for test fixtures during test runs)
-    $testBuildPath = Join-Path $PSScriptRoot ".build-test"
-    $testBuildTasks = Get-ProjectTasks -BuildPath $testBuildPath
-
-    # Add test build tasks
-    foreach ($key in $testBuildTasks.Keys) {
-        if ($allTasks.ContainsKey($key)) {
-            Write-Warning "Test build task '$key' is overriding existing task"
-        }
-        $allTasks[$key] = $testBuildTasks[$key]
-    }
-
-    # Get mock tasks from .build-test directory (for Pester tests)
-    $testBuildPath = Join-Path $PSScriptRoot ".build-test"
-    $mockTasks = Get-ProjectTasks -BuildPath $testBuildPath
-
-    # Add mock tasks
-    foreach ($key in $mockTasks.Keys) {
-        if ($allTasks.ContainsKey($key)) {
-            Write-Warning "Mock task '$key' is overriding existing task"
-        }
-        $allTasks[$key] = $mockTasks[$key]
     }
 
     return $allTasks
@@ -357,17 +340,17 @@ function Invoke-Task {
 }
 
 # Discover all available tasks
-$availableTasks = Get-AllTasks
+$availableTasks = Get-AllTasks -TaskDirectory $TaskDirectory
 
 # Handle -NewTask flag
 if (-not [string]::IsNullOrWhiteSpace($NewTask)) {
     Write-Host "Creating new task: $NewTask" -ForegroundColor Cyan
 
-    # Ensure .build directory exists
-    $buildPath = Join-Path $PSScriptRoot ".build"
+    # Ensure task directory exists
+    $buildPath = Join-Path $PSScriptRoot $TaskDirectory
     if (-not (Test-Path $buildPath)) {
         New-Item -Path $buildPath -ItemType Directory | Out-Null
-        Write-Host "Created .build directory" -ForegroundColor Gray
+        Write-Host "Created $TaskDirectory directory" -ForegroundColor Gray
     }
 
     # Generate filename: Invoke-TaskName.ps1 (with proper capitalization)
