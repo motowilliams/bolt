@@ -156,8 +156,7 @@ While Gosh works with any PowerShell workflow, it's optimized for Azure Bicep in
 
 - **`format`**: Formats all Bicep files using `bicep format`
   - Runs in-place formatting on all `.bicep` files in `iac/`
-  - Use `-Check` flag to validate without modifying files
-  - Reports which files need formatting
+  - Reports which files were formatted
   
 - **`lint`**: Validates Bicep syntax using `bicep lint`
   - Captures and displays errors and warnings with line numbers
@@ -175,9 +174,6 @@ While Gosh works with any PowerShell workflow, it's optimized for Azure Bicep in
 ```powershell
 # Full pipeline: format → lint → build
 .\gosh.ps1 build
-
-# Check formatting without making changes
-.\gosh.ps1 format -Check
 
 # Individual steps
 .\gosh.ps1 format      # Format all files
@@ -208,9 +204,6 @@ Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
 ### Development Iteration
 
 ```powershell
-# Quick format check (no file modifications)
-.\gosh.ps1 format -Check
-
 # Fix formatting issues
 .\gosh.ps1 format
 
@@ -237,9 +230,6 @@ Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
 ### CI/CD Integration
 
 ```powershell
-# Check formatting in CI (fail if not pre-formatted)
-.\gosh.ps1 format -Check
-
 # Full validation and build
 .\gosh.ps1 build
 ```

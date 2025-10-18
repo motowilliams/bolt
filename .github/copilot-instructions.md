@@ -23,8 +23,6 @@ The project is a **working example** that includes:
 
 **Ready to use**: The system is functional and can be adapted for any Azure Bicep project.
 
-**Format task behavior**: Formats files in-place by default. Supports optional `-Check` parameter for validation mode (must be called directly: `.\.build\Invoke-Format.ps1 -Check`). The `-Check` parameter is not yet forwarded through `gosh.ps1`.
-
 ## Core Architecture
 
 ### Task System Design
@@ -165,35 +163,16 @@ $diagnostics = $output | Where-Object { $_ -match '^\S+\(\d+,\d+\)\s*:\s*(Error|
 
 ### Format Task Behavior
 
-The format task has two modes of operation:
+The format task formats Bicep files in-place:
 
-**1. In-place formatting (default)**: `.\gosh.ps1 format`
+**In-place formatting**: `.\gosh.ps1 format`
 - Modifies files directly using `bicep format --outfile`
 - Reports which files were formatted
 - Always succeeds if bicep format runs without errors
 - Use this for fixing formatting issues
 
-**2. Check mode**: `.\gosh.ps1 format -Check` (requires manual script invocation)
-- Validates formatting without modifying files
-- Formats to a temp file and compares with original
-- Fails if any files need formatting
-- Use this in CI/CD to enforce pre-formatted code
-
-**Parameter forwarding limitation**: The `-Check` parameter cannot currently be passed via `.\gosh.ps1 format -Check`. You must invoke the script directly:
-```powershell
-.\.build\Invoke-Format.ps1 -Check  # Works
-.\gosh.ps1 format -Check            # Parameter not forwarded (known limitation)
-```
-
 **Implementation details**:
 ```powershell
-# Check mode: format to temp file and compare
-$tempFile = [System.IO.Path]::GetTempFileName()
-bicep format $file.FullName --outfile $tempFile 2>$null
-$original = Get-Content $file.FullName -Raw
-$formatted = Get-Content $tempFile -Raw
-if ($original -ne $formatted) { /* needs formatting */ }
-
 # In-place mode: format directly
 bicep format $file.FullName --outfile $file.FullName
 ```
@@ -256,20 +235,16 @@ Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
 
 ## Known Limitations & Quirks
 
-1. **Parameter forwarding not implemented** - `.\gosh.ps1 format -Check` doesn't pass `-Check` to the task script
-   - Workaround: Call script directly `.\.build\Invoke-Format.ps1 -Check`
-   - Planned enhancement: Dynamic parameter forwarding in gosh.ps1
-   
-2. **PowerShell 7.0+ required** - uses modern syntax features
+1. **PowerShell 7.0+ required** - uses modern syntax features
    - `#Requires -Version 7.0` directive enforced
    - Uses `using namespace` syntax
    - Ternary operator `? :` in some expressions
    
-3. **Tab completion requires shell restart** - after adding new tasks to `.build/`, restart PowerShell for completions to update
+2. **Tab completion requires shell restart** - after adding new tasks to `.build/`, restart PowerShell for completions to update
    - Task discovery happens at registration time
    - `Register-ArgumentCompleter` caches task list
    
-4. **Variable naming in tasks** - avoid using `$Task` variable name in task scripts
+3. **Variable naming in tasks** - avoid using `$Task` variable name in task scripts
    - Collides with gosh.ps1's `-Task` parameter in some contexts
    - Use descriptive names like `$currentTask`, `$taskName`, etc.
 

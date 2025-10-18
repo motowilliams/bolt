@@ -17,7 +17,6 @@
 #### **Format Task** (`.\gosh.ps1 format` or `.\gosh.ps1 fmt`)
 - Formats all Bicep files using `bicep format`
 - Recursively finds all `.bicep` files in `iac/` directory
-- Supports `-Check` mode for CI/CD validation (coming soon)
 - Shows per-file formatting status
 - Returns exit code 1 if formatting fails
 
@@ -116,9 +115,6 @@ The system properly detects and reports errors:
 # Format all Bicep files
 .\gosh.ps1 format
 
-# Check formatting without making changes
-.\gosh.ps1 format -Check
-
 # Lint/validate Bicep files
 .\gosh.ps1 lint
 
@@ -151,7 +147,6 @@ If any step fails, the build stops and returns an error code.
 ## Next Steps / Enhancements
 
 Potential future improvements:
-- [ ] Add `-Check` parameter support for format validation in CI/CD
 - [ ] Add `deploy` task for Azure deployment
 - [ ] Add `clean` task to remove compiled JSON files
 - [ ] Add `test` task for infrastructure testing

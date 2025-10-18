@@ -2,9 +2,7 @@
 # TASK: format, fmt
 # DESCRIPTION: Formats Bicep files using bicep format
 
-param(
-    [switch]$Check
-)
+param()
 
 Write-Host "Formatting Bicep files..." -ForegroundColor Cyan
 
@@ -31,70 +29,29 @@ $formattedCount = 0
 
 foreach ($file in $bicepFiles) {
     $relativePath = Resolve-Path -Relative $file.FullName
-    
-    if ($Check) {
-        # Check if file needs formatting without making changes
-        $tempFile = [System.IO.Path]::GetTempFileName()
-        
-        # Format to temp file
-        bicep format $file.FullName --outfile $tempFile 2>$null
-        
-        if ($LASTEXITCODE -eq 0) {
-            # Compare original with formatted
-            $original = Get-Content $file.FullName -Raw
-            $formatted = Get-Content $tempFile -Raw
-            
-            if ($original -ne $formatted) {
-                Write-Host "  ✗ $relativePath needs formatting" -ForegroundColor Yellow
-                $formatIssues++
-            }
-            else {
-                Write-Host "  ✓ $relativePath" -ForegroundColor Green
-            }
-        }
-        else {
-            Write-Host "  ✗ $relativePath (format check failed)" -ForegroundColor Red
-            $formatIssues++
-        }
-        
-        Remove-Item $tempFile -ErrorAction SilentlyContinue
+
+    # Format the file in place
+    Write-Host "  Formatting: $relativePath" -ForegroundColor Gray
+
+    bicep format $file.FullName --outfile $file.FullName
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  ✓ $relativePath formatted" -ForegroundColor Green
+        $formattedCount++
     }
     else {
-        # Format the file in place
-        Write-Host "  Formatting: $relativePath" -ForegroundColor Gray
-        
-        bicep format $file.FullName --outfile $file.FullName
-        
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "  ✓ $relativePath formatted" -ForegroundColor Green
-            $formattedCount++
-        }
-        else {
-            Write-Host "  ✗ $relativePath (format failed)" -ForegroundColor Red
-            $formatIssues++
-        }
+        Write-Host "  ✗ $relativePath (format failed)" -ForegroundColor Red
+        $formatIssues++
     }
 }
 
 Write-Host ""
 
-if ($Check) {
-    if ($formatIssues -eq 0) {
-        Write-Host "✓ All $($bicepFiles.Count) Bicep file(s) are properly formatted" -ForegroundColor Green
-        exit 0
-    }
-    else {
-        Write-Host "✗ $formatIssues file(s) need formatting. Run '.\go.ps1 format' to fix." -ForegroundColor Red
-        exit 1
-    }
+if ($formatIssues -eq 0) {
+    Write-Host "✓ Successfully formatted $formattedCount Bicep file(s)" -ForegroundColor Green
+    exit 0
 }
 else {
-    if ($formatIssues -eq 0) {
-        Write-Host "✓ Successfully formatted $formattedCount Bicep file(s)" -ForegroundColor Green
-        exit 0
-    }
-    else {
-        Write-Host "✗ Failed to format $formatIssues file(s)" -ForegroundColor Red
-        exit 1
-    }
+    Write-Host "✗ Failed to format $formatIssues file(s)" -ForegroundColor Red
+    exit 1
 }
