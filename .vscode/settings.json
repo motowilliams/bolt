@@ -6,7 +6,8 @@
   // File associations
   "files.associations": {
     "*.ps1": "powershell",
-    "*.bicep": "bicep"
+    "*.bicep": "bicep",
+    "*.md": "markdown",
   },
 
   // Editor settings
