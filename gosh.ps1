@@ -276,6 +276,9 @@ function Invoke-Task {
         return $true
     }
 
+    # Mark as executed BEFORE processing dependencies to prevent circular loops
+    $ExecutedTasks[$primaryName] = $true
+
     # Execute dependencies first (unless skipped)
     if ($TaskInfo.Dependencies.Count -gt 0) {
         if ($SkipDependencies) {
@@ -299,9 +302,6 @@ function Invoke-Task {
             Write-Host ""
         }
     }
-
-    # Mark as executed
-    $ExecutedTasks[$primaryName] = $true
 
     # Execute the task
     if ($TaskInfo.IsCore) {

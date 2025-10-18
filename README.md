@@ -11,12 +11,13 @@ A self-contained PowerShell build system with extensible task orchestration and 
 
 - **🔍 Automatic Task Discovery**: Drop `.ps1` files in `.build/` with comment-based metadata
 - **🔗 Dependency Resolution**: Tasks declare dependencies via `# DEPENDS:` header
-- **🚫 Circular Dependency Prevention**: Tracks executed tasks to prevent infinite loops
+- **🚫 Circular Dependency Prevention**: Prevents infinite loops by tracking executed tasks
 - **✅ Exit Code Propagation**: Proper CI/CD integration via `$LASTEXITCODE`
 - **📋 Multiple Task Support**: Run tasks in sequence (space or comma-separated)
 - **⏩ Skip Dependencies**: Use `-Only` flag for faster iteration
 - **🎯 Tab Completion**: Task names auto-complete in PowerShell
 - **🎨 Colorized Output**: Consistent, readable task output
+- **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
 
 ## 🚀 Quick Start
 
@@ -66,6 +67,9 @@ A self-contained PowerShell build system with extensible task orchestration and 
 
 # Run multiple tasks without dependencies
 .\gosh.ps1 format lint build -Only
+
+# Create a new task
+.\gosh.ps1 -NewTask deploy
 ```
 
 ## 📁 Project Structure
@@ -102,7 +106,26 @@ All modules are parameterized and support multiple environments (dev, staging, p
 
 ## 🛠️ Creating Tasks
 
-Create a PowerShell script in `.build/` with metadata:
+### Quick Method
+
+Use the built-in task generator to create a new task with proper structure:
+
+```powershell
+.\gosh.ps1 -NewTask deploy
+# Creates: .build/Invoke-Deploy.ps1 with metadata template
+```
+
+This automatically creates a properly formatted task file with:
+- Correct naming convention (`Invoke-TaskName.ps1`)
+- Metadata headers (`TASK`, `DESCRIPTION`, `DEPENDS`)
+- Parameter block
+- Color-coded output statements
+- TODO comments for implementation
+- Proper exit codes
+
+### Manual Method
+
+Or create a PowerShell script in `.build/` manually with metadata:
 
 ```powershell
 # .build/Invoke-Deploy.ps1
