@@ -190,6 +190,82 @@ When you run `.\gosh.ps1 build`, it automatically:
 
 If any step fails, the build stops and returns an error code.
 
+## Testing
+
+The project includes a comprehensive Pester test suite organized into three files for separation of concerns:
+
+### Test Structure
+
+**Core Orchestration** (`tests/gosh.Tests.ps1` - 25 tests):
+- Tests Gosh's task discovery, execution, and dependency resolution
+- Uses mock tasks from `tests/fixtures/` to avoid external dependencies
+- Validates script syntax, parameter handling, error handling
+- Ensures documentation consistency
+
+**Project Tasks** (`tests/ProjectTasks.Tests.ps1` - 12 tests):
+- Validates structure and metadata of format, lint, and build tasks
+- Checks task existence, syntax, and proper metadata headers
+- Verifies dependency declarations
+
+**Integration** (`tests/Integration.Tests.ps1` - 4 tests):
+- End-to-end tests executing actual Bicep operations
+- Requires Bicep CLI to be installed
+- Tests format, lint, build, and full pipeline
+
+### Test Fixtures
+
+Mock tasks in `tests/fixtures/` allow testing Gosh orchestration without external tool dependencies:
+
+- `Invoke-MockSimple.ps1` - Simple task with no dependencies
+- `Invoke-MockWithDep.ps1` - Task with single dependency (depends on mock-simple)
+- `Invoke-MockComplex.ps1` - Task with multiple dependencies
+- `Invoke-MockFail.ps1` - Task that intentionally fails for error handling tests
+
+These fixtures are automatically discovered by gosh.ps1 when running tests via the `.build-test/` directory mechanism.
+
+### Running Tests
+
+```powershell
+# Run all tests (auto-discovers *.Tests.ps1 files)
+Invoke-Pester
+
+# Run with detailed output
+Invoke-Pester -Output Detailed
+
+# Run specific test file
+Invoke-Pester -Path tests/gosh.Tests.ps1
+Invoke-Pester -Path tests/ProjectTasks.Tests.ps1
+Invoke-Pester -Path tests/Integration.Tests.ps1
+```
+
+### Test Results
+
+```
+Tests Passed: 43
+Tests Failed: 0
+Skipped: 0
+Total Time: ~27 seconds
+```
+
+### CI/CD Integration
+
+Tests can be run in CI pipelines:
+
+```yaml
+# GitHub Actions
+- name: Run Tests
+  run: |
+    Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
+    Invoke-Pester -Output Detailed -CI
+  shell: pwsh
+
+- name: Publish Test Results
+  uses: EnricoMi/publish-unit-test-result-action@v2
+  if: always()
+  with:
+    files: TestResults.xml
+```
+
 ## Next Steps / Enhancements
 
 Potential future improvements:

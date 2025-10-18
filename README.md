@@ -269,53 +269,78 @@ steps:
 
 ## 🧪 Testing
 
-The project includes comprehensive **Pester** tests to ensure correct behavior when refactoring or adding new features.
+The project includes comprehensive **Pester** tests to ensure correct behavior when refactoring or adding new features. Tests are organized into three separate files for clarity:
+
+### Test Structure
+
+- **`tests/gosh.Tests.ps1`** - Core orchestration tests using mock tasks
+  - Script validation, task discovery, execution, dependency resolution
+  - Uses mock fixtures from `tests/fixtures/` to test Gosh itself
+  
+- **`tests/ProjectTasks.Tests.ps1`** - Project-specific task validation
+  - Validates structure and metadata of format, lint, and build tasks
+  
+- **`tests/Integration.Tests.ps1`** - End-to-end Bicep integration tests
+  - Executes actual Bicep operations against real infrastructure files
+  - Requires Bicep CLI to be installed
 
 ### Running Tests
 
 ```powershell
-# Run tests directly with Pester (auto-discovers tests)
+# Run all tests (auto-discovers test files)
 Invoke-Pester
 
 # Run with detailed output
 Invoke-Pester -Output Detailed
+
+# Run specific test file
+Invoke-Pester -Path tests/gosh.Tests.ps1
 ```
 
 ### Test Coverage
 
-The test suite (`tests/gosh.Tests.ps1`) includes:
+**Core Orchestration** (`tests/gosh.Tests.ps1` - 25 tests):
+- Script validation and PowerShell version requirements
+- Task listing with `-ListTasks` and `-Help` parameters
+- Task discovery from `.build/` directory and test fixtures
+- Task execution (single, multiple, with dependencies)
+- Dependency resolution and `-Only` flag behavior
+- New task creation with `-NewTask` parameter
+- Error handling for invalid tasks
+- Parameter validation (comma/space-separated)
+- Documentation consistency
 
-- **Script Validation**: Verifies `gosh.ps1` syntax and PowerShell version requirements
-- **Task Listing**: Tests `-ListTasks` and `-Help` parameter functionality
-- **Task Discovery**: Validates automatic task discovery from `.build/` directory
-- **Task Execution**: Tests single task, multiple task, and dependency execution
-- **Dependency Resolution**: Verifies `-Only` flag skips dependencies correctly
-- **Parameter Validation**: Tests comma-separated and space-separated task lists
-- **New Task Creation**: Validates `-NewTask` parameter and file generation
-- **Error Handling**: Ensures proper error messages for invalid tasks
-- **Integration Tests**: Tests Bicep CLI integration (format, lint, build)
-- **Documentation Consistency**: Validates README and help text accuracy
+**Project Tasks** (`tests/ProjectTasks.Tests.ps1` - 12 tests):
+- Format task: existence, syntax, metadata, aliases
+- Lint task: existence, syntax, metadata, dependencies
+- Build task: existence, syntax, metadata, dependencies
+
+**Integration** (`tests/Integration.Tests.ps1` - 4 tests):
+- Format Bicep files integration
+- Lint Bicep files integration
+- Build Bicep files integration
+- Full build pipeline with dependencies
+
+### Test Fixtures
+
+Mock tasks in `tests/fixtures/` are used to test Gosh orchestration without external dependencies:
+
+- `Invoke-MockSimple.ps1` - Simple task with no dependencies
+- `Invoke-MockWithDep.ps1` - Task with single dependency
+- `Invoke-MockComplex.ps1` - Task with multiple dependencies
+- `Invoke-MockFail.ps1` - Task that intentionally fails
+
+These fixtures are automatically discovered when tests run and allow testing of:
+- Dependency resolution chains
+- Error handling
+- Task execution order
 
 ### Test Requirements
 
 - **Pester 5.0+**: Install with `Install-Module -Name Pester -MinimumVersion 5.0.0 -Scope CurrentUser`
+- **Bicep CLI** (optional): Required only for integration tests, other tests run without it
 - Tests run in isolated contexts with proper setup/teardown
 - Test results output to `TestResults.xml` (NUnit format for CI/CD)
-
-### Creating Custom Tests
-
-Add test files following the `*.Tests.ps1` pattern:
-
-```powershell
-# Example: .build/Invoke-Deploy.Tests.ps1
-Describe "Deploy Task" {
-    It "Should validate parameters" {
-        # Your test logic
-        $result = Test-DeploymentParameters
-        $result.IsValid | Should -Be $true
-    }
-}
-```
 
 ### CI/CD Integration
 
@@ -334,6 +359,15 @@ Use Pester directly in CI pipelines:
   if: always()
   with:
     files: TestResults.xml
+```
+
+### Test Results
+
+```
+Tests Passed: 43
+Tests Failed: 0
+Skipped: 0
+Total Time: ~27 seconds
 ```
 
 ## 🔧 Requirements

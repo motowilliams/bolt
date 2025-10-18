@@ -264,6 +264,30 @@ function Get-AllTasks {
         $allTasks[$key] = $testTasks[$key]
     }
 
+    # Get test build tasks from .build-test directory (for test fixtures during test runs)
+    $testBuildPath = Join-Path $PSScriptRoot ".build-test"
+    $testBuildTasks = Get-ProjectTasks -BuildPath $testBuildPath
+
+    # Add test build tasks
+    foreach ($key in $testBuildTasks.Keys) {
+        if ($allTasks.ContainsKey($key)) {
+            Write-Warning "Test build task '$key' is overriding existing task"
+        }
+        $allTasks[$key] = $testBuildTasks[$key]
+    }
+
+    # Get mock tasks from .build-test directory (for Pester tests)
+    $testBuildPath = Join-Path $PSScriptRoot ".build-test"
+    $mockTasks = Get-ProjectTasks -BuildPath $testBuildPath
+
+    # Add mock tasks
+    foreach ($key in $mockTasks.Keys) {
+        if ($allTasks.ContainsKey($key)) {
+            Write-Warning "Mock task '$key' is overriding existing task"
+        }
+        $allTasks[$key] = $mockTasks[$key]
+    }
+
     return $allTasks
 }
 

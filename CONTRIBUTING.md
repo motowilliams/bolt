@@ -73,26 +73,58 @@ if ($success) {
 
 Before submitting changes:
 
-- **Run the test suite**: `Invoke-Pester` to ensure all tests pass
+- **Run the test suite**: `Invoke-Pester` to ensure all tests pass (43 tests)
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
 - **Verify exit codes**: Ensure tasks return 0 for success, 1 for failure
 - **Test cross-platform**: If applicable, test on Windows, Linux, and macOS
-- **Add new tests**: If adding features, include Pester tests in `tests/gosh.Tests.ps1`
+- **Add new tests**: Choose the appropriate test file:
+  - **Core orchestration changes** → `tests/gosh.Tests.ps1` (uses mock fixtures)
+  - **New project tasks** → `tests/ProjectTasks.Tests.ps1` (validates task structure)
+  - **Bicep integrations** → `tests/Integration.Tests.ps1` (requires Bicep CLI)
 
 ### Writing Tests
 
-When adding new functionality, include Pester tests:
+When adding new functionality, include Pester tests in the appropriate file:
 
+**For core Gosh features** (use mock fixtures from `tests/fixtures/`):
 ```powershell
 # Add to tests/gosh.Tests.ps1
 Describe "Your New Feature" {
+    BeforeAll {
+        # Copy fixtures to .build-test/
+        $fixtureSource = Join-Path $PSScriptRoot "fixtures"
+        $fixtureDest = Join-Path $PSScriptRoot ".." ".build-test"
+        Copy-Item "$fixtureSource\*.ps1" -Destination $fixtureDest -Force
+    }
+    
     It "Should do something correctly" {
-        # Arrange
-        $result = Invoke-YourFunction
-        
-        # Assert
-        $result | Should -Be $expectedValue
+        # Test using mock-simple, mock-with-dep, or mock-complex
+        $result = & $goshScript "mock-simple"
+        $LASTEXITCODE | Should -Be 0
+    }
+    
+    AfterAll {
+        # Clean up .build-test/
+        Remove-Item $fixtureDest -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+```
+
+**For new project tasks**:
+```powershell
+# Add to tests/ProjectTasks.Tests.ps1
+Describe "YourNewTask Task" {
+    It "Should exist in .build directory" {
+        $taskPath = Join-Path $projectRoot ".build\Invoke-YourNewTask.ps1"
+        $taskPath | Should -Exist
+    }
+    
+    It "Should have valid PowerShell syntax" {
+        $errors = $null
+        $null = [System.Management.Automation.PSParser]::Tokenize(
+            (Get-Content $taskPath -Raw), [ref]$errors)
+        $errors.Count | Should -Be 0
     }
 }
 ```

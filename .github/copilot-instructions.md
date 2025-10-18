@@ -254,25 +254,58 @@ Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
 
 ### Pester Testing Framework
 
-This project uses **Pester** for PowerShell testing. The comprehensive test suite (`tests/gosh.Tests.ps1`) includes 24 tests covering all major functionality.
+This project uses **Pester** for PowerShell testing. The test suite is organized into three separate files for clarity and separation of concerns:
+
+**Test Structure**:
+- **`tests/gosh.Tests.ps1`** (25 tests) - Core Gosh orchestration using mock fixtures
+- **`tests/ProjectTasks.Tests.ps1`** (12 tests) - Project-specific Bicep task validation
+- **`tests/Integration.Tests.ps1`** (4 tests) - End-to-end Bicep integration tests
+- **`tests/fixtures/`** - Mock tasks for testing Gosh orchestration without external dependencies
 
 **Running tests**:
 ```powershell
-Invoke-Pester                      # Run all tests
+Invoke-Pester                      # Run all tests (auto-discovers *.Tests.ps1)
 Invoke-Pester -Output Detailed     # With detailed output
+Invoke-Pester -Path tests/gosh.Tests.ps1  # Run specific test file
 ```
 
-**Test Coverage** (`tests/gosh.Tests.ps1` - 419 lines):
-- **Script Validation**: Verifies `gosh.ps1` syntax, PowerShell version requirements
-- **Task Listing**: Tests `-ListTasks` and `-Help` parameters
-- **Task Discovery**: Validates automatic discovery from `.build/` and `tests/` directories
-- **Task Execution**: Single tasks, multiple tasks, comma/space-separated lists
-- **Dependency Resolution**: Tests `-Only` flag and automatic dependency execution
-- **New Task Creation**: Validates `-NewTask` parameter functionality
-- **Error Handling**: Ensures proper error messages for invalid tasks
-- **Integration Tests**: Tests Bicep CLI integration (format, lint, build)
-- **Parameter Validation**: Tests various task argument formats
-- **Documentation Consistency**: Validates README and help text
+**Test Coverage**:
+
+1. **Core Orchestration Tests** (`tests/gosh.Tests.ps1`):
+   - Script validation (syntax, PowerShell version)
+   - Task listing (`-ListTasks`, `-Help`)
+   - Task discovery from `.build/` and test fixtures
+   - Task execution (single, multiple, with dependencies)
+   - Dependency resolution and `-Only` flag
+   - New task creation (`-NewTask`)
+   - Error handling for invalid tasks
+   - Parameter validation (comma/space-separated)
+   - Documentation consistency
+
+2. **Project Task Tests** (`tests/ProjectTasks.Tests.ps1`):
+   - Format task: structure, metadata, aliases
+   - Lint task: structure, metadata, dependencies
+   - Build task: structure, metadata, dependency chain
+
+3. **Integration Tests** (`tests/Integration.Tests.ps1`):
+   - Format Bicep files (requires Bicep CLI)
+   - Lint Bicep files (requires Bicep CLI)
+   - Build Bicep files (requires Bicep CLI)
+   - Full build pipeline with dependencies
+
+4. **Test Fixtures** (`tests/fixtures/`):
+   - `Invoke-MockSimple.ps1` - No dependencies
+   - `Invoke-MockWithDep.ps1` - Single dependency
+   - `Invoke-MockComplex.ps1` - Multiple dependencies
+   - `Invoke-MockFail.ps1` - Intentional failure
+
+**Test Results**:
+```
+Tests Passed: 43
+Tests Failed: 0
+Skipped: 0
+Total Time: ~27 seconds
+```
 
 ### Validation Strategy
 
@@ -365,8 +398,11 @@ Ctrl+Shift+P > Tasks: Run Task     # Select any task
 - `.build/Invoke-*.ps1` - Project task implementations (format, lint, build)
 
 ### Testing
-- `tests/gosh.Tests.ps1` - Comprehensive Pester test suite (24 tests, 419 lines)
-- `tests/Invoke-Test.ps1` - Test runner task with auto-install
+- `tests/gosh.Tests.ps1` - Core Gosh orchestration tests (25 tests, uses mock fixtures)
+- `tests/ProjectTasks.Tests.ps1` - Project-specific task validation tests (12 tests)
+- `tests/Integration.Tests.ps1` - End-to-end Bicep integration tests (4 tests)
+- `tests/fixtures/Invoke-Mock*.ps1` - Mock tasks for testing Gosh without external dependencies
+- `tests/Invoke-Test.ps1` - Test runner task (optional, direct Pester usage recommended)
 
 ### Infrastructure
 - `iac/main.bicep` - Main infrastructure template
