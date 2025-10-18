@@ -104,7 +104,6 @@ function Invoke-CheckGitIndex {
         Verifies there are no uncommitted changes in the git repository
     #>
     [CmdletBinding()]
-    param()
 
     # Check if git is available
     $gitCommand = Get-Command git -ErrorAction SilentlyContinue
@@ -351,8 +350,6 @@ if (-not [string]::IsNullOrWhiteSpace($NewTask)) {
 # TASK: $($NewTask.ToLower())
 # DESCRIPTION: TODO: Add description for this task
 # DEPENDS:
-
-param()
 
 Write-Host "Running $($NewTask.ToLower()) task..." -ForegroundColor Cyan
 

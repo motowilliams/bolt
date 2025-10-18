@@ -30,9 +30,9 @@ When creating or modifying tasks in `.build/`:
   - Green: Success (✓)
   - Yellow: Warnings (⚠)
   - Red: Errors (✗)
-- ✅ **Include param() block**: Even if empty
 - ✅ **Check $LASTEXITCODE**: After external commands
 - ✅ **Use descriptive variable names**: Avoid `$Task` (collides with gosh.ps1)
+- ✅ **Only use param() if needed**: Include only if your task accepts parameters
 
 ### Example Task Template
 

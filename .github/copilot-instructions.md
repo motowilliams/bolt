@@ -94,8 +94,6 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
 # DESCRIPTION: Deploys infrastructure to Azure
 # DEPENDS: build
 
-param()  # Always include param() even if empty
-
 # Task implementation
 Write-Host "Deploying..." -ForegroundColor Cyan
 # ... your code ...
@@ -274,8 +272,6 @@ Invoke-Pester              # Direct Pester invocation
 ```powershell
 # TASK: test
 # DESCRIPTION: Run Pester tests
-
-param()
 
 $config = New-PesterConfiguration
 $config.Run.Path = @('.')

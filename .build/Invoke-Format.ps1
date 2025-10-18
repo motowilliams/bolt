@@ -2,8 +2,6 @@
 # TASK: format, fmt
 # DESCRIPTION: Formats Bicep files using bicep format
 
-param()
-
 Write-Host "Formatting Bicep files..." -ForegroundColor Cyan
 
 # Check if bicep CLI is available

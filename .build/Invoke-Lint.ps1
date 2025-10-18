@@ -2,8 +2,6 @@
 # TASK: lint
 # DESCRIPTION: Validates Bicep syntax and runs linter
 
-param()
-
 Write-Host "Linting Bicep files..." -ForegroundColor Cyan
 
 # Check if bicep CLI is available
@@ -31,16 +29,16 @@ $lintSuccess = $true
 foreach ($file in $bicepFiles) {
     $relativePath = Resolve-Path -Relative $file.FullName
     Write-Host "  Linting: $relativePath" -ForegroundColor Gray
-    
+
     # Run bicep lint to check for issues (capture both stdout and stderr)
     $output = & bicep lint $file.FullName 2>&1
-    
+
     # bicep lint outputs diagnostics in format: "path(line,col) : Level rule-name: message"
     # Example: "main.bicep(4,7) : Warning no-unused-params: Parameter "foo" is declared but never used."
-    
+
     # Filter for actual diagnostic lines (contain line/column numbers)
     $diagnostics = $output | Where-Object { $_ -match '^\S+\(\d+,\d+\)\s*:\s*(Error|Warning)' }
-    
+
     if ($diagnostics) {
         foreach ($diag in $diagnostics) {
             if ($diag -match ':\s*Error\s') {
@@ -57,7 +55,7 @@ foreach ($file in $bicepFiles) {
     else {
         Write-Host "    ✓ No issues found" -ForegroundColor Green
     }
-    
+
     Write-Host ""
 }
 

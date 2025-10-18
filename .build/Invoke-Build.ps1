@@ -1,9 +1,6 @@
-# Invoke-Build.ps1
 # TASK: build
 # DESCRIPTION: Compiles Bicep files to ARM JSON templates
 # DEPENDS: format, lint
-
-param()
 
 Write-Host "Building Bicep templates..." -ForegroundColor Cyan
 
@@ -27,9 +24,9 @@ $buildSuccess = $true
 foreach ($file in $bicepFiles) {
     $outputFile = $file.FullName -replace '\.bicep$', '.json'
     Write-Host "  Compiling: $($file.Name) -> $([System.IO.Path]::GetFileName($outputFile))" -ForegroundColor Gray
-    
+
     bicep build $file.FullName --outfile $outputFile
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to build $($file.Name)"
         $buildSuccess = $false

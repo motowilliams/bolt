@@ -133,8 +133,6 @@ Or create a PowerShell script in `.build/` manually with metadata:
 # DESCRIPTION: Deploys infrastructure to Azure
 # DEPENDS: build
 
-param()
-
 Write-Host "Deploying..." -ForegroundColor Cyan
 # Your deployment logic here
 exit 0  # Explicit exit code required
@@ -403,8 +401,8 @@ Task is automatically discovered—no registration needed! Restart your shell to
 
 - Use explicit exit codes: `exit 0` (success) or `exit 1` (failure)
 - Follow color conventions: Cyan (headers), Gray (progress), Green (success), Yellow (warnings), Red (errors)
-- Include `param()` block even if no parameters
 - Add metadata comments: `# TASK:`, `# DESCRIPTION:`, `# DEPENDS:`
+- Only include `param()` if your task accepts parameters
 
 ## 💡 Why "Gosh"?
 
