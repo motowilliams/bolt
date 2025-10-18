@@ -1,12 +1,14 @@
 # Gosh! - AI Agent Instructions
 
-> **Go** + **Shell** = **Gosh!** 🎉
+> **Go** + **powerShell** = **Gosh!** 🎉
 
 ## Project Overview
 
 This is **Gosh**, a self-contained PowerShell build system (`gosh.ps1`) designed for Azure Bicep infrastructure projects. It provides extensible task orchestration with automatic dependency resolution, similar to Make or Rake, but pure PowerShell with no external dependencies.
 
 **Architecture Pattern**: Monolithic orchestrator (`gosh.ps1`) + modular task scripts (`.build/*.ps1`)
+
+**Last Updated**: October 2025
 
 ### Current Project Status
 
@@ -39,7 +41,7 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
 - **No task registration required** - tasks auto-discovered via filesystem scan
 - **Dependency resolution happens at runtime** - `Invoke-Task` recursively executes deps with circular dependency prevention via `$ExecutedTasks` hashtable
 - **Exit codes propagate correctly** - `$LASTEXITCODE` checked after script execution, returns boolean for orchestration
-- **Project tasks override core tasks** - allows customization without modifying `go.ps1`
+- **Project tasks override core tasks** - allows customization without modifying `gosh.ps1`
 
 ### Task Discovery Flow
 
@@ -127,7 +129,7 @@ Write-Host "✓ Task succeeded" -ForegroundColor Green
 exit 0
 ```
 
-**Critical**: Always use explicit `exit 0` or `exit 1` - go.ps1 checks `$LASTEXITCODE` for orchestration.
+**Critical**: Always use explicit `exit 0` or `exit 1` - gosh.ps1 checks `$LASTEXITCODE` for orchestration.
 
 ### Output Formatting Standards
 
@@ -229,7 +231,7 @@ Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
 
 **Local-First Principle (90/10 Rule)**: Tasks should run identically locally and in CI pipelines.
 
-- **Same commands**: `.\go.ps1 build` works the same locally and in CI
+- **Same commands**: `.\gosh.ps1 build` works the same locally and in CI
 - **No special CI flags**: Avoid `if ($env:CI)` branches unless absolutely necessary
 - **Consistent tooling**: Use same Bicep CLI version, same PowerShell modules
 - **Deterministic behavior**: Tasks produce same results regardless of environment
@@ -239,10 +241,10 @@ Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
 ```yaml
 # Example CI job (any platform)
 - name: Build
-  run: pwsh -File go.ps1 build
+  run: pwsh -File gosh.ps1 build
   
 - name: Test
-  run: pwsh -File go.ps1 test
+  run: pwsh -File gosh.ps1 test
 ```
 
 ## Known Limitations & Quirks
@@ -282,7 +284,7 @@ Describe "Build Task" {
 
 **Running tests**:
 ```powershell
-.\go.ps1 test              # Run all Pester tests (task to be created)
+.\gosh.ps1 test            # Run all Pester tests (task to be created)
 Invoke-Pester              # Direct Pester invocation
 ```
 
@@ -310,6 +312,46 @@ exit ($result.FailedCount -eq 0 ? 0 : 1)
 - **Bicep validation**: lint task catches syntax errors
 - **Local-first principle**: Tasks run identically locally and in CI (90/10 rule)
 
+## VS Code Integration
+
+### Tasks Integration
+
+Pre-configured VS Code tasks in `.vscode/tasks.json`:
+
+```json
+// Available tasks (Ctrl+Shift+B for default build)
+{
+  "label": "Gosh: Build",      // Default build task (Ctrl+Shift+B)
+  "label": "Gosh: Format",     // Format Bicep files
+  "label": "Gosh: Lint",       // Validate Bicep files
+  "label": "Gosh: List Tasks"  // Show available tasks
+}
+```
+
+**Usage**: Press `Ctrl+Shift+B` to run the default build task, or `Ctrl+Shift+P` → "Tasks: Run Task" to select any task.
+
+**Adding new tasks**: When creating tasks in `.build/`, add corresponding VS Code tasks for IDE integration:
+
+```json
+{
+  "label": "Gosh: YourTask",
+  "type": "shell",
+  "command": "pwsh",
+  "args": ["-File", "${workspaceFolder}/gosh.ps1", "yourtask"]
+}
+```
+
+### EditorConfig
+
+The project uses `.editorconfig` for consistent code formatting:
+
+- **PowerShell (*.ps1)**: 4 spaces indentation
+- **Bicep (*.bicep)**: 2 spaces indentation  
+- **JSON (*.json)**: 2 spaces indentation
+- **UTF-8 encoding**, LF line endings, trim trailing whitespace
+
+**Applies automatically** with EditorConfig-compatible editors (VS Code, Visual Studio, etc.)
+
 ## Quick Reference
 
 ```powershell
@@ -325,12 +367,31 @@ exit ($result.FailedCount -eq 0 ? 0 : 1)
 # Task discovery
 Get-ChildItem .build        # See all project tasks
 Select-String "# TASK:" .build/*.ps1  # See task names
+
+# VS Code shortcuts
+Ctrl+Shift+B                # Run default build task
+Ctrl+Shift+P > Tasks: Run Task  # Select any task
 ```
 
 ## Related Files
 
-- `IMPLEMENTATION.md` - Feature documentation and examples
-- `.build/Invoke-*.ps1` - Project task implementations
-- `iac/main.bicep` - Main infrastructure template
-- `iac/modules/*.bicep` - Reusable infrastructure modules
+### Documentation
 - `README.md` - Project overview and quick start guide
+- `IMPLEMENTATION.md` - Feature documentation and examples
+- `CONTRIBUTING.md` - Contribution guidelines and task development patterns
+- `CHANGELOG.md` - Version history and release notes
+
+### Source Code
+- `gosh.ps1` - Main orchestrator (task discovery, dependency resolution, execution)
+- `.build/Invoke-*.ps1` - Project task implementations (format, lint, build)
+
+### Infrastructure
+- `iac/main.bicep` - Main infrastructure template
+- `iac/modules/*.bicep` - Reusable infrastructure modules (App Service, SQL)
+- `iac/*.parameters.json` - Environment-specific parameter files
+
+### Configuration
+- `.vscode/tasks.json` - VS Code task definitions
+- `.editorconfig` - Editor formatting rules
+- `.vscode/extensions.json` - Recommended VS Code extensions
+- `.vscode/settings.json` - Workspace settings
