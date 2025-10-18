@@ -71,10 +71,46 @@ if ($success) {
 
 ### Testing
 
-- Test tasks both individually and with dependencies
-- Verify tasks work with `-Only` flag
-- Check that exit codes propagate correctly
-- Test in both PowerShell 7.0+ on Windows and cross-platform if applicable
+Before submitting changes:
+
+- **Run the test suite**: `.\gosh.ps1 test` to ensure all tests pass
+- **If modifying gosh.ps1**: Run `Invoke-Pester` directly to test the orchestrator independently
+- **Test tasks individually**: Verify your task works standalone
+- **Test with dependencies**: Check dependency resolution and `-Only` flag
+- **Verify exit codes**: Ensure tasks return 0 for success, 1 for failure
+- **Test cross-platform**: If applicable, test on Windows, Linux, and macOS
+- **Add new tests**: If adding features, include Pester tests in `gosh.Tests.ps1`
+
+### Writing Tests
+
+When adding new functionality, include Pester tests:
+
+```powershell
+# Add to gosh.Tests.ps1
+Describe "Your New Feature" {
+    It "Should do something correctly" {
+        # Arrange
+        $result = Invoke-YourFunction
+        
+        # Assert
+        $result | Should -Be $expectedValue
+    }
+}
+```
+
+Test your changes:
+```powershell
+# Via Gosh (tests the integration)
+.\gosh.ps1 test
+
+# Directly via Pester (tests gosh.ps1 itself)
+Invoke-Pester
+
+# Specific test file
+Invoke-Pester -Path .\gosh.Tests.ps1
+```
+
+> **Important**: When modifying `gosh.ps1`, always test with `Invoke-Pester` directly to avoid circular dependency issues.
 
 ## Modifying Core Files
 

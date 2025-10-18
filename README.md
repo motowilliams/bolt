@@ -68,6 +68,9 @@ A self-contained PowerShell build system with extensible task orchestration and 
 # Run multiple tasks without dependencies
 .\gosh.ps1 format lint build -Only
 
+# Run the test suite
+.\gosh.ps1 test
+
 # Create a new task
 .\gosh.ps1 -NewTask deploy
 ```
@@ -269,27 +272,83 @@ steps:
 
 ## 🧪 Testing
 
-Uses **Pester** for PowerShell testing. Test files follow `*.Tests.ps1` pattern.
+The project includes comprehensive **Pester** tests to ensure correct behavior when refactoring or adding new features.
+
+### Running Tests
 
 ```powershell
-# Run all tests (coming soon!)
+# Run all tests via Gosh task (recommended)
 .\gosh.ps1 test
 
-# Or run Pester directly
+# If gosh.ps1 is broken, run Pester directly
 Invoke-Pester
+
+# Or run Pester with specific configuration
+Invoke-Pester -Path .\gosh.Tests.ps1
 ```
 
-### Creating Tests
+> **Important**: If you're troubleshooting or suspect `gosh.ps1` itself is broken, run `Invoke-Pester` directly instead of using `.\gosh.ps1 test`. This bypasses the Gosh orchestrator and tests it independently.
+
+### Test Coverage
+
+The test suite (`gosh.Tests.ps1`) includes:
+
+- **Script Validation**: Verifies `gosh.ps1` syntax and PowerShell version requirements
+- **Task Listing**: Tests `-ListTasks` and `-Help` parameter functionality
+- **Task Discovery**: Validates automatic task discovery from `.build/` directory
+- **Task Execution**: Tests single task, multiple task, and dependency execution
+- **Dependency Resolution**: Verifies `-Only` flag skips dependencies correctly
+- **Parameter Validation**: Tests comma-separated and space-separated task lists
+- **New Task Creation**: Validates `-NewTask` parameter and file generation
+- **Error Handling**: Ensures proper error messages for invalid tasks
+- **Integration Tests**: Tests Bicep CLI integration (format, lint, build)
+- **Documentation Consistency**: Validates README and help text accuracy
+
+### Test Requirements
+
+- **Pester 5.0+**: Auto-installed by the test task if not present (or install manually: `Install-Module -Name Pester -MinimumVersion 5.0.0`)
+- Tests run in isolated contexts with proper setup/teardown
+- Test results output to `TestResults.xml` (NUnit format for CI/CD)
+
+### Creating Custom Tests
+
+Add test files following the `*.Tests.ps1` pattern:
 
 ```powershell
-# .build/Invoke-Build.Tests.ps1
-Describe "Build Task" {
-    It "Should find main.bicep files" {
-        $files = Get-ChildItem -Path "iac" -Filter "main*.bicep" -File
-        $files.Count | Should -BeGreaterThan 0
+# Example: .build/Invoke-Deploy.Tests.ps1
+Describe "Deploy Task" {
+    It "Should validate parameters" {
+        # Your test logic
+        $result = Test-DeploymentParameters
+        $result.IsValid | Should -Be $true
     }
 }
 ```
+
+### CI/CD Integration
+
+The test task generates NUnit XML output for CI pipeline integration:
+
+```yaml
+# GitHub Actions example - Method 1: Via Gosh
+- name: Run Tests
+  run: pwsh -File gosh.ps1 test
+  
+# GitHub Actions example - Method 2: Direct Pester (safer for CI)
+- name: Run Tests
+  run: |
+    Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
+    Invoke-Pester -Path ./gosh.Tests.ps1 -Output Detailed -CI
+  shell: pwsh
+  
+- name: Publish Test Results
+  uses: EnricoMi/publish-unit-test-result-action@v2
+  if: always()
+  with:
+    files: TestResults.xml
+```
+
+> **CI/CD Best Practice**: Consider running `Invoke-Pester` directly in CI pipelines rather than via `.\gosh.ps1 test`. This ensures tests run even if there's an issue with `gosh.ps1` itself, and provides a clear separation between testing the tool and using the tool.
 
 ## 🔧 Requirements
 

@@ -76,6 +76,45 @@ Building Bicep templates...
 ✓ All Bicep files compiled successfully!
 ```
 
+#### **Test Task** (`.\gosh.ps1 test`)
+- Runs comprehensive Pester test suite
+- Auto-installs Pester 5.0+ if not present
+- Tests task discovery, execution, dependencies, and error handling
+- Generates NUnit XML test results for CI/CD integration
+- Returns exit code 1 if any tests fail
+
+**Test Coverage:**
+- Script validation (syntax, PowerShell version)
+- Task listing and help functionality
+- Task discovery from `.build/` directory
+- Single and multiple task execution
+- Dependency resolution and `-Only` flag
+- Parameter validation (comma/space-separated)
+- New task creation with `-NewTask`
+- Error handling for invalid tasks
+- Bicep CLI integration (format, lint, build)
+
+**Example Output:**
+```
+Running Pester tests...
+
+Pester v5.7.1
+Running tests from 'C:\...\gosh.Tests.ps1'
+Describing Gosh Core Functionality
+ Context Script Validation
+   [+] Should exist 3ms
+   [+] Should have valid PowerShell syntax 4ms
+   ...
+
+Test Summary:
+  Total:  24
+  Passed: 15
+  Failed: 0
+  Skipped: 3
+
+✓ All tests passed!
+```
+
 ### 3. Azure Infrastructure (Bicep)
 
 Created a complete Azure infrastructure setup:
@@ -121,6 +160,9 @@ The system properly detects and reports errors:
 # Full build (format → lint → compile)
 .\gosh.ps1 build
 
+# Run test suite
+.\gosh.ps1 test
+
 # Skip dependencies
 .\gosh.ps1 build -Only
 
@@ -149,7 +191,7 @@ If any step fails, the build stops and returns an error code.
 Potential future improvements:
 - [ ] Add `deploy` task for Azure deployment
 - [ ] Add `clean` task to remove compiled JSON files
-- [ ] Add `test` task for infrastructure testing
+- [x] Add `test` task for infrastructure testing (✅ Completed with Pester)
 - [ ] Add `watch` task for file change monitoring
 - [ ] Add task timing/profiling
 - [ ] Support for multiple IaC directories
@@ -157,16 +199,27 @@ Potential future improvements:
 
 ## CI/CD Integration
 
-The build system is CI/CD ready:
+The build system is CI/CD ready with proper exit codes:
 
 ```yaml
 # Example GitHub Actions
-- name: Run build
-  run: .\gosh.ps1 build
-  
-# Exit code 0 = success
-# Exit code 1 = failure (lint errors, format issues, build failures)
+steps:
+  - name: Run build
+    run: pwsh -File gosh.ps1 build
+    
+  - name: Run tests
+    run: pwsh -File gosh.ps1 test
+    
+  - name: Publish Test Results
+    uses: EnricoMi/publish-unit-test-result-action@v2
+    if: always()
+    with:
+      files: TestResults.xml
 ```
+
+**Exit Codes:**
+- Exit code 0 = success
+- Exit code 1 = failure (lint errors, format issues, build failures, test failures)
 
 ## Requirements
 

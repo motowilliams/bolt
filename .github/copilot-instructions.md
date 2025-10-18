@@ -14,7 +14,8 @@ This is **Gosh**, a self-contained PowerShell build system (`gosh.ps1`) designed
 
 The project is a **working example** that includes:
 - ✅ Complete build orchestration system (`gosh.ps1`)
-- ✅ Three core tasks: `format`, `lint`, `build`
+- ✅ Four core tasks: `format`, `lint`, `build`, `test`
+- ✅ Pester test suite with comprehensive coverage
 - ✅ Example Azure infrastructure (App Service + SQL)
 - ✅ Multi-task execution with dependency resolution
 - ✅ Tab completion and help system
@@ -250,35 +251,47 @@ Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
 
 ### Pester Testing Framework
 
-This project uses **Pester** for PowerShell testing. Test files follow the pattern `*.Tests.ps1`:
-
-```powershell
-# Example: .build/Invoke-Build.Tests.ps1
-Describe "Build Task" {
-    It "Should find main.bicep files" {
-        $files = Get-ChildItem -Path "iac" -Filter "main*.bicep" -File
-        $files.Count | Should -BeGreaterThan 0
-    }
-}
-```
+This project uses **Pester** for PowerShell testing. The comprehensive test suite (`gosh.Tests.ps1`) includes 24 tests covering all major functionality.
 
 **Running tests**:
 ```powershell
-.\gosh.ps1 test            # Run all Pester tests (task to be created)
+.\gosh.ps1 test            # Run all Pester tests via the test task
 Invoke-Pester              # Direct Pester invocation
 ```
 
-**Creating a test task** (`.build/Invoke-Test.ps1`):
+**Test Coverage** (`gosh.Tests.ps1` - 419 lines):
+- **Script Validation**: Verifies `gosh.ps1` syntax, PowerShell version requirements
+- **Task Listing**: Tests `-ListTasks` and `-Help` parameters
+- **Task Discovery**: Validates automatic discovery from `.build/` directory
+- **Task Execution**: Single tasks, multiple tasks, comma/space-separated lists
+- **Dependency Resolution**: Tests `-Only` flag and automatic dependency execution
+- **New Task Creation**: Validates `-NewTask` parameter functionality
+- **Error Handling**: Ensures proper error messages for invalid tasks
+- **Integration Tests**: Tests Bicep CLI integration (format, lint, build)
+- **Parameter Validation**: Tests various task argument formats
+- **Documentation Consistency**: Validates README and help text
+
+**Test Task Implementation** (`.build/Invoke-Test.ps1`):
 ```powershell
 # TASK: test
-# DESCRIPTION: Run Pester tests
+# DESCRIPTION: Run Pester tests for the Gosh build system
+# DEPENDS:
 
-$config = New-PesterConfiguration
-$config.Run.Path = @('.')
-$config.Run.PassThru = $true
-$config.Output.Verbosity = 'Detailed'
+# Auto-installs Pester 5.0+ if not present
+$pesterModule = Get-Module -ListAvailable -Name Pester | Where-Object { $_.Version -ge '5.0.0' }
+if (-not $pesterModule) {
+    Install-Module -Name Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force
+}
 
-$result = Invoke-Pester -Configuration $config
+# Configure and run tests
+$configuration = New-PesterConfiguration
+$configuration.Run.Path = Join-Path $PSScriptRoot '..\gosh.Tests.ps1'
+$configuration.Run.PassThru = $true
+$configuration.Output.Verbosity = 'Detailed'
+$configuration.TestResult.Enabled = $true
+$configuration.TestResult.OutputPath = 'TestResults.xml'
+
+$result = Invoke-Pester -Configuration $configuration
 
 exit ($result.FailedCount -eq 0 ? 0 : 1)
 ```
@@ -286,9 +299,12 @@ exit ($result.FailedCount -eq 0 ? 0 : 1)
 ### Validation Strategy
 
 - **Exit codes**: CI/CD integration via `$LASTEXITCODE` (0=success, 1=failure)
-- **Pester tests**: Unit tests for task logic and validation
+- **Pester tests**: Comprehensive unit and integration tests for all functionality
+- **NUnit XML output**: `TestResults.xml` for CI/CD pipeline integration
 - **Bicep validation**: lint task catches syntax errors
 - **Local-first principle**: Tasks run identically locally and in CI (90/10 rule)
+
+**Important**: When testing or debugging `gosh.ps1` itself, run `Invoke-Pester` directly rather than `.\gosh.ps1 test` to avoid circular dependency issues. The test task (`.\gosh.ps1 test`) uses `gosh.ps1` to run tests, so if `gosh.ps1` is broken, the tests won't run. Direct Pester invocation (`Invoke-Pester`) bypasses the orchestrator and tests it independently.
 
 ## VS Code Integration
 
@@ -338,12 +354,14 @@ The project uses `.editorconfig` for consistent code formatting:
 .\gosh.ps1 -Help                   # Same as -ListTasks
 .\gosh.ps1 build                   # Full pipeline
 .\gosh.ps1 build -Only             # Build only (skip format/lint)
+.\gosh.ps1 test                    # Run Pester test suite
 .\gosh.ps1 format lint             # Multiple tasks (space-separated)
 .\gosh.ps1 format,lint             # Multiple tasks (comma-separated)
 .\gosh.ps1 format lint build -Only # Multiple tasks without deps
 
 # Creating new tasks
 .\gosh.ps1 -NewTask deploy         # Create new task file
+.\gosh.ps1 -NewTask clean          # Creates .build/Invoke-Clean.ps1
 .\gosh.ps1 -NewTask clean          # Creates .build/Invoke-Clean.ps1
 
 # Task discovery

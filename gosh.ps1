@@ -215,8 +215,8 @@ function Get-ProjectTasks {
         return $metadata
     }
 
-    # Load tasks from .build directory
-    $buildFiles = Get-ChildItem $BuildPath -Filter "*.ps1" -File
+    # Load tasks from directory (exclude test files)
+    $buildFiles = Get-ChildItem $BuildPath -Filter "*.ps1" -File | Where-Object { $_.Name -notmatch '\.Tests\.ps1$' }
     foreach ($file in $buildFiles) {
         $metadata = Get-TaskMetadata $file.FullName
         foreach ($name in $metadata.Names) {
@@ -240,7 +240,7 @@ function Get-AllTasks {
         $allTasks[$key] = $coreTasks[$key]
     }
 
-    # Get project-specific tasks
+    # Get project-specific tasks from .build directory
     $buildPath = Join-Path $PSScriptRoot ".build"
     $projectTasks = Get-ProjectTasks -BuildPath $buildPath
 
@@ -250,6 +250,18 @@ function Get-AllTasks {
             Write-Warning "Project task '$key' is overriding core task"
         }
         $allTasks[$key] = $projectTasks[$key]
+    }
+
+    # Get test tasks from tests directory (for Gosh development)
+    $testsPath = Join-Path $PSScriptRoot "tests"
+    $testTasks = Get-ProjectTasks -BuildPath $testsPath
+
+    # Add test tasks
+    foreach ($key in $testTasks.Keys) {
+        if ($allTasks.ContainsKey($key)) {
+            Write-Warning "Test task '$key' is overriding existing task"
+        }
+        $allTasks[$key] = $testTasks[$key]
     }
 
     return $allTasks

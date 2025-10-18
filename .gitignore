@@ -6,3 +6,7 @@ iac/*.json
 
 # Don't ignore bicepconfig
 !iac/bicepconfig.json
+
+# Pester test results
+TestResults.xml
+coverage.xml
