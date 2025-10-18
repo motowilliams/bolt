@@ -1,6 +1,6 @@
 # Gosh! 🎉
 
-> **Go** + **Shell** = **Gosh!**  
+> **Go** + **powerShell** = **Gosh!**  
 > Build orchestration for PowerShell
 
 A self-contained PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by Make and Rake, but pure PowerShell with no external dependencies—just PowerShell 7.0+.
