@@ -81,7 +81,14 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files:
 
 ### Creating New Tasks
 
-Add a script to `.build/` with metadata header:
+**Quick method** - Use the built-in task generator:
+
+```powershell
+.\gosh.ps1 -NewTask deploy
+# Creates .build/Invoke-Deploy.ps1 with proper metadata structure
+```
+
+**Manual method** - Add a script to `.build/` with metadata header:
 
 ```powershell
 # .build/Invoke-Deploy.ps1
@@ -364,13 +371,17 @@ The project uses `.editorconfig` for consistent code formatting:
 .\gosh.ps1 format,lint             # Multiple tasks (comma-separated)
 .\gosh.ps1 format lint build -Only # Multiple tasks without deps
 
+# Creating new tasks
+.\gosh.ps1 -NewTask deploy         # Create new task file
+.\gosh.ps1 -NewTask clean          # Creates .build/Invoke-Clean.ps1
+
 # Task discovery
-Get-ChildItem .build        # See all project tasks
+Get-ChildItem .build               # See all project tasks
 Select-String "# TASK:" .build/*.ps1  # See task names
 
 # VS Code shortcuts
-Ctrl+Shift+B                # Run default build task
-Ctrl+Shift+P > Tasks: Run Task  # Select any task
+Ctrl+Shift+B                       # Run default build task
+Ctrl+Shift+P > Tasks: Run Task     # Select any task
 ```
 
 ## Related Files

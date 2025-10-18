@@ -10,9 +10,30 @@ using namespace System.Management.Automation
     added by placing PowerShell scripts in a .build directory.
 
     "Go" + "powerShell" = Gosh! 🎉
-#>
-
-param(
+.PARAMETER Task
+    One or more task names to execute. Tasks are executed in sequence.
+.PARAMETER ListTasks
+    Display all available tasks with their descriptions and dependencies.
+.PARAMETER Only
+    Skip task dependencies and execute only the specified tasks.
+.PARAMETER NewTask
+    Create a new task file with the specified name. Creates a stubbed file in
+    the .build directory with proper metadata structure.
+.PARAMETER Arguments
+    Additional arguments to pass to the task scripts.
+.EXAMPLE
+    .\gosh.ps1 build
+    Executes the build task and its dependencies (format, lint).
+.EXAMPLE
+    .\gosh.ps1 format lint build -Only
+    Executes format, lint, and build tasks without their dependencies.
+.EXAMPLE
+    .\gosh.ps1 -ListTasks
+    Shows all available tasks.
+.EXAMPLE
+    .\gosh.ps1 -NewTask clean
+    Creates a new task file named Invoke-Clean.ps1 in the .build directory.
+#>param(
     [Parameter(Mandatory = $false, Position = 0)]
     [string[]]$Task,
 
@@ -23,11 +44,12 @@ param(
     [Parameter()]
     [switch]$Only,
 
+    [Parameter()]
+    [string]$NewTask,
+
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Arguments
-)
-
-# Main script logic
+)# Main script logic
 $ErrorActionPreference = 'Stop'
 
 # Register argument completer
@@ -184,8 +206,11 @@ function Get-ProjectTasks {
         }
 
         # Extract dependencies
-        if ($content -match '(?m)^#\s*DEPENDS:\s*(.+)$') {
-            $metadata.Dependencies = @($Matches[1] -split ',' | ForEach-Object { $_.Trim() })
+        if ($content -match '(?m)^#\s*DEPENDS:(.*)$') {
+            $depString = $Matches[1].Trim()
+            if (-not [string]::IsNullOrWhiteSpace($depString)) {
+                $metadata.Dependencies = @($depString -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+            }
         }
 
         return $metadata
@@ -298,6 +323,60 @@ function Invoke-Task {
 
 # Discover all available tasks
 $availableTasks = Get-AllTasks
+
+# Handle -NewTask flag
+if (-not [string]::IsNullOrWhiteSpace($NewTask)) {
+    Write-Host "Creating new task: $NewTask" -ForegroundColor Cyan
+
+    # Ensure .build directory exists
+    $buildPath = Join-Path $PSScriptRoot ".build"
+    if (-not (Test-Path $buildPath)) {
+        New-Item -Path $buildPath -ItemType Directory | Out-Null
+        Write-Host "Created .build directory" -ForegroundColor Gray
+    }
+
+    # Generate filename: Invoke-TaskName.ps1 (with proper capitalization)
+    $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($NewTask.ToLower())
+    $fileName = "Invoke-$taskNameCapitalized.ps1"
+    $filePath = Join-Path $buildPath $fileName
+
+    # Check if file already exists
+    if (Test-Path $filePath) {
+        Write-Error "Task file already exists: $fileName"
+        exit 1
+    }
+
+    # Create task file template
+    $template = @"
+# TASK: $($NewTask.ToLower())
+# DESCRIPTION: TODO: Add description for this task
+# DEPENDS:
+
+param()
+
+Write-Host "Running $($NewTask.ToLower()) task..." -ForegroundColor Cyan
+
+# TODO: Implement task logic here
+
+Write-Host "✓ Task completed successfully" -ForegroundColor Green
+exit 0
+"@
+
+    # Write the file
+    Set-Content -Path $filePath -Value $template -Encoding UTF8
+
+    Write-Host ""
+    Write-Host "✓ Created task file: $fileName" -ForegroundColor Green
+    Write-Host "  Location: $filePath" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Next steps:" -ForegroundColor Yellow
+    Write-Host "  1. Edit $fileName to implement your task logic" -ForegroundColor Gray
+    Write-Host "  2. Update the DESCRIPTION and DEPENDS metadata as needed" -ForegroundColor Gray
+    Write-Host "  3. Run '.\gosh.ps1 $($NewTask.ToLower())' to execute your task" -ForegroundColor Gray
+    Write-Host "  4. Restart PowerShell to enable tab completion for the new task" -ForegroundColor Gray
+
+    exit 0
+}
 
 # Handle -ListTasks flag
 if ($ListTasks) {
