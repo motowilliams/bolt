@@ -84,14 +84,16 @@ A self-contained PowerShell build system with extensible task orchestration and 
 │   ├── Invoke-Build.ps1        # Compile Bicep to ARM JSON
 │   ├── Invoke-Format.ps1       # Format Bicep files
 │   └── Invoke-Lint.ps1         # Validate Bicep syntax
-├── iac/                        # Infrastructure as Code
-│   ├── main.bicep              # Main infrastructure template
-│   ├── main.parameters.json    # Production parameters
-│   ├── main.dev.parameters.json # Development parameters
-│   └── modules/                # Reusable Bicep modules
-│       ├── app-service-plan.bicep
-│       ├── web-app.bicep
-│       └── sql-server.bicep
+├── tests/                      # Tests & example infrastructure
+│   ├── fixtures/               # Mock tasks for testing
+│   ├── iac/                    # Example Bicep infrastructure
+│   │   ├── main.bicep          # Main infrastructure template
+│   │   ├── main.parameters.json # Production parameters
+│   │   ├── main.dev.parameters.json # Development parameters
+│   │   └── modules/            # Reusable Bicep modules
+│   ├── gosh.Tests.ps1          # Core orchestration tests
+│   ├── ProjectTasks.Tests.ps1  # Task validation tests
+│   └── Integration.Tests.ps1   # Bicep integration tests
 └── .github/
     └── copilot-instructions.md # AI agent guidance
 ```
@@ -177,7 +179,7 @@ While Gosh works with any PowerShell workflow, it's optimized for Azure Bicep in
 ### Available Tasks
 
 - **`format`**: Formats all Bicep files using `bicep format`
-  - Runs in-place formatting on all `.bicep` files in `iac/`
+  - Runs in-place formatting on all `.bicep` files in `tests/iac/`
   - Reports which files were formatted
   
 - **`lint`**: Validates Bicep syntax using `bicep lint`
@@ -187,7 +189,7 @@ While Gosh works with any PowerShell workflow, it's optimized for Azure Bicep in
   
 - **`build`**: Compiles Bicep to ARM JSON templates
   - Only compiles `main*.bicep` files (e.g., `main.bicep`, `main.dev.bicep`)
-  - Module files in `iac/modules/` are referenced, not compiled directly
+  - Module files in `tests/iac/modules/` are referenced, not compiled directly
   - Output `.json` files placed alongside source `.bicep` files
   - Depends on: `format`, `lint` (runs automatically)
 
@@ -514,7 +516,7 @@ Contributions welcome! This is a self-contained build system—keep it simple an
 
 1. **Keep `gosh.ps1`**: The orchestrator rarely needs modification
 2. **Modify tasks in `.build/`**: Edit existing tasks or add new ones
-3. **Update infrastructure in `iac/`**: Replace with your own Bicep modules
+3. **Update infrastructure in `tests/iac/`**: Replace with your own Bicep modules
 4. **Adjust parameters**: Edit `*.parameters.json` files for your environment
 
 ### Adding a New Task
@@ -534,7 +536,7 @@ param(
 Write-Host "Deploying to $Environment..." -ForegroundColor Cyan
 
 # Your deployment logic here
-az deployment group create --resource-group "rg-$Environment" --template-file "iac/main.json"
+az deployment group create --resource-group "rg-$Environment" --template-file "tests/iac/main.json"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✓ Deployment succeeded" -ForegroundColor Green

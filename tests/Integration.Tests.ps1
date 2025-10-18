@@ -14,7 +14,7 @@ BeforeAll {
     $projectRoot = Split-Path -Parent $PSScriptRoot
 
     $script:GoshScriptPath = Join-Path $projectRoot 'gosh.ps1'
-    $script:IacPath = Join-Path $projectRoot 'iac'
+    $script:IacPath = Join-Path $PSScriptRoot 'iac'
 
     # Helper function to invoke gosh with captured output
     function Invoke-Gosh {

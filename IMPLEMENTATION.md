@@ -17,7 +17,7 @@
 
 #### **Format Task** (`.\gosh.ps1 format` or `.\gosh.ps1 fmt`)
 - Formats all Bicep files using `bicep format`
-- Recursively finds all `.bicep` files in `iac/` directory
+- Recursively finds all `.bicep` files in `tests/iac/` directory
 - Shows per-file formatting status
 - Returns exit code 1 if formatting fails
 
@@ -119,16 +119,15 @@ Test Summary:
 
 ### 3. Azure Infrastructure (Bicep)
 
-Created a complete Azure infrastructure setup:
+Created a complete Azure infrastructure setup for testing:
 
 **Files:**
-- `iac/main.bicep` - Main deployment template
-- `iac/modules/app-service-plan.bicep` - App Service Plan
-- `iac/modules/web-app.bicep` - ASP.NET Core 8.0 Web App
-- `iac/modules/sql-server.bicep` - SQL Server + Database
-- `iac/main.parameters.json` - Production parameters
-- `iac/main.dev.parameters.json` - Development parameters
-- `iac/README.md` - Documentation
+- `tests/iac/main.bicep` - Main deployment template
+- `tests/iac/modules/app-service-plan.bicep` - App Service Plan
+- `tests/iac/modules/web-app.bicep` - ASP.NET Core 8.0 Web App
+- `tests/iac/modules/sql-server.bicep` - SQL Server + Database
+- `tests/iac/main.parameters.json` - Production parameters
+- `tests/iac/main.dev.parameters.json` - Development parameters
 
 **What Gets Deployed:**
 - Linux App Service Plan

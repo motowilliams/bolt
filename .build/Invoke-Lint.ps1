@@ -12,7 +12,7 @@ if (-not $bicepCmd) {
 }
 
 # Find all .bicep files
-$bicepFiles = Get-ChildItem -Path "iac" -Filter "*.bicep" -Recurse -File -ErrorAction SilentlyContinue
+$bicepFiles = Get-ChildItem -Path "tests/iac" -Filter "*.bicep" -Recurse -File -ErrorAction SilentlyContinue
 
 if ($bicepFiles.Count -eq 0) {
     Write-Host "No Bicep files found to lint." -ForegroundColor Yellow

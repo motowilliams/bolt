@@ -14,13 +14,15 @@ This is **Gosh**, a self-contained PowerShell build system (`gosh.ps1`) designed
 
 The project is a **working example** that includes:
 - ✅ Complete build orchestration system (`gosh.ps1`)
-- ✅ Four core tasks: `format`, `lint`, `build`, `test`
-- ✅ Pester test suite with comprehensive coverage
+- ✅ Three project tasks: `format`, `lint`, `build`
+- ✅ Pester test suite with comprehensive coverage (43 tests)
 - ✅ Example Azure infrastructure (App Service + SQL)
 - ✅ Multi-task execution with dependency resolution
 - ✅ Tab completion and help system
+- ✅ Parameterized task directory (`-TaskDirectory`)
+- ✅ Test tags for fast/slow test separation
 - ✅ MIT License
-- ✅ Comprehensive documentation (README.md, IMPLEMENTATION.md, copilot-instructions.md)
+- ✅ Comprehensive documentation (README.md, IMPLEMENTATION.md, CONTRIBUTING.md)
 
 **Ready to use**: The system is functional and can be adapted for any Azure Bicep project.
 
@@ -118,8 +120,9 @@ exit 0  # Explicit exit code required
 ### Bicep File Conventions
 
 - **Only `main*.bicep` files are compiled** (e.g., `main.bicep`, `main.dev.bicep`) - see `Invoke-Build.ps1`
-- **Module files in `iac/modules/` are not compiled directly** - they're referenced by main files
-- **Compiled `.json` files live alongside `.bicep` sources** - gitignored via `iac/.gitignore`
+- **Module files in `tests/iac/modules/` are not compiled directly** - they're referenced by main files
+- **Compiled `.json` files live alongside `.bicep` sources** - gitignored via pattern in `.gitignore`
+- **Infrastructure is in `tests/iac/`** - example Bicep files used for testing build tasks
 
 ### Error Handling Pattern
 
@@ -353,17 +356,29 @@ Total Time: ~27 seconds
 
 Pre-configured VS Code tasks in `.vscode/tasks.json`:
 
+**Build Tasks:**
 ```json
-// Available tasks (Ctrl+Shift+B for default build)
 {
-  "label": "Gosh: Build",      // Default build task (Ctrl+Shift+B)
-  "label": "Gosh: Format",     // Format Bicep files
-  "label": "Gosh: Lint",       // Validate Bicep files
-  "label": "Gosh: List Tasks"  // Show available tasks
+  "label": "Gosh: Build",       // Default build task (Ctrl+Shift+B)
+  "label": "Gosh: Format",      // Format Bicep files
+  "label": "Gosh: Lint",        // Validate Bicep files
+  "label": "Gosh: List Tasks"   // Show available tasks
 }
 ```
 
-**Usage**: Press `Ctrl+Shift+B` to run the default build task, or `Ctrl+Shift+P` → "Tasks: Run Task" to select any task.
+**Test Tasks:**
+```json
+{
+  "label": "Test: All",         // Default test task (Ctrl+Shift+P → Run Test Task)
+  "label": "Test: Core (Fast)", // Only core orchestration tests (~1s)
+  "label": "Test: Tasks"        // Only task validation tests (~22s)
+}
+```
+
+**Usage**: 
+- Press `Ctrl+Shift+B` to run the default build task
+- Press `Ctrl+Shift+P` → "Tasks: Run Task" to select any task
+- Press `Ctrl+Shift+P` → "Tasks: Run Test Task" to select test tasks
 
 **Adding new tasks**: When creating tasks in `.build/`, add corresponding VS Code tasks for IDE integration:
 
@@ -393,19 +408,21 @@ The project uses `.editorconfig` for consistent code formatting:
 # Common tasks
 .\gosh.ps1 -ListTasks              # List all available tasks
 .\gosh.ps1 -Help                   # Same as -ListTasks
-.\gosh.ps1 build                   # Full pipeline
+.\gosh.ps1 build                   # Full pipeline (format → lint → build)
 .\gosh.ps1 build -Only             # Build only (skip format/lint)
-.\gosh.ps1 test                    # Run Pester test suite
 .\gosh.ps1 format lint             # Multiple tasks (space-separated)
 .\gosh.ps1 format,lint             # Multiple tasks (comma-separated)
 .\gosh.ps1 format lint build -Only # Multiple tasks without deps
 
-# Testing
-Invoke-Pester                      # Run all tests
+# Testing with Pester
+Invoke-Pester                      # Run all tests (43 tests, ~27s)
+Invoke-Pester -Tag Core            # Only orchestration tests (27 tests, ~1s)
+Invoke-Pester -Tag Tasks           # Only task tests (16 tests, ~22s)
 Invoke-Pester -Output Detailed     # With detailed output
 
 # Creating new tasks
-.\gosh.ps1 -NewTask deploy         # Create new task file
+.\gosh.ps1 -NewTask deploy         # Create new task file in .build/
+.\gosh.ps1 -NewTask validate -TaskDirectory "custom" # Create in custom dir
 
 # Task discovery
 Get-ChildItem .build               # See all project tasks
@@ -414,6 +431,7 @@ Select-String "# TASK:" .build/*.ps1  # See task names
 # VS Code shortcuts
 Ctrl+Shift+B                       # Run default build task
 Ctrl+Shift+P > Tasks: Run Task     # Select any task
+Ctrl+Shift+P > Tasks: Run Test Task # Select test task
 ```
 
 ## Related Files
@@ -429,16 +447,15 @@ Ctrl+Shift+P > Tasks: Run Task     # Select any task
 - `.build/Invoke-*.ps1` - Project task implementations (format, lint, build)
 
 ### Testing
-- `tests/gosh.Tests.ps1` - Core Gosh orchestration tests (25 tests, uses mock fixtures)
-- `tests/ProjectTasks.Tests.ps1` - Project-specific task validation tests (12 tests)
-- `tests/Integration.Tests.ps1` - End-to-end Bicep integration tests (4 tests)
+- `tests/gosh.Tests.ps1` - Core Gosh orchestration tests (27 tests, uses mock fixtures, tag: `Core`)
+- `tests/ProjectTasks.Tests.ps1` - Project-specific task validation tests (12 tests, tag: `Tasks`)
+- `tests/Integration.Tests.ps1` - End-to-end Bicep integration tests (4 tests, tag: `Tasks`)
 - `tests/fixtures/Invoke-Mock*.ps1` - Mock tasks for testing Gosh without external dependencies
-- `tests/Invoke-Test.ps1` - Test runner task (optional, direct Pester usage recommended)
 
 ### Infrastructure
-- `iac/main.bicep` - Main infrastructure template
-- `iac/modules/*.bicep` - Reusable infrastructure modules (App Service, SQL)
-- `iac/*.parameters.json` - Environment-specific parameter files
+- `tests/iac/main.bicep` - Example infrastructure template for testing
+- `tests/iac/modules/*.bicep` - Example infrastructure modules (App Service, SQL)
+- `tests/iac/*.parameters.json` - Example parameter files
 
 ### Configuration
 - `.vscode/tasks.json` - VS Code task definitions

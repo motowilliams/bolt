@@ -5,7 +5,7 @@
 Write-Host "Building Bicep templates..." -ForegroundColor Cyan
 
 # Find all .bicep files (excluding modules in subdirectories for main builds)
-$bicepFiles = Get-ChildItem -Path "iac" -Filter "main*.bicep" -File -ErrorAction SilentlyContinue
+$bicepFiles = Get-ChildItem -Path "tests/iac" -Filter "main*.bicep" -File -ErrorAction SilentlyContinue
 
 if ($bicepFiles.Count -eq 0) {
     Write-Host "No Bicep files found to build." -ForegroundColor Yellow

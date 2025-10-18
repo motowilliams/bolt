@@ -1,11 +1,11 @@
 # Bicep build outputs
-iac/*.json
+tests/iac/*.json
 
 # Don't ignore parameter files
-!iac/*.parameters.json
+!tests/iac/*.parameters.json
 
 # Don't ignore bicepconfig
-!iac/bicepconfig.json
+!tests/iac/bicepconfig.json
 
 # Pester test results
 TestResults.xml

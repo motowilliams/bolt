@@ -23,7 +23,7 @@
   // Search exclusions
   "search.exclude": {
     "**/.git": true,
-    "**/iac/**/*.json": true
+    "**/tests/iac/**/*.json": true
   },
 
   // Terminal settings
