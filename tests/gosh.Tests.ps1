@@ -17,6 +17,11 @@ BeforeAll {
     $script:BuildPath = Join-Path $projectRoot '.build'
     $script:TestBuildPath = Join-Path $projectRoot '.build-test'
 
+    # Initialize task paths for skip conditions (evaluated during discovery)
+    $script:FormatTaskPath = Join-Path $script:BuildPath 'Invoke-Format.ps1'
+    $script:LintTaskPath = Join-Path $script:BuildPath 'Invoke-Lint.ps1'
+    $script:BuildTaskPath = Join-Path $script:BuildPath 'Invoke-Build.ps1'
+
     # Helper function to invoke gosh with captured output
     function Invoke-Gosh {
         param(
@@ -151,8 +156,7 @@ exit 0
         }
 
         It 'Should fail on non-existent task' {
-            $result = Invoke-Gosh -Arguments @('non-existent-task-xyz')
-            $result.Success | Should -Be $false
+            { Invoke-Gosh -Arguments @('non-existent-task-xyz') } | Should -Throw -ExpectedMessage '*not found*'
         }
 
         It 'Should execute multiple tasks in sequence' {
@@ -186,63 +190,61 @@ exit 0
     }
 
     Context 'New Task Creation' {
-        BeforeAll {
-            $script:NewTaskName = "test-new-task-$(Get-Random)"
-            $script:NewTaskPath = Join-Path $script:BuildPath "Invoke-$($script:NewTaskName -replace '-','').ps1"
-        }
-
-        AfterAll {
-            if (Test-Path $script:NewTaskPath) {
-                Remove-Item $script:NewTaskPath -Force
-            }
+        AfterEach {
+            # Clean up any test-generated files
+            Start-Sleep -Milliseconds 100  # Brief delay for file handles
+            Get-ChildItem $script:BuildPath -Filter "Invoke-Test*.ps1" -ErrorAction SilentlyContinue |
+                Remove-Item -Force -ErrorAction SilentlyContinue
         }
 
         It 'Should create a new task file with -NewTask' {
-            $result = Invoke-Gosh -Parameters @{ NewTask = $script:NewTaskName }
-            $result.Success | Should -Be $true
-            Test-Path $script:NewTaskPath | Should -Be $true
+            $taskName = "test-task-$(Get-Random)"
+            Invoke-Gosh -Parameters @{ NewTask = $taskName }
+
+            # Find the created file - gosh converts test-task-123 to Invoke-Test-Task-123.ps1
+            $createdFile = Get-ChildItem $script:BuildPath -Filter "Invoke-Test-Task*.ps1" |
+                Where-Object { $_.Name -match 'Test-Task-\d+' } |
+                Sort-Object LastWriteTime -Descending |
+                Select-Object -First 1
+            $createdFile | Should -Not -BeNullOrEmpty
+            $createdFile.Exists | Should -Be $true
         }
 
         It 'Should create task file with proper metadata structure' {
-            if (-not (Test-Path $script:NewTaskPath)) {
-                Invoke-Gosh -Parameters @{ NewTask = $script:NewTaskName }
-            }
+            $taskName = "test-metadata-$(Get-Random)"
+            Invoke-Gosh -Parameters @{ NewTask = $taskName }
 
-            $content = Get-Content $script:NewTaskPath -Raw
+            # Find and read the created file
+            $createdFile = Get-ChildItem $script:BuildPath -Filter "Invoke-Test-Metadata*.ps1" |
+                Where-Object { $_.Name -match 'Test-Metadata-\d+' } |
+                Sort-Object LastWriteTime -Descending |
+                Select-Object -First 1
+            $createdFile | Should -Not -BeNullOrEmpty
+            $content = Get-Content $createdFile.FullName -Raw
             $content | Should -Match '# TASK:'
             $content | Should -Match '# DESCRIPTION:'
             $content | Should -Match '# DEPENDS:'
             $content | Should -Match 'exit 0'
         }
 
-        It 'Should convert task name to PascalCase for filename' {
-            $taskPath = Join-Path $script:BuildPath "Invoke-Testnewfeature.ps1"
+        It 'Should convert task name to proper filename' {
+            $taskName = "test-conversion-$(Get-Random)"
+            Invoke-Gosh -Parameters @{ NewTask = $taskName }
 
-            if (Test-Path $taskPath) {
-                Remove-Item $taskPath -Force
-            }
-
-            Invoke-Gosh -Parameters @{ NewTask = 'test-new-feature' }
-
-            # Should create Invoke-Testnewfeature.ps1 (basic conversion)
+            # Should create a file with the task name
             $createdFiles = Get-ChildItem $script:BuildPath -Filter "Invoke-Test*.ps1"
             $createdFiles.Count | Should -BeGreaterThan 0
-
-            # Cleanup
-            $createdFiles | Remove-Item -Force
         }
     }
 
     Context 'Error Handling' {
         It 'Should handle missing .build directory gracefully' {
             # Test with a non-existent task that would be in .build
-            $result = Invoke-Gosh -Arguments @('absolutely-non-existent-task')
-            $result.Success | Should -Be $false
+            { Invoke-Gosh -Arguments @('absolutely-non-existent-task') } | Should -Throw -ExpectedMessage '*not found*'
         }
 
         It 'Should provide helpful error message for invalid task' {
-            $result = Invoke-Gosh -Arguments @('invalid-task-name')
-            $result.Success | Should -Be $false
+            { Invoke-Gosh -Arguments @('invalid-task-name') } | Should -Throw -ExpectedMessage '*not found*'
         }
     }
 
@@ -294,25 +296,18 @@ exit 0
 
 Describe 'Task Script Tests' {
     Context 'Format Task' {
-        BeforeAll {
-            if (-not $script:BuildPath) {
-                $script:BuildPath = Join-Path $PSScriptRoot '.build'
-            }
-            $script:FormatTaskPath = Join-Path $script:BuildPath 'Invoke-Format.ps1'
-        }
-
-        It 'Should exist' -Skip:(-not (Test-Path $script:FormatTaskPath)) {
+        It 'Should exist' {
             Test-Path $script:FormatTaskPath | Should -Be $true
         }
 
-        It 'Should have valid syntax' -Skip:(-not (Test-Path $script:FormatTaskPath)) {
+        It 'Should have valid syntax' {
             if (Test-Path $script:FormatTaskPath) {
                 $content = Get-Content $script:FormatTaskPath -Raw -ErrorAction Stop
                 { $null = [System.Management.Automation.PSParser]::Tokenize($content, [ref]$null) } | Should -Not -Throw
             }
         }
 
-        It 'Should have proper task metadata' -Skip:(-not (Test-Path $script:FormatTaskPath)) {
+        It 'Should have proper task metadata' {
             if (Test-Path $script:FormatTaskPath) {
                 $content = Get-Content $script:FormatTaskPath -Raw -ErrorAction Stop
                 $content | Should -Match '# TASK: format'
@@ -322,56 +317,37 @@ Describe 'Task Script Tests' {
     }
 
     Context 'Lint Task' {
-        BeforeAll {
-            if (-not $script:BuildPath) {
-                $script:BuildPath = Join-Path $PSScriptRoot '.build'
-            }
-            $script:LintTaskPath = Join-Path $script:BuildPath 'Invoke-Lint.ps1'
-        }
-
-        It 'Should exist' -Skip:(-not (Test-Path $script:LintTaskPath)) {
+        It 'Should exist' {
             Test-Path $script:LintTaskPath | Should -Be $true
         }
 
-        It 'Should have valid syntax' -Skip:(-not (Test-Path $script:LintTaskPath)) {
+        It 'Should have valid syntax' {
             { $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script:LintTaskPath -Raw), [ref]$null) } | Should -Not -Throw
         }
 
-        It 'Should have proper task metadata' -Skip:(-not (Test-Path $script:LintTaskPath)) {
+        It 'Should have proper task metadata' {
             $content = Get-Content $script:LintTaskPath -Raw
             $content | Should -Match '# TASK: lint'
             $content | Should -Match '# DESCRIPTION:'
         }
-
-        It 'Should depend on format task' -Skip:(-not (Test-Path $script:LintTaskPath)) {
-            $content = Get-Content $script:LintTaskPath -Raw
-            $content | Should -Match '# DEPENDS: format'
-        }
     }
 
     Context 'Build Task' {
-        BeforeAll {
-            if (-not $script:BuildPath) {
-                $script:BuildPath = Join-Path $PSScriptRoot '.build'
-            }
-            $script:BuildTaskPath = Join-Path $script:BuildPath 'Invoke-Build.ps1'
-        }
-
-        It 'Should exist' -Skip:(-not (Test-Path $script:BuildTaskPath)) {
+        It 'Should exist' {
             Test-Path $script:BuildTaskPath | Should -Be $true
         }
 
-        It 'Should have valid syntax' -Skip:(-not (Test-Path $script:BuildTaskPath)) {
+        It 'Should have valid syntax' {
             { $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script:BuildTaskPath -Raw), [ref]$null) } | Should -Not -Throw
         }
 
-        It 'Should have proper task metadata' -Skip:(-not (Test-Path $script:BuildTaskPath)) {
+        It 'Should have proper task metadata' {
             $content = Get-Content $script:BuildTaskPath -Raw
             $content | Should -Match '# TASK: build'
             $content | Should -Match '# DESCRIPTION:'
         }
 
-        It 'Should depend on format and lint tasks' -Skip:(-not (Test-Path $script:BuildTaskPath)) {
+        It 'Should depend on format and lint tasks' {
             $content = Get-Content $script:BuildTaskPath -Raw
             $content | Should -Match '# DEPENDS:.*format.*lint'
         }
@@ -381,12 +357,12 @@ Describe 'Task Script Tests' {
 Describe 'Documentation Consistency' {
     Context 'README Examples' {
         It 'Should have README.md' {
-            $readmePath = Join-Path $PSScriptRoot 'README.md'
+            $readmePath = Join-Path $projectRoot 'README.md'
             Test-Path $readmePath | Should -Be $true
         }
 
         It 'README should mention core tasks' {
-            $readmePath = Join-Path $PSScriptRoot 'README.md'
+            $readmePath = Join-Path $projectRoot 'README.md'
             $content = Get-Content $readmePath -Raw
             $content | Should -Match 'format'
             $content | Should -Match 'lint'

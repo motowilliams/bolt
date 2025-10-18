@@ -164,6 +164,9 @@ The system properly detects and reports errors:
 # Run test suite directly with Pester
 Invoke-Pester
 
+# With detailed output
+Invoke-Pester -Output Detailed
+
 # Skip dependencies
 .\gosh.ps1 build -Only
 
@@ -211,7 +214,7 @@ steps:
   - name: Run tests
     run: |
       Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
-      Invoke-Pester -Path ./tests/gosh.Tests.ps1 -Output Detailed -CI
+      Invoke-Pester -Output Detailed -CI
     shell: pwsh
     
   - name: Publish Test Results

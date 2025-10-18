@@ -274,11 +274,8 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 ### Running Tests
 
 ```powershell
-# Run tests directly with Pester
+# Run tests directly with Pester (auto-discovers tests)
 Invoke-Pester
-
-# Run with specific path
-Invoke-Pester -Path .\tests\gosh.Tests.ps1
 
 # Run with detailed output
 Invoke-Pester -Output Detailed
@@ -329,7 +326,7 @@ Use Pester directly in CI pipelines:
 - name: Run Tests
   run: |
     Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
-    Invoke-Pester -Path ./tests/gosh.Tests.ps1 -Output Detailed -CI
+    Invoke-Pester -Output Detailed -CI
   shell: pwsh
   
 - name: Publish Test Results

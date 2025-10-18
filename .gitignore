@@ -10,3 +10,4 @@ iac/*.json
 # Pester test results
 TestResults.xml
 coverage.xml
+.build-test/**/*

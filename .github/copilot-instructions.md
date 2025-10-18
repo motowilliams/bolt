@@ -231,7 +231,7 @@ Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
 - name: Test
   run: |
     Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
-    Invoke-Pester -Path ./tests/gosh.Tests.ps1 -Output Detailed -CI
+    Invoke-Pester -Output Detailed -CI
   shell: pwsh
 ```
 
