@@ -22,6 +22,10 @@ BeforeAll {
     $script:LintTaskPath = Join-Path $script:BuildPath 'Invoke-Lint.ps1'
     $script:BuildTaskPath = Join-Path $script:BuildPath 'Invoke-Build.ps1'
 
+    # Initialize Bicep availability for integration tests (evaluated during discovery)
+    $script:BicepAvailable = $null -ne (Get-Command bicep -ErrorAction SilentlyContinue)
+    $script:IacPath = Join-Path $projectRoot 'iac'
+
     # Helper function for robust file/directory removal with retries
     function Remove-ItemWithRetry {
         param(
@@ -275,33 +279,43 @@ exit 0
     }
 
     Context 'Integration Tests' {
-        BeforeAll {
+        It 'Should format Bicep files if bicep CLI is available' {
             # Check if Bicep CLI is available
-            $script:BicepAvailable = $null -ne (Get-Command bicep -ErrorAction SilentlyContinue)
+            $bicepCmd = Get-Command bicep -ErrorAction SilentlyContinue
+            if (-not $bicepCmd) {
+                Set-ItResult -Skipped -Because "Bicep CLI not installed"
+                return
+            }
+
+            Test-Path $script:IacPath | Should -Be $true
+            $result = Invoke-Gosh -Arguments @('format') -Parameters @{ Only = $true }
+            $result.ExitCode | Should -Be 0
         }
 
-        It 'Should format Bicep files if bicep CLI is available' -Skip:(-not $script:BicepAvailable) {
-            if (Test-Path (Join-Path $PSScriptRoot 'iac')) {
-                $result = Invoke-Gosh -Arguments @('format') -Parameters @{ Only = $true }
-                # Should execute without errors
-                $result.ExitCode | Should -BeIn @(0, 1)
+        It 'Should lint Bicep files if bicep CLI is available' {
+            # Check if Bicep CLI is available
+            $bicepCmd = Get-Command bicep -ErrorAction SilentlyContinue
+            if (-not $bicepCmd) {
+                Set-ItResult -Skipped -Because "Bicep CLI not installed"
+                return
             }
+
+            Test-Path $script:IacPath | Should -Be $true
+            $result = Invoke-Gosh -Arguments @('lint') -Parameters @{ Only = $true }
+            $result.ExitCode | Should -Be 0
         }
 
-        It 'Should lint Bicep files if bicep CLI is available' -Skip:(-not $script:BicepAvailable) {
-            if (Test-Path (Join-Path $PSScriptRoot 'iac')) {
-                $result = Invoke-Gosh -Arguments @('lint', '-Only')
-                # Should execute (may have warnings/errors but should run)
-                $result.ExitCode | Should -BeIn @(0, 1)
+        It 'Should build Bicep files if bicep CLI is available' {
+            # Check if Bicep CLI is available
+            $bicepCmd = Get-Command bicep -ErrorAction SilentlyContinue
+            if (-not $bicepCmd) {
+                Set-ItResult -Skipped -Because "Bicep CLI not installed"
+                return
             }
-        }
 
-        It 'Should build Bicep files if bicep CLI is available' -Skip:(-not $script:BicepAvailable) {
-            if (Test-Path (Join-Path $PSScriptRoot 'iac')) {
-                $result = Invoke-Gosh -Arguments @('build', '-Only')
-                # Should execute
-                $result.ExitCode | Should -BeIn @(0, 1)
-            }
+            Test-Path $script:IacPath | Should -Be $true
+            $result = Invoke-Gosh -Arguments @('build') -Parameters @{ Only = $true }
+            $result.ExitCode | Should -Be 0
         }
     }
 
