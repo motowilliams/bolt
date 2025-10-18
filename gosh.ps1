@@ -8,21 +8,21 @@ using namespace System.Management.Automation
     A self-contained PowerShell build system with extensible task orchestration.
     Core build tasks are built into this script. Project-specific tasks can be
     added by placing PowerShell scripts in a .build directory.
-    
-    "Go" + "Shell" = Gosh! 🎉
+
+    "Go" + "powerShell" = Gosh! 🎉
 #>
 
 param(
     [Parameter(Mandatory = $false, Position = 0)]
     [string[]]$Task,
-    
+
     [Parameter()]
     [Alias('Help')]
     [switch]$ListTasks,
-    
+
     [Parameter()]
     [switch]$Only,
-    
+
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Arguments
 )
@@ -33,16 +33,13 @@ $ErrorActionPreference = 'Stop'
 # Register argument completer
 $taskCompleter = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
-    
-    # Extract the script path from the command AST
+
+    # Extract the script path from the command abstract syntax tree (AST)
     $scriptPath = $commandAst.CommandElements[0].Value
     $scriptDir = Split-Path -Parent (Resolve-Path $scriptPath -ErrorAction SilentlyContinue)
-    
+
     if (-not $scriptDir) { return }
-    
-    # Core tasks (defined in this script)
-    $coreTasks = @('check-index', 'check')
-    
+
     # Scan for project-specific tasks in .build directory
     $projectTasks = @()
     $buildPath = Join-Path $scriptDir ".build"
@@ -61,10 +58,13 @@ $taskCompleter = {
             }
         }
     }
-    
+
+    # Core tasks (defined in this script)
+    $coreTasks = @('check-index', 'check')
+
     # Combine and get unique task names
     $allTasks = ($coreTasks + $projectTasks) | Select-Object -Unique | Sort-Object
-    
+
     # Return matching completions
     $allTasks | Where-Object { $_ -like "$wordToComplete*" } |
     ForEach-Object {
@@ -83,26 +83,26 @@ function Invoke-CheckGitIndex {
     #>
     [CmdletBinding()]
     param()
-    
+
     # Check if git is available
     $gitCommand = Get-Command git -ErrorAction SilentlyContinue
     if (-not $gitCommand) {
         Write-Error "Git is not installed or not in PATH"
         return $false
     }
-    
+
     # Check if we're in a git repository
     $null = git rev-parse --git-dir 2>$null
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Not in a git repository"
         return $false
     }
-    
+
     Write-Host "Checking git index status..." -ForegroundColor Cyan
-    
+
     # Get git status
     $status = git status --porcelain
-    
+
     if ([string]::IsNullOrWhiteSpace($status)) {
         Write-Host "✓ Git index is clean - no uncommitted changes" -ForegroundColor Green
         return $true
@@ -148,17 +148,17 @@ function Get-ProjectTasks {
     param(
         [string]$BuildPath
     )
-    
+
     $tasks = @{}
-    
+
     if (-not (Test-Path $BuildPath)) {
         return $tasks
     }
-    
+
     # Function to parse task metadata from script files
     function Get-TaskMetadata {
         param($FilePath)
-        
+
         $lines = Get-Content $FilePath -First 30 -ErrorAction SilentlyContinue
         $content = $lines -join "`n"
         $metadata = @{
@@ -168,28 +168,29 @@ function Get-ProjectTasks {
             ScriptPath   = $FilePath
             IsCore       = $false
         }
-        
+
         # Extract task names
         if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
             $metadata.Names = @($Matches[1] -split ',' | ForEach-Object { $_.Trim() })
         }
         else {
-            $metadata.Names = @((Get-Item $FilePath).BaseName)
+            # if there is no TASK tag, use the noun portion of the filename as the task name
+            $metadata.Names = @((Get-Item $FilePath).BaseName).ToLower() -split '-' | Select-Object -Last 1
         }
-        
+
         # Extract description
         if ($content -match '(?m)^#\s*DESCRIPTION:\s*(.+)$') {
             $metadata.Description = $Matches[1].Trim()
         }
-        
+
         # Extract dependencies
         if ($content -match '(?m)^#\s*DEPENDS:\s*(.+)$') {
             $metadata.Dependencies = @($Matches[1] -split ',' | ForEach-Object { $_.Trim() })
         }
-        
+
         return $metadata
     }
-    
+
     # Load tasks from .build directory
     $buildFiles = Get-ChildItem $BuildPath -Filter "*.ps1" -File
     foreach ($file in $buildFiles) {
@@ -198,7 +199,7 @@ function Get-ProjectTasks {
             $tasks[$name] = $metadata
         }
     }
-    
+
     return $tasks
 }
 
@@ -208,17 +209,17 @@ function Get-AllTasks {
         Returns all available tasks (core + project-specific)
     #>
     $allTasks = @{}
-    
+
     # Get core tasks
     $coreTasks = Get-CoreTasks
     foreach ($key in $coreTasks.Keys) {
         $allTasks[$key] = $coreTasks[$key]
     }
-    
+
     # Get project-specific tasks
     $buildPath = Join-Path $PSScriptRoot ".build"
     $projectTasks = Get-ProjectTasks -BuildPath $buildPath
-    
+
     # Project tasks override core tasks if there's a naming conflict
     foreach ($key in $projectTasks.Keys) {
         if ($allTasks.ContainsKey($key)) {
@@ -226,7 +227,7 @@ function Get-AllTasks {
         }
         $allTasks[$key] = $projectTasks[$key]
     }
-    
+
     return $allTasks
 }
 
@@ -242,14 +243,14 @@ function Invoke-Task {
         [hashtable]$ExecutedTasks = @{},
         [bool]$SkipDependencies = $false
     )
-    
+
     $primaryName = $TaskInfo.Names[0]
-    
+
     # Check if already executed (prevent circular dependencies)
     if ($ExecutedTasks.ContainsKey($primaryName)) {
         return $true
     }
-    
+
     # Execute dependencies first (unless skipped)
     if ($TaskInfo.Dependencies.Count -gt 0) {
         if ($SkipDependencies) {
@@ -273,10 +274,10 @@ function Invoke-Task {
             Write-Host ""
         }
     }
-    
+
     # Mark as executed
     $ExecutedTasks[$primaryName] = $true
-    
+
     # Execute the task
     if ($TaskInfo.IsCore) {
         # Execute core task function
@@ -286,7 +287,7 @@ function Invoke-Task {
     else {
         # Execute external script
         & $TaskInfo.ScriptPath @Arguments
-        
+
         # Check exit code
         if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {
             return $false
@@ -302,7 +303,7 @@ $availableTasks = Get-AllTasks
 if ($ListTasks) {
     Write-Host "Available tasks:" -ForegroundColor Cyan
     Write-Host ""
-    
+
     $uniqueTasks = @{}
     foreach ($taskKey in $availableTasks.Keys) {
         $taskInfo = $availableTasks[$taskKey]
@@ -328,28 +329,28 @@ if ($ListTasks) {
             $uniqueTasks[$primaryName] = $taskInfo
         }
     }
-    
+
     foreach ($taskName in ($uniqueTasks.Keys | Sort-Object)) {
         $taskInfo = $uniqueTasks[$taskName]
         $aliases = $taskInfo['Names'] | Where-Object { $_ -ne $taskName }
         $source = if ($taskInfo['IsCore']) { "core" } else { "project" }
-        
+
         Write-Host "  $taskName" -ForegroundColor Green -NoNewline
         if ($aliases.Count -gt 0) {
             Write-Host " (aliases: $($aliases -join ', '))" -ForegroundColor Gray -NoNewline
         }
         Write-Host " [$source]" -ForegroundColor DarkGray
-        
+
         if ($taskInfo['Description']) {
             Write-Host "    $($taskInfo['Description'])" -ForegroundColor Gray
         }
-        
+
         if ($taskInfo['Dependencies'].Count -gt 0) {
             Write-Host "    Dependencies: $($taskInfo['Dependencies'] -join ', ')" -ForegroundColor DarkGray
         }
         Write-Host ""
     }
-    
+
     exit 0
 }
 
@@ -419,24 +420,24 @@ $allSucceeded = $true
 
 foreach ($taskName in $taskList) {
     $taskInfo = $availableTasks[$taskName]
-    
+
     Write-Host "Executing task: $taskName" -ForegroundColor Cyan
     if ($taskInfo.Description) {
         Write-Host "Description: $($taskInfo.Description)" -ForegroundColor Gray
     }
     Write-Host ""
-    
+
     # Execute the task with dependency resolution
     $result = Invoke-Task -TaskInfo $taskInfo -AllTasks $availableTasks -Arguments $remainingArgs -ExecutedTasks $executedTasks -SkipDependencies $Only
-    
+
     if (-not $result) {
         Write-Host "`nTask '$taskName' failed" -ForegroundColor Red
         $allSucceeded = $false
         break
     }
-    
+
     Write-Host "`nTask '$taskName' completed successfully" -ForegroundColor Green
-    
+
     if ($taskList.Count -gt 1 -and $taskName -ne $taskList[-1]) {
         Write-Host ""
         Write-Host ("=" * 60) -ForegroundColor DarkGray
