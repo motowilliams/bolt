@@ -11,8 +11,9 @@ if (-not $bicepCmd) {
     exit 1
 }
 
-# Find all .bicep files
-$bicepFiles = Get-ChildItem -Path "tests/iac" -Filter "*.bicep" -Recurse -File -ErrorAction SilentlyContinue
+# Find all .bicep files (cross-platform path handling)
+$iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+$bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File -Force -ErrorAction SilentlyContinue
 
 if ($bicepFiles.Count -eq 0) {
     Write-Host "No Bicep files found to lint." -ForegroundColor Yellow

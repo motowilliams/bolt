@@ -81,7 +81,7 @@ $taskCompleter = {
     $projectTasks = @()
     $buildPath = Join-Path $scriptDir $taskDir
     if (Test-Path $buildPath) {
-        $buildFiles = Get-ChildItem $buildPath -Filter "*.ps1" -File
+        $buildFiles = Get-ChildItem $buildPath -Filter "*.ps1" -File -Force
         foreach ($file in $buildFiles) {
             # Extract task name from file
             $lines = Get-Content $file.FullName -First 20 -ErrorAction SilentlyContinue
@@ -231,7 +231,7 @@ function Get-ProjectTasks {
     }
 
     # Load tasks from directory (exclude test files)
-    $buildFiles = Get-ChildItem $BuildPath -Filter "*.ps1" -File | Where-Object { $_.Name -notmatch '\.Tests\.ps1$' }
+    $buildFiles = Get-ChildItem $BuildPath -Filter "*.ps1" -File -Force | Where-Object { $_.Name -notmatch '\.Tests\.ps1$' }
     foreach ($file in $buildFiles) {
         $metadata = Get-TaskMetadata $file.FullName
         foreach ($name in $metadata.Names) {

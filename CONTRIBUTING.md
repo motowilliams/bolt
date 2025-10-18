@@ -81,11 +81,41 @@ Before submitting changes:
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
 - **Test with custom directories**: Verify `-TaskDirectory` parameter works correctly
 - **Verify exit codes**: Ensure tasks return 0 for success, 1 for failure
-- **Test cross-platform**: If applicable, test on Windows, Linux, and macOS
+- **Test cross-platform**: All changes should work on Windows, Linux, and macOS with PowerShell Core
 - **Add new tests**: Choose the appropriate test file:
   - **Core orchestration changes** → `tests/gosh.Tests.ps1` (uses mock fixtures, tag with `Core`)
   - **New project tasks** → `tests/ProjectTasks.Tests.ps1` (validates task structure, tag with `Tasks`)
   - **Bicep integrations** → `tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Tasks`)
+
+### Cross-Platform Guidelines
+
+Gosh is **cross-platform by design**. Follow these patterns:
+
+**Path Handling:**
+```powershell
+# ✅ GOOD - Use Join-Path
+$iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+$mainFile = Join-Path $iacPath "main.bicep"
+
+# ❌ BAD - Hardcoded path separators
+$iacPath = "$PSScriptRoot\..\tests\iac"      # Windows-only
+$iacPath = "$PSScriptRoot/../tests/iac"      # Works, but inconsistent
+```
+
+**File Discovery:**
+```powershell
+# ✅ GOOD - Use -Force for consistent behavior across platforms
+$bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File -Force
+
+# ❌ BAD - Missing -Force may behave differently on Linux
+$bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File
+```
+
+**Key Principles:**
+- Always use `Join-Path` for path construction
+- Use `-Force` with `Get-ChildItem` when scanning directories
+- Avoid platform-specific commands (e.g., `cmd.exe`, `bash` unless wrapped)
+- Test on multiple platforms before submitting PRs
 
 ### Writing Tests
 

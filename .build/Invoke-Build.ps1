@@ -5,7 +5,9 @@
 Write-Host "Building Bicep templates..." -ForegroundColor Cyan
 
 # Find all .bicep files (excluding modules in subdirectories for main builds)
-$bicepFiles = Get-ChildItem -Path "tests/iac" -Filter "main*.bicep" -File -ErrorAction SilentlyContinue
+# Cross-platform path handling
+$iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+$bicepFiles = Get-ChildItem -Path $iacPath -Filter "main*.bicep" -File -Force -ErrorAction SilentlyContinue
 
 if ($bicepFiles.Count -eq 0) {
     Write-Host "No Bicep files found to build." -ForegroundColor Yellow

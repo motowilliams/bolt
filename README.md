@@ -3,9 +3,9 @@
 > **Go** + **powerShell** = **Gosh!**  
 > Build orchestration for PowerShell
 
-A self-contained PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by Make and Rake, but pure PowerShell with no external dependencies—just PowerShell 7.0+.
+A self-contained, cross-platform PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by Make and Rake, but pure PowerShell with no external dependencies—just PowerShell 7.0+.
 
-**Perfect for Azure Bicep infrastructure projects**, but flexible enough for any PowerShell workflow.
+**Perfect for Azure Bicep infrastructure projects**, but flexible enough for any PowerShell workflow. Runs on Windows, Linux, and macOS.
 
 ## ✨ Features
 
@@ -18,6 +18,7 @@ A self-contained PowerShell build system with extensible task orchestration and 
 - **🎯 Tab Completion**: Task names auto-complete in PowerShell
 - **🎨 Colorized Output**: Consistent, readable task output
 - **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
+- **🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
 
 ## 🚀 Quick Start
 

@@ -117,6 +117,26 @@ exit 0  # Explicit exit code required
 
 ## Project-Specific Conventions
 
+### Cross-Platform Compatibility
+
+**Gosh is designed to run on Windows, Linux, and macOS with PowerShell Core 7.0+**
+
+Key cross-platform patterns:
+- **Use `Join-Path` for all path construction** - never hardcode path separators (`/` or `\`)
+- **Use `-Force` with `Get-ChildItem`** - ensures consistent behavior with hidden files/directories (e.g., `.build`)
+- **Avoid platform-specific commands** - stick to PowerShell Core cmdlets that work everywhere
+- **Test on multiple platforms** - especially when modifying task discovery or file operations
+
+Example cross-platform path handling:
+```powershell
+# ✅ GOOD - Cross-platform
+$iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+$bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File -Force
+
+# ❌ BAD - Windows-only
+$bicepFiles = Get-ChildItem -Path "tests\iac" -Filter "*.bicep" -Recurse
+```
+
 ### Bicep File Conventions
 
 - **Only `main*.bicep` files are compiled** (e.g., `main.bicep`, `main.dev.bicep`) - see `Invoke-Build.ps1`
