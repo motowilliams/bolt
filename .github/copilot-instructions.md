@@ -277,7 +277,15 @@ This project uses **Pester** for PowerShell testing. The test suite is organized
 Invoke-Pester                      # Run all tests (auto-discovers *.Tests.ps1)
 Invoke-Pester -Output Detailed     # With detailed output
 Invoke-Pester -Path tests/gosh.Tests.ps1  # Run specific test file
+
+# Use tags for targeted testing
+Invoke-Pester -Tag Core            # Only core orchestration tests (27 tests, ~1s)
+Invoke-Pester -Tag Tasks           # Only task validation tests (16 tests, ~22s)
 ```
+
+**Test Tags**:
+- **`Core`** (27 tests) - Tests gosh.ps1 orchestration, fast, no external dependencies
+- **`Tasks`** (16 tests) - Tests project task scripts, slower, requires Bicep CLI
 
 **Test Coverage**:
 

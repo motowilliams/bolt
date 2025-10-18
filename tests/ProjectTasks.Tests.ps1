@@ -19,7 +19,7 @@ BeforeAll {
     $script:BuildTaskPath = Join-Path $script:BuildPath 'Invoke-Build.ps1'
 }
 
-Describe 'Project Task Validation' {
+Describe 'Project Task Validation' -Tag 'Tasks' {
     Context 'Format Task' {
         It 'Should exist' {
             Test-Path $script:FormatTaskPath | Should -Be $true

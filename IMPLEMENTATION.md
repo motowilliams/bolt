@@ -258,6 +258,40 @@ Invoke-Pester -Output Detailed
 Invoke-Pester -Path tests/gosh.Tests.ps1
 Invoke-Pester -Path tests/ProjectTasks.Tests.ps1
 Invoke-Pester -Path tests/Integration.Tests.ps1
+
+# Run tests by tag
+Invoke-Pester -Tag Core        # Only core orchestration tests (27 tests, ~1s)
+Invoke-Pester -Tag Tasks       # Only task validation tests (16 tests, ~22s)
+```
+
+### Test Tags
+
+The test suite uses Pester tags for flexible test execution:
+
+**`Core` Tag** (27 tests, ~1 second)
+- Tests gosh.ps1 orchestration functionality
+- Includes `gosh.Tests.ps1` and `Documentation Consistency` tests
+- Fast execution with no external dependencies
+- Uses mock fixtures from `tests/fixtures/`
+- Ideal for quick validation during development
+
+**`Tasks` Tag** (16 tests, ~22 seconds)
+- Tests project task scripts in `.build/` directory
+- Includes `ProjectTasks.Tests.ps1` (structure validation)
+- Includes `Integration.Tests.ps1` (actual Bicep execution)
+- Requires Bicep CLI to be installed
+- Runs slower due to actual tool invocation
+
+**Use Cases:**
+```powershell
+# Quick feedback loop during core development
+Invoke-Pester -Tag Core
+
+# Validate tasks before committing changes to .build/
+Invoke-Pester -Tag Tasks
+
+# Complete validation (default)
+Invoke-Pester
 ```
 
 ### Test Results
@@ -271,11 +305,18 @@ Total Time: ~27 seconds
 
 ### CI/CD Integration
 
-Tests can be run in CI pipelines:
+Tests can be run in CI pipelines with tag-based filtering:
 
 ```yaml
-# GitHub Actions
-- name: Run Tests
+# GitHub Actions - Quick PR validation
+- name: Quick Core Tests
+  run: |
+    Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
+    Invoke-Pester -Tag Core -Output Detailed -CI
+  shell: pwsh
+
+# Full test suite on main branch
+- name: Run All Tests
   run: |
     Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
     Invoke-Pester -Output Detailed -CI

@@ -74,15 +74,18 @@ if ($success) {
 Before submitting changes:
 
 - **Run the test suite**: `Invoke-Pester` to ensure all tests pass (43 tests)
+- **Use test tags for faster feedback**:
+  - `Invoke-Pester -Tag Core` - Quick orchestration tests (~1s)
+  - `Invoke-Pester -Tag Tasks` - Task validation tests (~22s)
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
 - **Test with custom directories**: Verify `-TaskDirectory` parameter works correctly
 - **Verify exit codes**: Ensure tasks return 0 for success, 1 for failure
 - **Test cross-platform**: If applicable, test on Windows, Linux, and macOS
 - **Add new tests**: Choose the appropriate test file:
-  - **Core orchestration changes** → `tests/gosh.Tests.ps1` (uses mock fixtures)
-  - **New project tasks** → `tests/ProjectTasks.Tests.ps1` (validates task structure)
-  - **Bicep integrations** → `tests/Integration.Tests.ps1` (requires Bicep CLI)
+  - **Core orchestration changes** → `tests/gosh.Tests.ps1` (uses mock fixtures, tag with `Core`)
+  - **New project tasks** → `tests/ProjectTasks.Tests.ps1` (validates task structure, tag with `Tasks`)
+  - **Bicep integrations** → `tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Tasks`)
 
 ### Writing Tests
 
@@ -91,7 +94,7 @@ When adding new functionality, include Pester tests in the appropriate file:
 **For core Gosh features** (use `-TaskDirectory` parameter with mock fixtures):
 ```powershell
 # Add to tests/gosh.Tests.ps1
-Describe "Your New Feature" {
+Describe "Your New Feature" -Tag 'Core' {
     It "Should do something correctly" {
         # Tests use -TaskDirectory to point to fixtures
         $result = Invoke-Gosh -Arguments @('mock-simple') `
@@ -110,7 +113,7 @@ Describe "Your New Feature" {
 **For new project tasks**:
 ```powershell
 # Add to tests/ProjectTasks.Tests.ps1
-Describe "YourNewTask Task" {
+Describe "YourNewTask Task" -Tag 'Tasks' {
     It "Should exist in .build directory" {
         $taskPath = Join-Path $projectRoot ".build\Invoke-YourNewTask.ps1"
         $taskPath | Should -Exist
@@ -134,7 +137,10 @@ Test your changes:
 Invoke-Pester
 
 # Specific test file
-Invoke-Pester -Path .\gosh.Tests.ps1
+Invoke-Pester -Path tests\gosh.Tests.ps1
+
+# Quick core tests during development
+Invoke-Pester -Tag Core
 ```
 
 > **Important**: When modifying `gosh.ps1`, always test with `Invoke-Pester` directly to avoid circular dependency issues.

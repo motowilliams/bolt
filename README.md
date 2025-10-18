@@ -319,6 +319,36 @@ Invoke-Pester -Output Detailed
 
 # Run specific test file
 Invoke-Pester -Path tests/gosh.Tests.ps1
+
+# Run tests by tag
+Invoke-Pester -Tag Core        # Only core orchestration tests (fast, ~1s)
+Invoke-Pester -Tag Tasks       # Only task validation tests (slower, ~22s)
+```
+
+### Test Tags
+
+Tests are organized with tags for flexible execution:
+
+- **`Core`** (27 tests) - Tests gosh.ps1 orchestration itself
+  - Fast execution (~1 second)
+  - No external tool dependencies
+  - Uses mock fixtures from `tests/fixtures/`
+  
+- **`Tasks`** (16 tests) - Tests project task scripts (.build/*.ps1)
+  - Slower execution (~22 seconds)
+  - Requires Bicep CLI for integration tests
+  - Validates task structure, metadata, and actual Bicep operations
+
+**Common workflows:**
+```powershell
+# Quick validation during development
+Invoke-Pester -Tag Core
+
+# Full task testing before commit
+Invoke-Pester -Tag Tasks
+
+# Complete test suite
+Invoke-Pester
 ```
 
 ### Test Coverage
@@ -386,6 +416,13 @@ Use Pester directly in CI pipelines:
   run: |
     Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
     Invoke-Pester -Output Detailed -CI
+  shell: pwsh
+
+# Run only fast core tests for quick PR validation
+- name: Quick Validation
+  run: |
+    Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
+    Invoke-Pester -Tag Core -Output Detailed -CI
   shell: pwsh
   
 - name: Publish Test Results

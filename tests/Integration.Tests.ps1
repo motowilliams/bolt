@@ -49,7 +49,7 @@ BeforeAll {
     }
 }
 
-Describe 'Bicep Task Integration Tests' {
+Describe 'Bicep Task Integration Tests' -Tag 'Tasks' {
     Context 'Format Task Integration' {
         It 'Should format Bicep files if bicep CLI is available' {
             # Check if Bicep CLI is available

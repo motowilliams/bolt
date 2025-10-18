@@ -78,7 +78,7 @@ BeforeAll {
     }
 }
 
-Describe 'Gosh Core Functionality' {
+Describe 'Gosh Core Functionality' -Tag 'Core' {
 
     Context 'Script Validation' {
         It 'Should exist' {
@@ -279,7 +279,7 @@ Describe 'Gosh Core Functionality' {
     }
 }
 
-Describe 'Documentation Consistency' {
+Describe 'Documentation Consistency' -Tag 'Core' {
     BeforeAll {
         $projectRoot = Split-Path -Parent $PSScriptRoot
         $script:GoshScriptPath = Join-Path $projectRoot 'gosh.ps1'
