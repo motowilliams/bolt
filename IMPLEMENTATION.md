@@ -1,6 +1,6 @@
 # Gosh! - Implementation Summary
 
-> **Go** + **Shell** = **Gosh!** 🎉
+> **Go** + **powerShell** = **Gosh!** 🎉
 
 ## ✅ Fully Implemented Features
 

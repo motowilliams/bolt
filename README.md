@@ -406,7 +406,7 @@ Task is automatically discovered—no registration needed! Restart your shell to
 
 ## 💡 Why "Gosh"?
 
-**Go** (the entry point) + **Shell** (PowerShell) = **Gosh!**
+**Go** (the entry point) + **powerShell** (PowerShell) = **Gosh!**
 
 It's also a natural exclamation when your builds succeed! 🎉
 
