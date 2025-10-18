@@ -68,9 +68,6 @@ A self-contained PowerShell build system with extensible task orchestration and 
 # Run multiple tasks without dependencies
 .\gosh.ps1 format lint build -Only
 
-# Run the test suite
-.\gosh.ps1 test
-
 # Create a new task
 .\gosh.ps1 -NewTask deploy
 ```
@@ -277,21 +274,19 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 ### Running Tests
 
 ```powershell
-# Run all tests via Gosh task (recommended)
-.\gosh.ps1 test
-
-# If gosh.ps1 is broken, run Pester directly
+# Run tests directly with Pester
 Invoke-Pester
 
-# Or run Pester with specific configuration
-Invoke-Pester -Path .\gosh.Tests.ps1
-```
+# Run with specific path
+Invoke-Pester -Path .\tests\gosh.Tests.ps1
 
-> **Important**: If you're troubleshooting or suspect `gosh.ps1` itself is broken, run `Invoke-Pester` directly instead of using `.\gosh.ps1 test`. This bypasses the Gosh orchestrator and tests it independently.
+# Run with detailed output
+Invoke-Pester -Output Detailed
+```
 
 ### Test Coverage
 
-The test suite (`gosh.Tests.ps1`) includes:
+The test suite (`tests/gosh.Tests.ps1`) includes:
 
 - **Script Validation**: Verifies `gosh.ps1` syntax and PowerShell version requirements
 - **Task Listing**: Tests `-ListTasks` and `-Help` parameter functionality
@@ -306,7 +301,7 @@ The test suite (`gosh.Tests.ps1`) includes:
 
 ### Test Requirements
 
-- **Pester 5.0+**: Auto-installed by the test task if not present (or install manually: `Install-Module -Name Pester -MinimumVersion 5.0.0`)
+- **Pester 5.0+**: Install with `Install-Module -Name Pester -MinimumVersion 5.0.0 -Scope CurrentUser`
 - Tests run in isolated contexts with proper setup/teardown
 - Test results output to `TestResults.xml` (NUnit format for CI/CD)
 
@@ -327,18 +322,14 @@ Describe "Deploy Task" {
 
 ### CI/CD Integration
 
-The test task generates NUnit XML output for CI pipeline integration:
+Use Pester directly in CI pipelines:
 
 ```yaml
-# GitHub Actions example - Method 1: Via Gosh
-- name: Run Tests
-  run: pwsh -File gosh.ps1 test
-  
-# GitHub Actions example - Method 2: Direct Pester (safer for CI)
+# GitHub Actions
 - name: Run Tests
   run: |
     Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
-    Invoke-Pester -Path ./gosh.Tests.ps1 -Output Detailed -CI
+    Invoke-Pester -Path ./tests/gosh.Tests.ps1 -Output Detailed -CI
   shell: pwsh
   
 - name: Publish Test Results
@@ -347,8 +338,6 @@ The test task generates NUnit XML output for CI pipeline integration:
   with:
     files: TestResults.xml
 ```
-
-> **CI/CD Best Practice**: Consider running `Invoke-Pester` directly in CI pipelines rather than via `.\gosh.ps1 test`. This ensures tests run even if there's an issue with `gosh.ps1` itself, and provides a clear separation between testing the tool and using the tool.
 
 ## 🔧 Requirements
 

@@ -73,20 +73,19 @@ if ($success) {
 
 Before submitting changes:
 
-- **Run the test suite**: `.\gosh.ps1 test` to ensure all tests pass
-- **If modifying gosh.ps1**: Run `Invoke-Pester` directly to test the orchestrator independently
+- **Run the test suite**: `Invoke-Pester` to ensure all tests pass
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
 - **Verify exit codes**: Ensure tasks return 0 for success, 1 for failure
 - **Test cross-platform**: If applicable, test on Windows, Linux, and macOS
-- **Add new tests**: If adding features, include Pester tests in `gosh.Tests.ps1`
+- **Add new tests**: If adding features, include Pester tests in `tests/gosh.Tests.ps1`
 
 ### Writing Tests
 
 When adding new functionality, include Pester tests:
 
 ```powershell
-# Add to gosh.Tests.ps1
+# Add to tests/gosh.Tests.ps1
 Describe "Your New Feature" {
     It "Should do something correctly" {
         # Arrange

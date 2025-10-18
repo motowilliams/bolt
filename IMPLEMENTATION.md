@@ -76,9 +76,10 @@ Building Bicep templates...
 ✓ All Bicep files compiled successfully!
 ```
 
-#### **Test Task** (`.\gosh.ps1 test`)
-- Runs comprehensive Pester test suite
-- Auto-installs Pester 5.0+ if not present
+#### **Test Suite** (`Invoke-Pester`)
+- Comprehensive Pester test suite for Gosh build system
+- Located in `tests/gosh.Tests.ps1`
+- Requires Pester 5.0+: `Install-Module -Name Pester -MinimumVersion 5.0.0`
 - Tests task discovery, execution, dependencies, and error handling
 - Generates NUnit XML test results for CI/CD integration
 - Returns exit code 1 if any tests fail
@@ -86,7 +87,7 @@ Building Bicep templates...
 **Test Coverage:**
 - Script validation (syntax, PowerShell version)
 - Task listing and help functionality
-- Task discovery from `.build/` directory
+- Task discovery from `.build/` and `tests/` directories
 - Single and multiple task execution
 - Dependency resolution and `-Only` flag
 - Parameter validation (comma/space-separated)
@@ -160,8 +161,8 @@ The system properly detects and reports errors:
 # Full build (format → lint → compile)
 .\gosh.ps1 build
 
-# Run test suite
-.\gosh.ps1 test
+# Run test suite directly with Pester
+Invoke-Pester
 
 # Skip dependencies
 .\gosh.ps1 build -Only
@@ -208,7 +209,10 @@ steps:
     run: pwsh -File gosh.ps1 build
     
   - name: Run tests
-    run: pwsh -File gosh.ps1 test
+    run: |
+      Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
+      Invoke-Pester -Path ./tests/gosh.Tests.ps1 -Output Detailed -CI
+    shell: pwsh
     
   - name: Publish Test Results
     uses: EnricoMi/publish-unit-test-result-action@v2
