@@ -16,6 +16,9 @@ using namespace System.Management.Automation
     Display all available tasks with their descriptions and dependencies.
 .PARAMETER Only
     Skip task dependencies and execute only the specified tasks.
+.PARAMETER Outline
+    Display the task dependency tree and execution order without executing tasks.
+    Shows what would be executed when the task is run.
 .PARAMETER TaskDirectory
     Directory containing task scripts. Defaults to .build in the script's directory.
     Relative paths are resolved relative to the script location.
@@ -37,6 +40,9 @@ using namespace System.Management.Automation
     .\gosh.ps1 -ListTasks
     Shows all available tasks.
 .EXAMPLE
+    .\gosh.ps1 build -Outline
+    Shows the dependency tree and execution order for the build task without executing it.
+.EXAMPLE
     .\gosh.ps1 -NewTask clean
     Creates a new task file named Invoke-Clean.ps1 in the task directory.
 #>param(
@@ -49,6 +55,9 @@ using namespace System.Management.Automation
 
     [Parameter()]
     [switch]$Only,
+
+    [Parameter()]
+    [switch]$Outline,
 
     [Parameter()]
     [string]$TaskDirectory = ".build",
@@ -272,6 +281,153 @@ function Get-AllTasks {
     }
 
     return $allTasks
+}
+
+function Show-TaskOutline {
+    <#
+    .SYNOPSIS
+        Displays the task dependency tree without executing tasks
+    #>
+    param(
+        [string[]]$TaskNames,
+        [hashtable]$AllTasks,
+        [bool]$SkipDependencies = $false
+    )
+
+    function Get-ExecutionOrder {
+        param(
+            [string]$TaskName,
+            [hashtable]$Tasks,
+            [hashtable]$Visited = @{},
+            [System.Collections.ArrayList]$Order
+        )
+
+        if ($Visited.ContainsKey($TaskName)) {
+            return
+        }
+
+        $Visited[$TaskName] = $true
+
+        if ($Tasks.ContainsKey($TaskName)) {
+            $taskInfo = $Tasks[$TaskName]
+
+            # Process dependencies first
+            foreach ($dep in $taskInfo.Dependencies) {
+                if ($Tasks.ContainsKey($dep)) {
+                    Get-ExecutionOrder -TaskName $dep -Tasks $Tasks -Visited $Visited -Order $Order
+                }
+            }
+
+            # Add current task
+            [void]$Order.Add($TaskName)
+        }
+    }
+
+    function Show-DependencyTree {
+        param(
+            [string]$TaskName,
+            [hashtable]$Tasks,
+            [int]$Indent = 0,
+            [bool]$IsLast = $true,
+            [string]$Prefix = ""
+        )
+
+        $taskInfo = $Tasks[$TaskName]
+        $primaryName = $taskInfo.Names[0]
+
+        # Determine tree characters
+        if ($Indent -eq 0) {
+            $branch = ""
+            $connector = ""
+        }
+        else {
+            $branch = if ($IsLast) { "└── " } else { "├── " }
+            $connector = if ($IsLast) { "    " } else { "│   " }
+        }
+
+        # Display task name with description
+        $taskDisplay = $primaryName
+        if (-not [string]::IsNullOrWhiteSpace($taskInfo.Description)) {
+            Write-Host "$Prefix$branch" -NoNewline -ForegroundColor Gray
+            Write-Host $taskDisplay -NoNewline -ForegroundColor Cyan
+            Write-Host " ($($taskInfo.Description))" -ForegroundColor Gray
+        }
+        else {
+            Write-Host "$Prefix$branch" -NoNewline -ForegroundColor Gray
+            Write-Host $taskDisplay -ForegroundColor Cyan
+        }
+
+        # Show dependencies recursively
+        if ($taskInfo.Dependencies.Count -gt 0 -and -not $SkipDependencies) {
+            $depCount = $taskInfo.Dependencies.Count
+            for ($i = 0; $i -lt $depCount; $i++) {
+                $dep = $taskInfo.Dependencies[$i]
+                $isLastDep = ($i -eq $depCount - 1)
+
+                if ($Tasks.ContainsKey($dep)) {
+                    Show-DependencyTree -TaskName $dep -Tasks $Tasks -Indent ($Indent + 1) -IsLast $isLastDep -Prefix "$Prefix$connector"
+                }
+                else {
+                    # Missing dependency
+                    $depBranch = if ($isLastDep) { "└── " } else { "├── " }
+                    Write-Host "$Prefix$connector$depBranch" -NoNewline -ForegroundColor Gray
+                    Write-Host $dep -NoNewline -ForegroundColor Red
+                    Write-Host " (NOT FOUND)" -ForegroundColor Red
+                }
+            }
+        }
+        elseif ($SkipDependencies -and $taskInfo.Dependencies.Count -gt 0) {
+            Write-Host "$Prefix$connector" -NoNewline -ForegroundColor Gray
+            Write-Host "(Dependencies skipped: $($taskInfo.Dependencies -join ', '))" -ForegroundColor Yellow
+        }
+    }
+
+    # Header
+    Write-Host ""
+    Write-Host "Task execution plan for: " -NoNewline -ForegroundColor Cyan
+    Write-Host ($TaskNames -join ', ') -ForegroundColor White
+
+    if ($SkipDependencies) {
+        Write-Host "(Dependencies will be skipped with -Only flag)" -ForegroundColor Yellow
+    }
+
+    Write-Host ""
+
+    # Show dependency tree for each task
+    foreach ($taskName in $TaskNames) {
+        if ($AllTasks.ContainsKey($taskName)) {
+            Show-DependencyTree -TaskName $taskName -Tasks $AllTasks
+            Write-Host ""
+        }
+        else {
+            Write-Host "$taskName " -NoNewline -ForegroundColor Red
+            Write-Host "(NOT FOUND)" -ForegroundColor Red
+            Write-Host ""
+        }
+    }
+
+    # Calculate and show execution order
+    $executionOrder = New-Object System.Collections.ArrayList
+    $visited = @{}
+
+    foreach ($taskName in $TaskNames) {
+        if ($AllTasks.ContainsKey($taskName)) {
+            if ($SkipDependencies) {
+                [void]$executionOrder.Add($taskName)
+            }
+            else {
+                Get-ExecutionOrder -TaskName $taskName -Tasks $AllTasks -Visited $visited -Order $executionOrder
+            }
+        }
+    }
+
+    if ($executionOrder.Count -gt 0) {
+        Write-Host "Execution order:" -ForegroundColor Cyan
+        for ($i = 0; $i -lt $executionOrder.Count; $i++) {
+            Write-Host "  $($i + 1). $($executionOrder[$i])" -ForegroundColor White
+        }
+        Write-Host ""
+    }
 }
 
 function Invoke-Task {
@@ -507,6 +663,12 @@ foreach ($taskName in $taskList) {
         Write-Error "Task '$taskName' not found. Available tasks: $($availableTasks.Keys | Sort-Object -Unique | Join-String -Separator ', ')"
         exit 1
     }
+}
+
+# Handle -Outline flag
+if ($Outline) {
+    Show-TaskOutline -TaskNames $taskList -AllTasks $availableTasks -SkipDependencies $Only
+    exit 0
 }
 
 # Execute all tasks in sequence
