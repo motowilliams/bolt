@@ -114,13 +114,13 @@ jobs:
             exit 1
           }
 
-      - name: Run Tasks Tests (Requires Bicep)
+      - name: Run Bicep Tasks Tests (Requires Bicep)
         shell: pwsh
         run: |
-          Write-Host "Running Tasks tests (Bicep required)..." -ForegroundColor Cyan
-          $tasksResult = Invoke-Pester -Tag Tasks -Output Detailed -PassThru
+          Write-Host "Running Bicep-Tasks tests (Bicep required)..." -ForegroundColor Cyan
+          $tasksResult = Invoke-Pester -Tag Bicep-Tasks -Output Detailed -PassThru
           if ($tasksResult.FailedCount -gt 0) {
-            Write-Error "Tasks tests failed: $($tasksResult.FailedCount) test(s)"
+            Write-Error "Bicep-Tasks tests failed: $($tasksResult.FailedCount) test(s)"
             exit 1
           }
 
@@ -169,7 +169,7 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Checking for compiled ARM templates..." -ForegroundColor Cyan
-          $jsonFiles = Get-ChildItem -Path tests/iac -Filter "*.json" -Recurse -File
+          $jsonFiles = Get-ChildItem -Path .build-bicep/tests/iac -Filter "*.json" -Recurse -File
           if ($jsonFiles.Count -eq 0) {
             Write-Error "No .json files found - build may have failed"
             exit 1
