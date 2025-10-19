@@ -86,6 +86,8 @@ if ($PSBoundParameters.ContainsKey('ErrorAction')) {
 }
 
 # Register argument completer
+# Note: $commandName and $parameterName are required by PowerShell's argument completer signature
+# even though they're not used in this implementation
 $taskCompleter = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
 
