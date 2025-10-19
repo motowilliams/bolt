@@ -613,18 +613,16 @@ Task is automatically discovered—no registration needed! Restart your shell to
 - Add metadata comments: `# TASK:`, `# DESCRIPTION:`, `# DEPENDS:`
 - Only include `param()` if your task accepts parameters
 
-## � Continuous Integration
+## 🔄 Continuous Integration
 
 Gosh includes a GitHub Actions workflow that runs on Ubuntu and Windows:
 
-- **Triggers**: Push to `main` branch, manual dispatch
+- **Triggers**: Pull requests to `main`, push to `main` branch, manual dispatch
 - **Platforms**: Ubuntu (Linux) and Windows
 - **Pipeline**: Core tests → Tasks tests → Full build (format → lint → build)
 - **Dependencies**: Automatically installs PowerShell 7.0+ and Bicep CLI
 - **Test Reports**: NUnit XML artifacts uploaded for each platform
 - **Status**: [![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
-
-**TODO**: Enable CI for pull requests (currently main branch only)
 
 See `.github/workflows/ci.yml` for the complete workflow configuration.
 

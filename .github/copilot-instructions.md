@@ -359,8 +359,8 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
 
 **Configuration**:
 - **Platforms**: Ubuntu (Linux) and Windows (matrix strategy)
-- **Triggers**: Push to `main` branch, manual dispatch via `workflow_dispatch`
-- **TODO**: Enable pull request builds (currently main branch only)
+- **Triggers**: Pull requests to `main`, push to `main` branch, manual dispatch via `workflow_dispatch`
+- **Branch Protection**: Main branch should be protected (requires GitHub settings configuration)
 
 **Pipeline Steps**:
 1. **Setup**: Checkout code, verify PowerShell 7.0+
