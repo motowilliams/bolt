@@ -169,7 +169,7 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Checking for compiled ARM templates..." -ForegroundColor Cyan
-          $jsonFiles = Get-ChildItem -Path .build-bicep/tests/iac -Filter "*.json" -Recurse -File
+          $jsonFiles = Get-ChildItem -Path packages/.build-bicep/tests/iac -Filter "*.json" -Recurse -File
           if ($jsonFiles.Count -eq 0) {
             Write-Error "No .json files found - build may have failed"
             exit 1

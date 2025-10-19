@@ -10,8 +10,19 @@
 #>
 
 BeforeAll {
-    # Get project root (parent of tests directory)
+    # Get module root (parent of tests directory); tests lives in a 'tests' directory
     $projectRoot = Split-Path -Parent $PSScriptRoot
+
+    # Get project root (parent of module directory)
+    $currentPath = $moduleRoot
+    while ($currentPath -and $currentPath -ne (Split-Path -Parent $currentPath)) {
+        Write-host "Checking path: $currentPath for .git directory" -ForegroundColor DarkGray
+        if (Test-Path (Join-Path $currentPath '.git')) {
+            $projectRoot = $currentPath
+            break
+        }
+        $currentPath = Split-Path -Parent $currentPath
+    }
 
     $script:GoshScriptPath = Join-Path $projectRoot 'gosh.ps1'
     $script:BuildPath = Join-Path $projectRoot '.build'
