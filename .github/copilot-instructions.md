@@ -2,6 +2,48 @@
 
 > **Go** + **powerShell** = **Gosh!** 🎉
 
+## How to Use These Instructions
+
+**⚠️ CRITICAL: Always Think Deeply and Ask Questions**
+
+Before implementing any changes or answering requests:
+
+1. **Think deeply about the problem** - Use your thinking process to:
+   - Analyze the user's request thoroughly
+   - Consider multiple approaches and their tradeoffs
+   - Identify edge cases and potential issues
+   - Evaluate impact on existing functionality
+   - Plan the implementation strategy
+
+2. **Ask clarifying questions when needed** - Don't make assumptions:
+   - If requirements are ambiguous, ask for clarification
+   - If multiple approaches exist, present options and ask for preference
+   - If design decisions need to be made, discuss them with the user
+   - If you're unsure about constraints, verify them
+
+3. **Present your thinking** - Share your analysis before implementing:
+   - Explain your understanding of the problem
+   - Outline your proposed approach
+   - Discuss alternatives you considered
+   - Get user confirmation before proceeding with complex changes
+
+**Example questions to ask:**
+- "Should this feature work with `-Only` flag?"
+- "Do you prefer option A (tree format) or option B (list format)?"
+- "Should we handle this edge case: [scenario]?"
+- "What should happen when [situation]?"
+
+**When to think deeply:**
+- Adding new features or parameters
+- Modifying core orchestration logic
+- Changing task discovery behavior
+- Updating cross-platform code
+- Refactoring existing functionality
+
+**Remember**: It's better to ask and understand fully than to implement incorrectly.
+
+---
+
 ## Project Overview
 
 This is **Gosh**, a self-contained PowerShell build system (`gosh.ps1`) designed for Azure Bicep infrastructure projects. It provides extensible task orchestration with automatic dependency resolution, similar to Make or Rake, but pure PowerShell with no external dependencies.
