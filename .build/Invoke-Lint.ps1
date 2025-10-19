@@ -1,4 +1,3 @@
-# Invoke-Lint.ps1
 # TASK: lint
 # DESCRIPTION: Validates Bicep syntax and runs linter
 

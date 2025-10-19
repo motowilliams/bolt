@@ -1,4 +1,3 @@
-# Invoke-Format.ps1
 # TASK: format, fmt
 # DESCRIPTION: Formats Bicep files using bicep format
 
