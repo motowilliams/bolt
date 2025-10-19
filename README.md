@@ -626,23 +626,6 @@ Gosh includes a GitHub Actions workflow that runs on Ubuntu and Windows:
 
 See `.github/workflows/ci.yml` for the complete workflow configuration.
 
-### Branch Protection
-
-The `main` branch should be protected to ensure code quality:
-
-1. Go to **Settings** → **Branches** → **Branch protection rules**
-2. Add rule for `main` branch
-3. Enable **"Require status checks to pass before merging"**
-4. Select the **CI** workflow as a required check
-5. Enable **"Require branches to be up to date before merging"**
-6. Enable **"Require pull request reviews before merging"** (recommended)
-
-This ensures that:
-- Nobody can push directly to `main`
-- All changes must go through pull requests
-- CI must pass before merging
-- Code is reviewed before merging
-
 ### Running CI Locally
 
 The CI pipeline runs the same commands you use locally:
