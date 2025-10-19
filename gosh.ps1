@@ -115,9 +115,12 @@ $taskCompleter = {
             if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
                 $taskNames = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
                 $projectTasks += $taskNames
-            }
-            else {
-                $projectTasks += $file.BaseName.ToLower() -split '-' | Select-Object -Last 1
+            } else {
+                # Extract task name: Verb-My-Custom-Task -> my-custom-task
+                # Split on '-', skip first part (verb), join remaining with '-', convert to lowercase
+                $parts = $file.BaseName -split '-'
+                $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+                $projectTasks += $taskName
             }
         }
     }
@@ -168,8 +171,7 @@ function Invoke-CheckGitIndex {
     if ([string]::IsNullOrWhiteSpace($status)) {
         Write-Host "✓ Git index is clean - no uncommitted changes" -ForegroundColor Green
         return $true
-    }
-    else {
+    } else {
         Write-Host "✗ Git index is dirty - uncommitted changes detected:" -ForegroundColor Red
         Write-Host ""
         git status --short
@@ -234,8 +236,7 @@ function Get-ProjectTasks {
         # Extract task names
         if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
             $metadata.Names = @($Matches[1] -split ',' | ForEach-Object { $_.Trim() })
-        }
-        else {
+        } else {
             # if there is no TASK tag, use the noun portion of the filename as the task name
             $metadata.Names = @((Get-Item $FilePath).BaseName).ToLower() -split '-' | Select-Object -Last 1
         }
@@ -286,7 +287,12 @@ function Get-AllTasks {
     }
 
     # Get project-specific tasks from specified directory
-    $buildPath = Join-Path $PSScriptRoot $TaskDirectory
+    # Check if TaskDirectory is absolute or relative
+    if ([System.IO.Path]::IsPathRooted($TaskDirectory)) {
+        $buildPath = $TaskDirectory
+    } else {
+        $buildPath = Join-Path $PSScriptRoot $TaskDirectory
+    }
     $projectTasks = Get-ProjectTasks -BuildPath $buildPath
 
     # Project tasks override core tasks if there's a naming conflict
@@ -356,8 +362,7 @@ function Show-TaskOutline {
         if ($Indent -eq 0) {
             $branch = ""
             $connector = ""
-        }
-        else {
+        } else {
             $branch = if ($IsLast) { "└── " } else { "├── " }
             $connector = if ($IsLast) { "    " } else { "│   " }
         }
@@ -368,8 +373,7 @@ function Show-TaskOutline {
             Write-Host "$Prefix$branch" -NoNewline -ForegroundColor Gray
             Write-Host $taskDisplay -NoNewline -ForegroundColor Cyan
             Write-Host " ($($taskInfo.Description))" -ForegroundColor Gray
-        }
-        else {
+        } else {
             Write-Host "$Prefix$branch" -NoNewline -ForegroundColor Gray
             Write-Host $taskDisplay -ForegroundColor Cyan
         }
@@ -383,8 +387,7 @@ function Show-TaskOutline {
 
                 if ($Tasks.ContainsKey($dep)) {
                     Show-DependencyTree -TaskName $dep -Tasks $Tasks -Indent ($Indent + 1) -IsLast $isLastDep -Prefix "$Prefix$connector"
-                }
-                else {
+                } else {
                     # Missing dependency
                     $depBranch = if ($isLastDep) { "└── " } else { "├── " }
                     Write-Host "$Prefix$connector$depBranch" -NoNewline -ForegroundColor Gray
@@ -392,8 +395,7 @@ function Show-TaskOutline {
                     Write-Host " (NOT FOUND)" -ForegroundColor Red
                 }
             }
-        }
-        elseif ($SkipDependencies -and $taskInfo.Dependencies.Count -gt 0) {
+        } elseif ($SkipDependencies -and $taskInfo.Dependencies.Count -gt 0) {
             Write-Host "$Prefix$connector" -NoNewline -ForegroundColor Gray
             Write-Host "(Dependencies skipped: $($taskInfo.Dependencies -join ', '))" -ForegroundColor Yellow
         }
@@ -415,8 +417,7 @@ function Show-TaskOutline {
         if ($AllTasks.ContainsKey($taskName)) {
             Show-DependencyTree -TaskName $taskName -Tasks $AllTasks
             Write-Host ""
-        }
-        else {
+        } else {
             Write-Host "$taskName " -NoNewline -ForegroundColor Red
             Write-Host "(NOT FOUND)" -ForegroundColor Red
             Write-Host ""
@@ -431,8 +432,7 @@ function Show-TaskOutline {
         if ($AllTasks.ContainsKey($taskName)) {
             if ($SkipDependencies) {
                 [void]$executionOrder.Add($taskName)
-            }
-            else {
+            } else {
                 Get-ExecutionOrder -TaskName $taskName -Tasks $AllTasks -Visited $visited -Order $executionOrder
             }
         }
@@ -474,8 +474,7 @@ function Invoke-Task {
     if ($TaskInfo.Dependencies.Count -gt 0) {
         if ($SkipDependencies) {
             Write-Host "Skipping dependencies for '$primaryName': $($TaskInfo.Dependencies -join ', ')" -ForegroundColor Yellow
-        }
-        else {
+        } else {
             Write-Host "Dependencies for '$primaryName': $($TaskInfo.Dependencies -join ', ')" -ForegroundColor Gray
             foreach ($dep in $TaskInfo.Dependencies) {
                 if ($AllTasks.ContainsKey($dep)) {
@@ -489,8 +488,7 @@ function Invoke-Task {
                         }
                         Write-Host "Continuing despite dependency failure due to -ErrorAction $ErrorActionPreference..." -ForegroundColor Yellow
                     }
-                }
-                else {
+                } else {
                     Write-Warning "Dependency '$dep' not found, skipping"
                 }
             }
@@ -503,8 +501,7 @@ function Invoke-Task {
         # Execute core task function
         $result = & $TaskInfo.Function
         return $result
-    }
-    else {
+    } else {
         # Execute external script
         & $TaskInfo.ScriptPath @Arguments
 
@@ -649,8 +646,7 @@ foreach ($taskArg in $Task) {
     if ($taskArg -match ',') {
         # Comma-separated tasks in a single string
         $taskList += $taskArg -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-    }
-    else {
+    } else {
         $taskList += $taskArg.Trim()
     }
 }
@@ -662,18 +658,15 @@ foreach ($arg in $Arguments) {
         if ($arg -match ',') {
             # Comma-separated tasks
             $taskList += $arg -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-        }
-        elseif ($availableTasks.ContainsKey($arg)) {
+        } elseif ($availableTasks.ContainsKey($arg)) {
             # Valid task name
             $taskList += $arg
-        }
-        else {
+        } else {
             # Not a task, must be an argument
             $collectingTasks = $false
             $remainingArgs += $arg
         }
-    }
-    else {
+    } else {
         $remainingArgs += $arg
     }
 }
@@ -743,8 +736,7 @@ foreach ($taskName in $taskList) {
         }
         # Otherwise continue to next task (when ErrorAction is Continue, SilentlyContinue, or Ignore)
         Write-Host "Continuing to next task due to -ErrorAction $ErrorActionPreference..." -ForegroundColor Yellow
-    }
-    else {
+    } else {
         Write-Host "`nTask '$taskName' completed successfully" -ForegroundColor Green
     }
 

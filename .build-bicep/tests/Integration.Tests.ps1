@@ -3,15 +3,18 @@
 
 <#
 .SYNOPSIS
-    Integration tests for Gosh project's Bicep tasks
+    Integration tests for project tasks
 .DESCRIPTION
     End-to-end tests that actually execute format, lint, and build tasks
-    against real Bicep infrastructure files. Requires Bicep CLI to be installed.
+    against real infrastructure files. Requires Bicep CLI to be installed.
 #>
 
 BeforeAll {
-    # Get project root (parent of tests directory)
-    $projectRoot = Split-Path -Parent $PSScriptRoot
+    # Get module root (parent of tests directory)
+    $moduleRoot = Split-Path -Parent $PSScriptRoot
+
+    # Get project root (parent of module directory)
+    $projectRoot = Split-Path -Parent $moduleRoot
 
     $script:GoshScriptPath = Join-Path $projectRoot 'gosh.ps1'
     $script:IacPath = Join-Path $PSScriptRoot 'iac'
@@ -25,6 +28,9 @@ BeforeAll {
             [Parameter()]
             [hashtable]$Parameters = @{}
         )
+
+        # Always use the module root task directory for these tests
+        $Parameters['TaskDirectory'] = $moduleRoot
 
         # Build splatting hashtable for named parameters
         $splatParams = @{}
@@ -49,7 +55,7 @@ BeforeAll {
     }
 }
 
-Describe 'Bicep Task Integration Tests' -Tag 'Tasks' {
+Describe 'Task Integration Tests' -Tag 'Bicep-Tasks' {
     Context 'Format Task Integration' {
         It 'Should format Bicep files if bicep CLI is available' {
             # Check if Bicep CLI is available
