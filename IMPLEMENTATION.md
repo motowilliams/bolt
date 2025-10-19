@@ -276,12 +276,12 @@ The project includes a comprehensive Pester test suite organized into three file
 - Validates script syntax, parameter handling, error handling
 - Ensures documentation consistency
 
-**Bicep Tasks** (`.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
+**Bicep Tasks** (`packages/.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
 - Validates structure and metadata of Bicep tasks
 - Checks task existence, syntax, and proper metadata headers
 - Verifies dependency declarations
 
-**Bicep Integration** (`.build-bicep/tests/Integration.Tests.ps1` - 4 tests):
+**Bicep Integration** (`packages/.build-bicep/tests/Integration.Tests.ps1` - 4 tests):
 - End-to-end tests executing actual Bicep operations
 - Requires Bicep CLI to be installed
 - Tests format, lint, build, and full pipeline
@@ -322,7 +322,7 @@ Invoke-Pester -Output Detailed
 
 # Run specific test file
 Invoke-Pester -Path tests/gosh.Tests.ps1
-Invoke-Pester -Path .build-bicep/tests/
+Invoke-Pester -Path packages/.build-bicep/tests/
 
 # Run tests by tag
 Invoke-Pester -Tag Core           # Only core orchestration tests (27 tests, ~1s)
@@ -341,7 +341,7 @@ The test suite uses Pester tags for flexible test execution:
 - Ideal for quick validation during development
 
 **`Bicep-Tasks` Tag** (16 tests, ~22 seconds)
-- Tests Bicep task implementation in `.build-bicep/` directory
+- Tests Bicep task implementation in `packages/.build-bicep/` directory
 - Includes `Tasks.Tests.ps1` (structure validation)
 - Includes `Integration.Tests.ps1` (actual Bicep execution)
 - Requires Bicep CLI to be installed

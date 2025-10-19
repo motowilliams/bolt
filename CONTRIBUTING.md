@@ -84,8 +84,8 @@ Before submitting changes:
 - **Test cross-platform**: All changes should work on Windows, Linux, and macOS with PowerShell Core
 - **Add new tests**: Choose the appropriate test file:
   - **Core orchestration changes** → `tests/gosh.Tests.ps1` (uses mock fixtures, tag with `Core`)
-  - **New Bicep tasks** → `.build-bicep/tests/Tasks.Tests.ps1` (validates task structure, tag with `Bicep-Tasks`)
-  - **Bicep integrations** → `.build-bicep/tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Bicep-Tasks`)
+  - **New Bicep tasks** → `packages/.build-bicep/tests/Tasks.Tests.ps1` (validates task structure, tag with `Bicep-Tasks`)
+  - **Bicep integrations** → `packages/.build-bicep/tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Bicep-Tasks`)
 
 ### Cross-Platform Guidelines
 
@@ -142,7 +142,7 @@ Describe "Your New Feature" -Tag 'Core' {
 
 **For new Bicep tasks**:
 ```powershell
-# Add to .build-bicep/tests/Tasks.Tests.ps1
+# Add to packages/.build-bicep/tests/Tasks.Tests.ps1
 Describe "YourNewTask Task" -Tag 'Bicep-Tasks' {
     It "Should exist" {
         $taskPath = Join-Path $moduleRoot "Invoke-YourNewTask.ps1"

@@ -10,13 +10,22 @@
 #>
 
 BeforeAll {
-    # Get module root (parent of tests directory)
-    $moduleRoot = Split-Path -Parent $PSScriptRoot
+    # Get module root (parent of tests directory); tests live in a 'tests' directory
+    $moduleRoot = Resolve-Path (Split-Path -Parent $PSScriptRoot)
+    $projectRoot = $moduleRoot
 
     # Get project root (parent of module directory)
-    $projectRoot = Split-Path -Parent $moduleRoot
-
+    $currentPath = $projectRoot
+    while ($currentPath -and $currentPath -ne (Split-Path -Parent $currentPath)) {
+        Write-host "Checking path: $currentPath for .git directory" -ForegroundColor DarkGray
+        if (Test-Path (Join-Path $currentPath '.git')) {
+            $projectRoot = $currentPath
+            break
+        }
+        $currentPath = Split-Path -Parent $currentPath
+    }
     $script:GoshScriptPath = Join-Path $projectRoot 'gosh.ps1'
+
     $script:IacPath = Join-Path $PSScriptRoot 'iac'
 
     # Helper function to invoke gosh with captured output
@@ -48,9 +57,9 @@ BeforeAll {
         $exitCode = $LASTEXITCODE
 
         return @{
-            Output = $output
+            Output   = $output
             ExitCode = $exitCode
-            Success = $exitCode -eq 0
+            Success  = $exitCode -eq 0
         }
     }
 }
