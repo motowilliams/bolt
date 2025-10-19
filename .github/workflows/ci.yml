@@ -25,33 +25,81 @@ jobs:
           Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
           Write-Host "OS: $($PSVersionTable.OS)"
 
+      - name: Cache PowerShell Modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/powershell/Modules
+            ~/Documents/PowerShell/Modules
+            C:\Users\runneradmin\Documents\PowerShell\Modules
+          key: ${{ runner.os }}-pester-${{ hashFiles('**/ci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-pester-
+
       - name: Install Pester
         shell: pwsh
         run: |
-          Write-Host "Installing Pester module..."
-          Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck
+          # Check if Pester is already cached
+          $pester = Get-Module -ListAvailable -Name Pester | Where-Object { $_.Version -ge '5.0.0' } | Select-Object -First 1
+          if ($pester) {
+            Write-Host "Using cached Pester version: $($pester.Version)" -ForegroundColor Green
+          } else {
+            Write-Host "Installing Pester module..." -ForegroundColor Cyan
+            Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck
+          }
           Import-Module Pester
-          Write-Host "Pester version: $((Get-Module Pester).Version)"
+          Write-Host "Pester version: $((Get-Module Pester).Version)" -ForegroundColor Green
+
+      - name: Cache Bicep CLI (Ubuntu)
+        if: runner.os == 'Linux'
+        uses: actions/cache@v4
+        with:
+          path: ~/.azure/bin
+          key: ${{ runner.os }}-bicep-${{ hashFiles('**/ci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-bicep-
+
+      - name: Cache Bicep CLI (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: C:\Program Files\Bicep CLI
+          key: ${{ runner.os }}-bicep-${{ hashFiles('**/ci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-bicep-
 
       - name: Install Bicep CLI (Ubuntu)
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          # Install Azure CLI (includes Bicep)
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          # Verify installation
-          az bicep version
+          # Check if Bicep is already cached
+          if command -v bicep &> /dev/null; then
+            echo "✓ Using cached Bicep CLI"
+            bicep --version
+          else
+            echo "Installing Azure CLI (includes Bicep)..."
+            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+            echo "✓ Bicep CLI installed"
+            az bicep version
+          fi
 
       - name: Install Bicep CLI (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # Install Bicep via winget
-          winget install Microsoft.Bicep --silent --accept-package-agreements --accept-source-agreements
-          # Add to PATH for this session
-          $env:PATH = "C:\Program Files\Bicep CLI;$env:PATH"
-          # Verify installation
-          bicep --version
+          # Check if Bicep is already cached
+          $bicepPath = "C:\Program Files\Bicep CLI\bicep.exe"
+          if (Test-Path $bicepPath) {
+            Write-Host "✓ Using cached Bicep CLI" -ForegroundColor Green
+            $env:PATH = "C:\Program Files\Bicep CLI;$env:PATH"
+            bicep --version
+          } else {
+            Write-Host "Installing Bicep via winget..." -ForegroundColor Cyan
+            winget install Microsoft.Bicep --silent --accept-package-agreements --accept-source-agreements
+            $env:PATH = "C:\Program Files\Bicep CLI;$env:PATH"
+            Write-Host "✓ Bicep CLI installed" -ForegroundColor Green
+            bicep --version
+          }
 
       - name: Run Core Tests (Fast)
         shell: pwsh
