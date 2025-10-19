@@ -353,15 +353,46 @@ The `-Outline` flag provides task visualization without execution:
 
 **Pipeline-agnostic design**: Tasks work with GitHub Actions, Azure DevOps, GitLab CI, etc.
 
+### GitHub Actions CI
+
+This project includes a CI workflow at `.github/workflows/ci.yml`:
+
+**Configuration**:
+- **Platforms**: Ubuntu (Linux) and Windows (matrix strategy)
+- **Triggers**: Push to `main` branch, manual dispatch via `workflow_dispatch`
+- **TODO**: Enable pull request builds (currently main branch only)
+
+**Pipeline Steps**:
+1. **Setup**: Checkout code, verify PowerShell 7.0+
+2. **Dependencies**: Install Pester 5.0+ and Bicep CLI
+   - Ubuntu: Azure CLI (includes Bicep) via `curl -sL https://aka.ms/InstallAzureCLIDeb`
+   - Windows: Bicep via `winget install Microsoft.Bicep`
+3. **Core Tests**: Fast tests (~1s, no Bicep required) - `Invoke-Pester -Tag Core`
+4. **Tasks Tests**: Bicep-dependent tests (~22s) - `Invoke-Pester -Tag Tasks`
+5. **Test Report**: Generate NUnit XML - `Invoke-Pester -Configuration $config`
+6. **Build Pipeline**: Run full pipeline - `pwsh -File gosh.ps1 build`
+7. **Verify Artifacts**: Check compiled ARM JSON templates exist
+
+**Artifacts**:
+- Test results uploaded as `test-results-ubuntu-latest.xml` and `test-results-windows-latest.xml`
+- Retention: 30 days
+- Available even if tests fail (`if: always()`)
+
+**Status Badge**:
+```markdown
+[![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
+```
+
+**Example for other CI platforms**:
 ```yaml
-# Example CI job (any platform)
+# Azure DevOps, GitLab CI, etc.
 - name: Build
   run: pwsh -File gosh.ps1 build
   
 - name: Test
   run: |
     Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
-    Invoke-Pester -Output Detailed -CI
+    Invoke-Pester -Output Detailed
   shell: pwsh
 ```
 

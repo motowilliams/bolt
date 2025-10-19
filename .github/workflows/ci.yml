@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Manual trigger option
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false # Continue testing other platforms if one fails
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PowerShell
+        shell: pwsh
+        run: |
+          Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
+          Write-Host "OS: $($PSVersionTable.OS)"
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Write-Host "Installing Pester module..."
+          Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser -SkipPublisherCheck
+          Import-Module Pester
+          Write-Host "Pester version: $((Get-Module Pester).Version)"
+
+      - name: Install Bicep CLI (Ubuntu)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          # Install Azure CLI (includes Bicep)
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          # Verify installation
+          az bicep version
+
+      - name: Install Bicep CLI (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Install Bicep via winget
+          winget install Microsoft.Bicep --silent --accept-package-agreements --accept-source-agreements
+          # Add to PATH for this session
+          $env:PATH = "C:\Program Files\Bicep CLI;$env:PATH"
+          # Verify installation
+          bicep --version
+
+      - name: Run Core Tests (Fast)
+        shell: pwsh
+        run: |
+          Write-Host "Running Core tests (no Bicep dependencies)..." -ForegroundColor Cyan
+          $coreResult = Invoke-Pester -Tag Core -Output Detailed -PassThru
+          if ($coreResult.FailedCount -gt 0) {
+            Write-Error "Core tests failed: $($coreResult.FailedCount) test(s)"
+            exit 1
+          }
+
+      - name: Run Tasks Tests (Requires Bicep)
+        shell: pwsh
+        run: |
+          Write-Host "Running Tasks tests (Bicep required)..." -ForegroundColor Cyan
+          $tasksResult = Invoke-Pester -Tag Tasks -Output Detailed -PassThru
+          if ($tasksResult.FailedCount -gt 0) {
+            Write-Error "Tasks tests failed: $($tasksResult.FailedCount) test(s)"
+            exit 1
+          }
+
+      - name: Run All Tests with NUnit XML Report
+        shell: pwsh
+        run: |
+          Write-Host "Generating test report..." -ForegroundColor Cyan
+          $config = New-PesterConfiguration
+          $config.Run.Exit = $false
+          $config.TestResult.Enabled = $true
+          $config.TestResult.OutputFormat = 'NUnitXml'
+          $config.TestResult.OutputPath = 'TestResults-${{ matrix.os }}.xml'
+          $config.Output.Verbosity = 'Detailed'
+
+          $result = Invoke-Pester -Configuration $config
+
+          Write-Host "Tests Passed: $($result.PassedCount)" -ForegroundColor Green
+          Write-Host "Tests Failed: $($result.FailedCount)" -ForegroundColor $(if ($result.FailedCount -gt 0) { 'Red' } else { 'Green' })
+          Write-Host "Tests Skipped: $($result.SkippedCount)" -ForegroundColor Yellow
+
+          if ($result.FailedCount -gt 0) {
+            Write-Error "Test suite failed with $($result.FailedCount) failure(s)"
+            exit 1
+          }
+
+      - name: Upload Test Results
+        if: always() # Upload even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: TestResults-${{ matrix.os }}.xml
+          retention-days: 30
+
+      - name: Run Build Pipeline
+        shell: pwsh
+        run: |
+          Write-Host "Running full build pipeline: format → lint → build" -ForegroundColor Cyan
+          pwsh -File gosh.ps1 build
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Build pipeline failed"
+            exit 1
+          }
+          Write-Host "✓ Build pipeline completed successfully" -ForegroundColor Green
+
+      - name: Verify Build Artifacts
+        shell: pwsh
+        run: |
+          Write-Host "Checking for compiled ARM templates..." -ForegroundColor Cyan
+          $jsonFiles = Get-ChildItem -Path tests/iac -Filter "*.json" -Recurse -File
+          if ($jsonFiles.Count -eq 0) {
+            Write-Error "No .json files found - build may have failed"
+            exit 1
+          }
+          Write-Host "Found $($jsonFiles.Count) compiled template(s):" -ForegroundColor Green
+          $jsonFiles | ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Gray }

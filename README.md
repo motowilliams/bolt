@@ -1,5 +1,7 @@
 # Gosh! 🎉
 
+[![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
+
 > **Go** + **powerShell** = **Gosh!**  
 > Build orchestration for PowerShell
 
@@ -611,7 +613,41 @@ Task is automatically discovered—no registration needed! Restart your shell to
 - Add metadata comments: `# TASK:`, `# DESCRIPTION:`, `# DEPENDS:`
 - Only include `param()` if your task accepts parameters
 
-## 💡 Why "Gosh"?
+## � Continuous Integration
+
+Gosh includes a GitHub Actions workflow that runs on Ubuntu and Windows:
+
+- **Triggers**: Push to `main` branch, manual dispatch
+- **Platforms**: Ubuntu (Linux) and Windows
+- **Pipeline**: Core tests → Tasks tests → Full build (format → lint → build)
+- **Dependencies**: Automatically installs PowerShell 7.0+ and Bicep CLI
+- **Test Reports**: NUnit XML artifacts uploaded for each platform
+- **Status**: [![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
+
+**TODO**: Enable CI for pull requests (currently main branch only)
+
+See `.github/workflows/ci.yml` for the complete workflow configuration.
+
+### Running CI Locally
+
+The CI pipeline runs the same commands you use locally:
+
+```powershell
+# Install dependencies
+Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
+
+# Run tests (same as CI)
+Invoke-Pester -Tag Core    # Fast tests (~1s)
+Invoke-Pester -Tag Tasks   # Bicep tests (~22s)
+Invoke-Pester             # All tests
+
+# Run build pipeline (same as CI)
+.\gosh.ps1 build
+```
+
+This follows the **90/10 principle**: 90% of the workflow should be identical locally and in CI.
+
+## �💡 Why "Gosh"?
 
 **Go** (the entry point) + **powerShell** (PowerShell) = **Gosh!**
 
