@@ -686,27 +686,27 @@ if ($Outline) {
 }
 
 function Write-Separator {
-<#
-    .SYNOPSIS
-    Writes a horizontal separator line
-    .DESCRIPTION
-    Displays a horizontal line of repeated characters in the specified color
-    .PARAMETER Character
-    The character to repeat for the separator line. Defaults to '='
-    .PARAMETER Length
-    The length of the separator line. Defaults to 60
-    .PARAMETER Color
-    The foreground color for the separator. Defaults to 'DarkGray'
-#>
-    [CmdletBinding()]
-    param(
-        [string]$Character = '=',
-        [int]$Length = 60,
-        [System.ConsoleColor]$Color = 'DarkGray'
-    )
+        <#
+        .SYNOPSIS
+            Writes a horizontal separator line
+        .DESCRIPTION
+            Displays a horizontal line of repeated characters in the specified color
+        .PARAMETER Character
+            The character to repeat for the separator line. Defaults to '='
+        .PARAMETER Length
+            The length of the separator line. Defaults to 60
+        .PARAMETER Color
+            The foreground color for the separator. Defaults to 'DarkGray'
+        #>
+        [CmdletBinding()]
+        param(
+            [string]$Character = '=',
+            [int]$Length = 60,
+            [System.ConsoleColor]$Color = 'DarkGray'
+        )
 
-    Write-Host ($Character * $Length) -ForegroundColor $Color
-}
+        Write-Host ($Character * $Length) -ForegroundColor $Color
+    }
 
 # Execute all tasks in sequence
 $executedTasks = @{}
