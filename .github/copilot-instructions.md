@@ -20,7 +20,9 @@ The project is a **working example** that includes:
 - ✅ Multi-task execution with dependency resolution
 - ✅ Tab completion and help system
 - ✅ Parameterized task directory (`-TaskDirectory`)
+- ✅ Task outline visualization (`-Outline`)
 - ✅ Test tags for fast/slow test separation
+- ✅ Cross-platform support (Windows, Linux, macOS)
 - ✅ MIT License
 - ✅ Comprehensive documentation (README.md, IMPLEMENTATION.md, CONTRIBUTING.md)
 
@@ -60,12 +62,18 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files (or 
 # Single task with dependencies
 .\gosh.ps1 build              # Runs: format → lint → build
 
+# Preview execution plan without running
+.\gosh.ps1 build -Outline     # Shows dependency tree and execution order
+
 # Multiple tasks in sequence
 .\gosh.ps1 lint format        # Runs: lint, then format
 .\gosh.ps1 format,lint,build  # Comma-separated also works
 
 # Skip dependencies (faster iteration)
 .\gosh.ps1 build -Only        # Runs: build only (no format/lint)
+
+# Preview what -Only would do
+.\gosh.ps1 build -Only -Outline
 
 # Multiple tasks without dependencies
 .\gosh.ps1 format lint build -Only  # Runs all three, skipping build's deps
@@ -81,6 +89,7 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files (or 
 
 **Important**: 
 - Use `-Only` switch to skip dependencies for all tasks in the sequence
+- Use `-Outline` to preview dependency trees and execution order without running tasks
 - Use `-TaskDirectory` to specify custom task locations (default: `.build`)
 - Tasks execute in the order specified
 - If any task fails, execution stops
@@ -244,6 +253,52 @@ if (-not $bicepCmd) {
 ```
 
 Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
+
+## Task Outline Feature
+
+The `-Outline` flag provides task visualization without execution:
+
+**Purpose**: Preview dependency trees and execution order before running tasks.
+
+**Implementation**:
+- `Show-TaskOutline` function (152 lines) in `gosh.ps1`
+- Displays ASCII tree structure (├── └──)
+- Shows task descriptions inline
+- Calculates deduplicated execution order
+- Respects `-Only` flag (shows what would actually execute)
+- Handles missing dependencies (shown in red)
+
+**Example Usage**:
+```powershell
+# Preview build dependencies
+.\gosh.ps1 build -Outline
+
+# Output:
+# Task execution plan for: build
+#
+# build (Compiles Bicep files to ARM JSON templates)
+# ├── format (Formats Bicep files using bicep format)
+# └── lint (Validates Bicep syntax and runs linter)
+#
+# Execution order:
+#   1. format
+#   2. lint
+#   3. build
+
+# Preview with -Only flag
+.\gosh.ps1 build -Only -Outline
+# Shows: build only (dependencies skipped)
+
+# Multiple tasks
+.\gosh.ps1 format lint build -Outline
+# Shows combined execution plan with deduplication
+```
+
+**Use Cases**:
+- **Debugging**: Understand complex dependency chains
+- **Documentation**: Show team members task relationships
+- **Planning**: Verify execution order before critical operations
+- **Testing**: Preview `-Only` behavior without side effects
 
 ## CI/CD Philosophy
 
@@ -429,7 +484,9 @@ The project uses `.editorconfig` for consistent code formatting:
 .\gosh.ps1 -ListTasks              # List all available tasks
 .\gosh.ps1 -Help                   # Same as -ListTasks
 .\gosh.ps1 build                   # Full pipeline (format → lint → build)
+.\gosh.ps1 build -Outline          # Preview execution plan (no execution)
 .\gosh.ps1 build -Only             # Build only (skip format/lint)
+.\gosh.ps1 build -Only -Outline    # Preview what -Only would do
 .\gosh.ps1 format lint             # Multiple tasks (space-separated)
 .\gosh.ps1 format,lint             # Multiple tasks (comma-separated)
 .\gosh.ps1 format lint build -Only # Multiple tasks without deps

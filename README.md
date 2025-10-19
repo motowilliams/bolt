@@ -18,6 +18,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🎯 Tab Completion**: Task names auto-complete in PowerShell
 - **🎨 Colorized Output**: Consistent, readable task output
 - **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
+- **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
 - **🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
 
 ## 🚀 Quick Start
@@ -60,11 +61,17 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 # Run a single task (with dependencies)
 .\gosh.ps1 build
 
+# Preview task execution plan without running
+.\gosh.ps1 build -Outline
+
 # Run multiple tasks in sequence
 .\gosh.ps1 format lint build
 
 # Skip dependencies for faster iteration
 .\gosh.ps1 build -Only
+
+# Preview what -Only would execute
+.\gosh.ps1 build -Only -Outline
 
 # Run multiple tasks without dependencies
 .\gosh.ps1 format lint build -Only
@@ -200,10 +207,16 @@ While Gosh works with any PowerShell workflow, it's optimized for Azure Bicep in
 # Full pipeline: format → lint → build
 .\gosh.ps1 build
 
+# Preview execution plan before running
+.\gosh.ps1 build -Outline
+
 # Individual steps
 .\gosh.ps1 format      # Format all files
 .\gosh.ps1 lint        # Validate syntax
 .\gosh.ps1 build -Only # Compile only (skip format/lint)
+
+# Preview what -Only would do
+.\gosh.ps1 build -Only -Outline
 ```
 
 ### Bicep CLI Integration
@@ -214,6 +227,47 @@ All tasks use the official Azure Bicep CLI:
 - `bicep build` - ARM template compilation
 
 Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
+
+## 📊 Task Visualization with `-Outline`
+
+The `-Outline` flag displays the task dependency tree and execution order **without executing** any tasks:
+
+```powershell
+# Preview build task dependencies
+.\gosh.ps1 build -Outline
+
+# Output:
+# Task execution plan for: build
+#
+# build (Compiles Bicep files to ARM JSON templates)
+# ├── format (Formats Bicep files using bicep format)
+# └── lint (Validates Bicep syntax and runs linter)
+#
+# Execution order:
+#   1. format
+#   2. lint
+#   3. build
+```
+
+**Key Benefits:**
+- **🔍 Debug dependencies** - Understand why certain tasks run
+- **📋 Document workflows** - Show team members task relationships  
+- **🎯 Plan execution** - Preview before running critical operations
+- **⚡ Test `-Only` flag** - See what would execute with dependencies skipped
+
+**Examples:**
+
+```powershell
+# Preview what -Only would do
+.\gosh.ps1 build -Only -Outline
+# Output: Execution order: 1. build (dependencies skipped)
+
+# Preview multiple tasks
+.\gosh.ps1 format lint build -Outline
+
+# Preview with custom task directory
+.\gosh.ps1 -TaskDirectory "infra-tasks" deploy -Outline
+```
 
 ## 🏗️ Example Workflows
 

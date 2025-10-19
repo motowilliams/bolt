@@ -12,6 +12,7 @@
 - **Circular Dependency Prevention**: Tracks executed tasks
 - **Exit Code Handling**: Properly propagates errors
 - **Parameterized Task Directory**: Use `-TaskDirectory` to specify custom task locations
+- **Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
 
 ### 2. Build Tasks
 
@@ -152,6 +153,9 @@ The system properly detects and reports errors:
 .\gosh.ps1 -ListTasks
 .\gosh.ps1 -Help
 
+# Preview task execution plan (no execution)
+.\gosh.ps1 build -Outline
+
 # Format all Bicep files
 .\gosh.ps1 format
 
@@ -170,6 +174,9 @@ Invoke-Pester -Output Detailed
 # Skip dependencies
 .\gosh.ps1 build -Only
 
+# Preview what -Only would do
+.\gosh.ps1 build -Only -Outline
+
 # Use task aliases
 .\gosh.ps1 fmt           # Same as format
 .\gosh.ps1 check         # Check git index
@@ -181,6 +188,66 @@ Invoke-Pester -Output Detailed
 # Create new task in custom directory
 .\gosh.ps1 -NewTask validate -TaskDirectory "validation"
 ```
+
+## Task Outline Feature
+
+The `-Outline` flag visualizes task dependency trees without execution:
+
+**Example Output:**
+```
+PS> .\gosh.ps1 build -Outline
+
+Task execution plan for: build
+
+build (Compiles Bicep files to ARM JSON templates)
+├── format (Formats Bicep files using bicep format)
+└── lint (Validates Bicep syntax and runs linter)
+
+Execution order:
+  1. format
+  2. lint
+  3. build
+```
+
+**With `-Only` flag:**
+```
+PS> .\gosh.ps1 build -Only -Outline
+
+Task execution plan for: build
+(Dependencies will be skipped with -Only flag)
+
+build (Compiles Bicep files to ARM JSON templates)
+(Dependencies skipped: format, lint)
+
+Execution order:
+  1. build
+```
+
+**Multiple tasks:**
+```
+PS> .\gosh.ps1 format lint build -Outline
+
+Task execution plan for: format, lint, build
+
+format (Formats Bicep files using bicep format)
+
+lint (Validates Bicep syntax and runs linter)
+
+build (Compiles Bicep files to ARM JSON templates)
+├── format (Formats Bicep files using bicep format)
+└── lint (Validates Bicep syntax and runs linter)
+
+Execution order:
+  1. format
+  2. lint
+  3. build
+```
+
+**Benefits:**
+- Debug complex dependency chains
+- Document task relationships for team members
+- Verify execution order before running
+- Test `-Only` flag behavior without side effects
 
 ## Task Dependency Chain
 
