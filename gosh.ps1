@@ -45,7 +45,12 @@ using namespace System.Management.Automation
 .EXAMPLE
     .\gosh.ps1 -NewTask clean
     Creates a new task file named Invoke-Clean.ps1 in the task directory.
-#>param(
+.EXAMPLE
+    .\gosh.ps1 format,lint,build -ErrorAction Continue
+    Runs all tasks even if one fails (useful for seeing all errors at once).
+#>
+[CmdletBinding()]
+param(
     [Parameter(Mandatory = $false, Position = 0)]
     [string[]]$Task,
 
@@ -67,8 +72,18 @@ using namespace System.Management.Automation
 
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Arguments
-)# Main script logic
-$ErrorActionPreference = 'Stop'
+)
+
+# Main script logic
+# Note: Don't override $ErrorActionPreference here - respect the common parameter from CmdletBinding
+# Default ErrorActionPreference for scripts is 'Continue', but we want 'Stop' unless user specifies otherwise
+if ($PSBoundParameters.ContainsKey('ErrorAction')) {
+    # User explicitly set ErrorAction, use it
+    $ErrorActionPreference = $PSBoundParameters['ErrorAction']
+} else {
+    # Default to Stop for build script behavior
+    $ErrorActionPreference = 'Stop'
+}
 
 # Register argument completer
 $taskCompleter = {
@@ -465,8 +480,12 @@ function Invoke-Task {
                     Write-Host "`nExecuting dependency: $dep" -ForegroundColor Yellow
                     $depResult = Invoke-Task -TaskInfo $AllTasks[$dep] -AllTasks $AllTasks -Arguments $Arguments -ExecutedTasks $ExecutedTasks
                     if (-not $depResult) {
-                        Write-Error "Dependency '$dep' failed"
-                        return $false
+                        Write-Host "Dependency '$dep' failed" -ForegroundColor Red
+                        # Stop on dependency failure unless ErrorAction permits continuing
+                        if ($ErrorActionPreference -eq 'Stop') {
+                            return $false
+                        }
+                        Write-Host "Continuing despite dependency failure due to -ErrorAction $ErrorActionPreference..." -ForegroundColor Yellow
                     }
                 }
                 else {
@@ -674,6 +693,7 @@ if ($Outline) {
 # Execute all tasks in sequence
 $executedTasks = @{}
 $allSucceeded = $true
+$failedTasks = @()
 
 foreach ($taskName in $taskList) {
     $taskInfo = $availableTasks[$taskName]
@@ -690,10 +710,18 @@ foreach ($taskName in $taskList) {
     if (-not $result) {
         Write-Host "`nTask '$taskName' failed" -ForegroundColor Red
         $allSucceeded = $false
-        break
-    }
+        $failedTasks += $taskName
 
-    Write-Host "`nTask '$taskName' completed successfully" -ForegroundColor Green
+        # Check if we should stop on error (default behavior)
+        if ($ErrorActionPreference -eq 'Stop') {
+            break
+        }
+        # Otherwise continue to next task (when ErrorAction is Continue, SilentlyContinue, or Ignore)
+        Write-Host "Continuing to next task due to -ErrorAction $ErrorActionPreference..." -ForegroundColor Yellow
+    }
+    else {
+        Write-Host "`nTask '$taskName' completed successfully" -ForegroundColor Green
+    }
 
     if ($taskList.Count -gt 1 -and $taskName -ne $taskList[-1]) {
         Write-Host ""
@@ -702,7 +730,13 @@ foreach ($taskName in $taskList) {
     }
 }
 
+# Summary if there were failures
 if (-not $allSucceeded) {
+    Write-Host ""
+    Write-Host ("=" * 60) -ForegroundColor Red
+    Write-Host "Build completed with failures" -ForegroundColor Red
+    Write-Host "Failed tasks: $($failedTasks -join ', ')" -ForegroundColor Red
+    Write-Host ("=" * 60) -ForegroundColor Red
     exit 1
 }
 
