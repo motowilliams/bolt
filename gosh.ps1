@@ -224,7 +224,7 @@ function Get-ProjectTasks {
         }
 
         # Extract description
-        if ($content -match '(?m)^#\s*DESCRIPTION:\s*(.+)$') {
+        if ($content -match '(?m)^#\s*DESCRIPTION:[ \t]*([^\r\n]*)') {
             $metadata.Description = $Matches[1].Trim()
         }
 
