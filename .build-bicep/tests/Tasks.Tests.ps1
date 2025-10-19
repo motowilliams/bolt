@@ -10,15 +10,15 @@
 #>
 
 BeforeAll {
-    # Get .build-bicep root (parent of tests directory)
-    $bicepRoot = Split-Path -Parent $PSScriptRoot
+    # Get module root (parent of tests directory)
+    $moduleRoot = Split-Path -Parent $PSScriptRoot
 
-    $script:FormatTaskPath = Join-Path $bicepRoot 'Invoke-Format.ps1'
-    $script:LintTaskPath = Join-Path $bicepRoot 'Invoke-Lint.ps1'
-    $script:BuildTaskPath = Join-Path $bicepRoot 'Invoke-Build.ps1'
+    $script:FormatTaskPath = Join-Path $moduleRoot 'Invoke-Format.ps1'
+    $script:LintTaskPath = Join-Path $moduleRoot 'Invoke-Lint.ps1'
+    $script:BuildTaskPath = Join-Path $moduleRoot 'Invoke-Build.ps1'
 }
 
-Describe 'Task Validation' -Tag 'Tasks' {
+Describe 'Task Validation' -Tag 'Bicep-Tasks' {
     Context 'Format Task' {
         It 'Should exist' {
             Test-Path $script:FormatTaskPath | Should -Be $true

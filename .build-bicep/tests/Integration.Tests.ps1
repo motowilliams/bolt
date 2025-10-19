@@ -10,11 +10,11 @@
 #>
 
 BeforeAll {
-    # Get .build-bicep root (parent of tests directory)
-    $bicepRoot = Split-Path -Parent $PSScriptRoot
+    # Get module root (parent of tests directory)
+    $moduleRoot = Split-Path -Parent $PSScriptRoot
 
-    # Get project root (parent of .build-bicep directory)
-    $projectRoot = Split-Path -Parent $bicepRoot
+    # Get project root (parent of module directory)
+    $projectRoot = Split-Path -Parent $moduleRoot
 
     $script:GoshScriptPath = Join-Path $projectRoot 'gosh.ps1'
     $script:IacPath = Join-Path $PSScriptRoot 'iac'
@@ -29,8 +29,8 @@ BeforeAll {
             [hashtable]$Parameters = @{}
         )
 
-        # Always use the .build-bicep task directory for these tests
-        $Parameters['TaskDirectory'] = $bicepRoot
+        # Always use the module root task directory for these tests
+        $Parameters['TaskDirectory'] = $moduleRoot
 
         # Build splatting hashtable for named parameters
         $splatParams = @{}
@@ -55,7 +55,7 @@ BeforeAll {
     }
 }
 
-Describe 'Task Integration Tests' -Tag 'Tasks' {
+Describe 'Task Integration Tests' -Tag 'Bicep-Tasks' {
     Context 'Format Task Integration' {
         It 'Should format Bicep files if bicep CLI is available' {
             # Check if Bicep CLI is available
