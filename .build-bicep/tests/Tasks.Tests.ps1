@@ -3,23 +3,22 @@
 
 <#
 .SYNOPSIS
-    Pester tests for project-specific Bicep tasks
+    Pester tests for project tasks
 .DESCRIPTION
-    Tests the format, lint, and build tasks that ship with the Gosh project.
+    Tests the format, lint, and build tasks.
     These tests verify task structure, metadata, and dependencies.
 #>
 
 BeforeAll {
-    # Get project root (parent of tests directory)
-    $projectRoot = Split-Path -Parent $PSScriptRoot
+    # Get .build-bicep root (parent of tests directory)
+    $bicepRoot = Split-Path -Parent $PSScriptRoot
 
-    $script:BuildPath = Join-Path $projectRoot '.build'
-    $script:FormatTaskPath = Join-Path $script:BuildPath 'Invoke-Format.ps1'
-    $script:LintTaskPath = Join-Path $script:BuildPath 'Invoke-Lint.ps1'
-    $script:BuildTaskPath = Join-Path $script:BuildPath 'Invoke-Build.ps1'
+    $script:FormatTaskPath = Join-Path $bicepRoot 'Invoke-Format.ps1'
+    $script:LintTaskPath = Join-Path $bicepRoot 'Invoke-Lint.ps1'
+    $script:BuildTaskPath = Join-Path $bicepRoot 'Invoke-Build.ps1'
 }
 
-Describe 'Project Task Validation' -Tag 'Tasks' {
+Describe 'Task Validation' -Tag 'Tasks' {
     Context 'Format Task' {
         It 'Should exist' {
             Test-Path $script:FormatTaskPath | Should -Be $true

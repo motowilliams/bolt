@@ -286,7 +286,12 @@ function Get-AllTasks {
     }
 
     # Get project-specific tasks from specified directory
-    $buildPath = Join-Path $PSScriptRoot $TaskDirectory
+    # Check if TaskDirectory is absolute or relative
+    if ([System.IO.Path]::IsPathRooted($TaskDirectory)) {
+        $buildPath = $TaskDirectory
+    } else {
+        $buildPath = Join-Path $PSScriptRoot $TaskDirectory
+    }
     $projectTasks = Get-ProjectTasks -BuildPath $buildPath
 
     # Project tasks override core tasks if there's a naming conflict
