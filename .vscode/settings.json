@@ -2,6 +2,7 @@
   // PowerShell settings
   "powershell.codeFormatting.preset": "OTBS",
   "powershell.scriptAnalysis.enable": true,
+  "powershell.scriptAnalysis.settingsPath": ".vscode/PSScriptAnalyzerSettings.psd1",
 
   // File associations
   "files.associations": {

@@ -86,6 +86,8 @@ if ($PSBoundParameters.ContainsKey('ErrorAction')) {
 }
 
 # Register argument completer
+# Note: $commandName and $parameterName are required by PowerShell's argument completer signature
+# even though they're not used in this implementation
 $taskCompleter = {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
 
@@ -115,7 +117,7 @@ $taskCompleter = {
                 $projectTasks += $taskNames
             }
             else {
-                $projectTasks += $file.BaseName
+                $projectTasks += $file.BaseName.ToLower() -split '-' | Select-Object -Last 1
             }
         }
     }
@@ -690,6 +692,29 @@ if ($Outline) {
     exit 0
 }
 
+function Write-Separator {
+        <#
+        .SYNOPSIS
+            Writes a horizontal separator line
+        .DESCRIPTION
+            Displays a horizontal line of repeated characters in the specified color
+        .PARAMETER Character
+            The character to repeat for the separator line. Defaults to '='
+        .PARAMETER Length
+            The length of the separator line. Defaults to 60
+        .PARAMETER Color
+            The foreground color for the separator. Defaults to 'DarkGray'
+        #>
+        [CmdletBinding()]
+        param(
+            [string]$Character = '=',
+            [int]$Length = 60,
+            [System.ConsoleColor]$Color = 'DarkGray'
+        )
+
+        Write-Host ($Character * $Length) -ForegroundColor $Color
+    }
+
 # Execute all tasks in sequence
 $executedTasks = @{}
 $allSucceeded = $true
@@ -725,7 +750,7 @@ foreach ($taskName in $taskList) {
 
     if ($taskList.Count -gt 1 -and $taskName -ne $taskList[-1]) {
         Write-Host ""
-        Write-Host ("=" * 60) -ForegroundColor DarkGray
+        Write-Separator -Character "=" -Length 60 -Color DarkGray
         Write-Host ""
     }
 }
@@ -733,10 +758,10 @@ foreach ($taskName in $taskList) {
 # Summary if there were failures
 if (-not $allSucceeded) {
     Write-Host ""
-    Write-Host ("=" * 60) -ForegroundColor Red
+    Write-Separator -Character "=" -Length 60 -Color Red
     Write-Host "Build completed with failures" -ForegroundColor Red
     Write-Host "Failed tasks: $($failedTasks -join ', ')" -ForegroundColor Red
-    Write-Host ("=" * 60) -ForegroundColor Red
+    Write-Separator -Character "=" -Length 60 -Color Red
     exit 1
 }
 
