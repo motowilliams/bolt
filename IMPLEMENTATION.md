@@ -270,18 +270,18 @@ The project includes a comprehensive Pester test suite organized into three file
 
 ### Test Structure
 
-**Core Orchestration** (`tests/gosh.Tests.ps1` - 25 tests):
+**Core Orchestration** (`tests/gosh.Tests.ps1` - 27 tests):
 - Tests Gosh's task discovery, execution, and dependency resolution
 - Uses mock tasks from `tests/fixtures/` to avoid external dependencies
 - Validates script syntax, parameter handling, error handling
 - Ensures documentation consistency
 
-**Project Tasks** (`tests/ProjectTasks.Tests.ps1` - 12 tests):
-- Validates structure and metadata of format, lint, and build tasks
+**Bicep Tasks** (`.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
+- Validates structure and metadata of Bicep tasks
 - Checks task existence, syntax, and proper metadata headers
 - Verifies dependency declarations
 
-**Integration** (`tests/Integration.Tests.ps1` - 4 tests):
+**Bicep Integration** (`.build-bicep/tests/Integration.Tests.ps1` - 4 tests):
 - End-to-end tests executing actual Bicep operations
 - Requires Bicep CLI to be installed
 - Tests format, lint, build, and full pipeline
@@ -322,12 +322,11 @@ Invoke-Pester -Output Detailed
 
 # Run specific test file
 Invoke-Pester -Path tests/gosh.Tests.ps1
-Invoke-Pester -Path tests/ProjectTasks.Tests.ps1
-Invoke-Pester -Path tests/Integration.Tests.ps1
+Invoke-Pester -Path .build-bicep/tests/
 
 # Run tests by tag
-Invoke-Pester -Tag Core        # Only core orchestration tests (27 tests, ~1s)
-Invoke-Pester -Tag Tasks       # Only task validation tests (16 tests, ~22s)
+Invoke-Pester -Tag Core           # Only core orchestration tests (27 tests, ~1s)
+Invoke-Pester -Tag Bicep-Tasks    # Only Bicep task tests (16 tests, ~22s)
 ```
 
 ### Test Tags
@@ -341,9 +340,9 @@ The test suite uses Pester tags for flexible test execution:
 - Uses mock fixtures from `tests/fixtures/`
 - Ideal for quick validation during development
 
-**`Tasks` Tag** (16 tests, ~22 seconds)
-- Tests project task scripts in `.build/` directory
-- Includes `ProjectTasks.Tests.ps1` (structure validation)
+**`Bicep-Tasks` Tag** (16 tests, ~22 seconds)
+- Tests Bicep task implementation in `.build-bicep/` directory
+- Includes `Tasks.Tests.ps1` (structure validation)
 - Includes `Integration.Tests.ps1` (actual Bicep execution)
 - Requires Bicep CLI to be installed
 - Runs slower due to actual tool invocation
@@ -353,8 +352,8 @@ The test suite uses Pester tags for flexible test execution:
 # Quick feedback loop during core development
 Invoke-Pester -Tag Core
 
-# Validate tasks before committing changes to .build/
-Invoke-Pester -Tag Tasks
+# Validate Bicep tasks before committing changes
+Invoke-Pester -Tag Bicep-Tasks
 
 # Complete validation (default)
 Invoke-Pester

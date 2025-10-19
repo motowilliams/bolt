@@ -90,20 +90,22 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 ```
 .
 ├── gosh.ps1                    # Main orchestrator
-├── .build/                     # Task scripts
-│   ├── Invoke-Build.ps1        # Compile Bicep to ARM JSON
-│   ├── Invoke-Format.ps1       # Format Bicep files
-│   └── Invoke-Lint.ps1         # Validate Bicep syntax
-├── tests/                      # Tests & example infrastructure
+├── .build/                     # User-customizable task templates
+│   ├── Invoke-Build.ps1        # Build task template
+│   ├── Invoke-Format.ps1       # Format task template
+│   └── Invoke-Lint.ps1         # Lint task template
+├── .build-bicep/               # Bicep task implementation (separate package)
+│   ├── Invoke-Build.ps1        # Compiles Bicep to ARM JSON
+│   ├── Invoke-Format.ps1       # Formats Bicep files
+│   ├── Invoke-Lint.ps1         # Validates Bicep syntax
+│   └── tests/                  # Bicep-specific tests
+│       ├── Tasks.Tests.ps1     # Task validation tests (12 tests)
+│       ├── Integration.Tests.ps1 # End-to-end tests (4 tests)
+│       └── iac/                # Test infrastructure
+├── tests/                      # Core Gosh tests
 │   ├── fixtures/               # Mock tasks for testing
-│   ├── iac/                    # Example Bicep infrastructure
-│   │   ├── main.bicep          # Main infrastructure template
-│   │   ├── main.parameters.json # Production parameters
-│   │   ├── main.dev.parameters.json # Development parameters
-│   │   └── modules/            # Reusable Bicep modules
-│   ├── gosh.Tests.ps1          # Core orchestration tests
-│   ├── ProjectTasks.Tests.ps1  # Task validation tests
-│   └── Integration.Tests.ps1   # Bicep integration tests
+│   ├── gosh.Tests.ps1          # Core orchestration tests (27 tests)
+│   └── Invoke-Test.ps1         # Test helper
 └── .github/
     └── copilot-instructions.md # AI agent guidance
 ```
@@ -352,36 +354,42 @@ steps:
 
 ## 🧪 Testing
 
-The project includes comprehensive **Pester** tests to ensure correct behavior when refactoring or adding new features. Tests are organized into three separate files for clarity:
+The project includes comprehensive **Pester** tests to ensure correct behavior when refactoring or adding new features. Tests are organized for clarity with separate locations for core and module-specific tests.
 
 ### Test Structure
 
-- **`tests/gosh.Tests.ps1`** - Core orchestration tests using mock tasks
+**Core Tests** (`tests/` directory):
+- **`tests/gosh.Tests.ps1`** (27 tests) - Core orchestration tests
   - Script validation, task discovery, execution, dependency resolution
   - Uses mock fixtures from `tests/fixtures/` to test Gosh itself
+  - Tag: `Core`
+
+**Bicep Module Tests** (`.build-bicep/tests/` directory):
+- **`.build-bicep/tests/Tasks.Tests.ps1`** (12 tests) - Task validation
+  - Validates structure and metadata of Bicep tasks
+  - Tag: `Bicep-Tasks`
   
-- **`tests/ProjectTasks.Tests.ps1`** - Project-specific task validation
-  - Validates structure and metadata of format, lint, and build tasks
-  
-- **`tests/Integration.Tests.ps1`** - End-to-end Bicep integration tests
+- **`.build-bicep/tests/Integration.Tests.ps1`** (4 tests) - Integration tests
   - Executes actual Bicep operations against real infrastructure files
   - Requires Bicep CLI to be installed
+  - Tag: `Bicep-Tasks`
 
 ### Running Tests
 
 ```powershell
 # Run all tests (auto-discovers test files)
-Invoke-Pester
+Invoke-Pester                         # 43 tests total
 
 # Run with detailed output
 Invoke-Pester -Output Detailed
 
 # Run specific test file
 Invoke-Pester -Path tests/gosh.Tests.ps1
+Invoke-Pester -Path .build-bicep/tests/
 
 # Run tests by tag
-Invoke-Pester -Tag Core        # Only core orchestration tests (fast, ~1s)
-Invoke-Pester -Tag Tasks       # Only task validation tests (slower, ~22s)
+Invoke-Pester -Tag Core               # Core orchestration only (27 tests, ~1s)
+Invoke-Pester -Tag Bicep-Tasks        # Bicep tasks only (16 tests, ~22s)
 ```
 
 ### Test Tags
@@ -393,9 +401,10 @@ Tests are organized with tags for flexible execution:
   - No external tool dependencies
   - Uses mock fixtures from `tests/fixtures/`
   
-- **`Tasks`** (16 tests) - Tests project task scripts (.build/*.ps1)
+- **`Bicep-Tasks`** (16 tests) - Tests Bicep task implementation
   - Slower execution (~22 seconds)
   - Requires Bicep CLI for integration tests
+  - Tests live with implementation in `.build-bicep/tests/`
   - Validates task structure, metadata, and actual Bicep operations
 
 **Common workflows:**
@@ -404,7 +413,7 @@ Tests are organized with tags for flexible execution:
 Invoke-Pester -Tag Core
 
 # Full task testing before commit
-Invoke-Pester -Tag Tasks
+Invoke-Pester -Tag Bicep-Tasks
 
 # Complete test suite
 Invoke-Pester
@@ -412,7 +421,7 @@ Invoke-Pester
 
 ### Test Coverage
 
-**Core Orchestration** (`tests/gosh.Tests.ps1` - 25 tests):
+**Core Orchestration** (`tests/gosh.Tests.ps1` - 27 tests):
 - Script validation and PowerShell version requirements
 - Task listing with `-ListTasks` and `-Help` parameters
 - Task discovery from `.build/` directory and test fixtures
@@ -423,12 +432,12 @@ Invoke-Pester
 - Parameter validation (comma/space-separated)
 - Documentation consistency
 
-**Project Tasks** (`tests/ProjectTasks.Tests.ps1` - 12 tests):
+**Bicep Tasks** (`.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
 - Format task: existence, syntax, metadata, aliases
 - Lint task: existence, syntax, metadata, dependencies
 - Build task: existence, syntax, metadata, dependencies
 
-**Integration** (`tests/Integration.Tests.ps1` - 4 tests):
+**Bicep Integration** (`.build-bicep/tests/Integration.Tests.ps1` - 4 tests):
 - Format Bicep files integration
 - Lint Bicep files integration
 - Build Bicep files integration

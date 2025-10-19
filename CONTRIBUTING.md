@@ -76,7 +76,7 @@ Before submitting changes:
 - **Run the test suite**: `Invoke-Pester` to ensure all tests pass (43 tests)
 - **Use test tags for faster feedback**:
   - `Invoke-Pester -Tag Core` - Quick orchestration tests (~1s)
-  - `Invoke-Pester -Tag Tasks` - Task validation tests (~22s)
+  - `Invoke-Pester -Tag Bicep-Tasks` - Bicep task validation tests (~22s)
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
 - **Test with custom directories**: Verify `-TaskDirectory` parameter works correctly
@@ -84,8 +84,8 @@ Before submitting changes:
 - **Test cross-platform**: All changes should work on Windows, Linux, and macOS with PowerShell Core
 - **Add new tests**: Choose the appropriate test file:
   - **Core orchestration changes** → `tests/gosh.Tests.ps1` (uses mock fixtures, tag with `Core`)
-  - **New project tasks** → `tests/ProjectTasks.Tests.ps1` (validates task structure, tag with `Tasks`)
-  - **Bicep integrations** → `tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Tasks`)
+  - **New Bicep tasks** → `.build-bicep/tests/Tasks.Tests.ps1` (validates task structure, tag with `Bicep-Tasks`)
+  - **Bicep integrations** → `.build-bicep/tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Bicep-Tasks`)
 
 ### Cross-Platform Guidelines
 
@@ -140,20 +140,18 @@ Describe "Your New Feature" -Tag 'Core' {
 - This achieves clean separation between production tasks and test infrastructure
 - No need to copy fixtures—they're referenced directly
 
-**For new project tasks**:
+**For new Bicep tasks**:
 ```powershell
-# Add to tests/ProjectTasks.Tests.ps1
-Describe "YourNewTask Task" -Tag 'Tasks' {
-    It "Should exist in .build directory" {
-        $taskPath = Join-Path $projectRoot ".build\Invoke-YourNewTask.ps1"
-        $taskPath | Should -Exist
+# Add to .build-bicep/tests/Tasks.Tests.ps1
+Describe "YourNewTask Task" -Tag 'Bicep-Tasks' {
+    It "Should exist" {
+        $taskPath = Join-Path $moduleRoot "Invoke-YourNewTask.ps1"
+        Test-Path $taskPath | Should -Be $true
     }
     
     It "Should have valid PowerShell syntax" {
-        $errors = $null
-        $null = [System.Management.Automation.PSParser]::Tokenize(
-            (Get-Content $taskPath -Raw), [ref]$errors)
-        $errors.Count | Should -Be 0
+        $content = Get-Content $taskPath -Raw -ErrorAction Stop
+        { $null = [System.Management.Automation.PSParser]::Tokenize($content, [ref]$null) } | Should -Not -Throw
     }
 }
 ```
