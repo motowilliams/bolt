@@ -149,10 +149,14 @@ $taskCompleter = {
                 $taskNames = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
                 $projectTasks += $taskNames
             } else {
-                # Extract task name: Verb-My-Custom-Task -> my-custom-task
+                # Extract task name: Invoke-My-Custom-Task -> my-custom-task
                 # Split on '-', skip first part (verb), join remaining with '-', convert to lowercase
                 $parts = $file.BaseName -split '-'
-                $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+                if ($parts.Count -gt 1) {
+                    $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+                } else {
+                    $taskName = $parts[0].ToLower()
+                }
                 $projectTasks += $taskName
             }
         }
@@ -411,7 +415,15 @@ function Get-ProjectTasks {
             }
         } else {
             # if there is no TASK tag, use the noun portion of the filename as the task name
-            $metadata.Names = @((Get-Item $FilePath).BaseName).ToLower() -split '-' | Select-Object -Last 1
+            # Extract task name: Invoke-My-Custom-Task -> my-custom-task
+            # Split on '-', skip first part (verb), join remaining with '-', convert to lowercase
+            $parts = (Get-Item $FilePath).BaseName -split '-'
+            if ($parts.Count -gt 1) {
+                $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+            } else {
+                $taskName = $parts[0].ToLower()
+            }
+            $metadata.Names = @($taskName)
         }
 
         # Extract description
