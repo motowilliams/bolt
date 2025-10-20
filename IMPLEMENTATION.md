@@ -270,11 +270,17 @@ The project includes a comprehensive Pester test suite organized into three file
 
 ### Test Structure
 
-**Core Orchestration** (`tests/gosh.Tests.ps1` - 27 tests):
+**Core Orchestration** (`tests/gosh.Tests.ps1` - 28 tests):
 - Tests Gosh's task discovery, execution, and dependency resolution
 - Uses mock tasks from `tests/fixtures/` to avoid external dependencies
 - Validates script syntax, parameter handling, error handling
+- Tests filename fallback for tasks without metadata (handles Invoke-Verb-Noun.ps1 patterns)
 - Ensures documentation consistency
+
+**Security Validation** (`tests/security/Security.Tests.ps1` - 29 tests):
+- Validates P0 security fixes for path traversal and command injection
+- Tests input sanitization and validation
+- Ensures secure error handling
 
 **Bicep Tasks** (`packages/.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
 - Validates structure and metadata of Bicep tasks
@@ -325,7 +331,8 @@ Invoke-Pester -Path tests/gosh.Tests.ps1
 Invoke-Pester -Path packages/.build-bicep/tests/
 
 # Run tests by tag
-Invoke-Pester -Tag Core           # Only core orchestration tests (27 tests, ~1s)
+Invoke-Pester -Tag Core           # Only core orchestration tests (28 tests, ~1s)
+Invoke-Pester -Tag Security       # Only security validation tests (29 tests, ~1s)
 Invoke-Pester -Tag Bicep-Tasks    # Only Bicep task tests (16 tests, ~22s)
 ```
 
@@ -333,12 +340,19 @@ Invoke-Pester -Tag Bicep-Tasks    # Only Bicep task tests (16 tests, ~22s)
 
 The test suite uses Pester tags for flexible test execution:
 
-**`Core` Tag** (27 tests, ~1 second)
+**`Core` Tag** (28 tests, ~1 second)
 - Tests gosh.ps1 orchestration functionality
 - Includes `gosh.Tests.ps1` and `Documentation Consistency` tests
 - Fast execution with no external dependencies
 - Uses mock fixtures from `tests/fixtures/`
 - Ideal for quick validation during development
+
+**`Security` Tag** (29 tests, ~1 second)
+- Tests security validation and P0 fixes
+- Includes path traversal and command injection prevention
+- Fast execution with no external dependencies
+- Ensures secure input handling and error modes
+- Critical for security compliance
 
 **`Bicep-Tasks` Tag** (16 tests, ~22 seconds)
 - Tests Bicep task implementation in `packages/.build-bicep/` directory

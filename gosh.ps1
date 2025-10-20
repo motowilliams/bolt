@@ -52,6 +52,22 @@ using namespace System.Management.Automation
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false, Position = 0)]
+    [ValidateScript({
+        foreach ($taskArg in $_) {
+            # SECURITY: Validate task name format (P0 - Task Name Validation)
+            # Split on commas first in case user provided comma-separated list
+            $taskNames = $taskArg -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+            foreach ($taskName in $taskNames) {
+                if ($taskName -cnotmatch '^[a-z0-9][a-z0-9\-]*$') {
+                    throw "Task name '$taskName' contains invalid characters. Only lowercase letters, numbers, and hyphens are allowed."
+                }
+                if ($taskName.Length -gt 50) {
+                    throw "Task name '$taskName' is too long (max 50 characters)."
+                }
+            }
+        }
+        return $true
+    })]
     [string[]]$Task,
 
     [Parameter()]
@@ -65,9 +81,26 @@ param(
     [switch]$Outline,
 
     [Parameter()]
+    [ValidatePattern('^[a-zA-Z0-9_\-\./\\]+$')]
+    [ValidateScript({
+        if ($_ -match '\.\.' -or [System.IO.Path]::IsPathRooted($_)) {
+            throw "TaskDirectory must be a relative path without '..' sequences or absolute paths"
+        }
+        return $true
+    })]
     [string]$TaskDirectory = ".build",
 
     [Parameter()]
+    [ValidateScript({
+        # SECURITY: Validate task name format (P0 - Task Name Validation)
+        if ($_ -cnotmatch '^[a-z0-9][a-z0-9\-]*$') {
+            throw "Task name '$_' contains invalid characters. Only lowercase letters, numbers, and hyphens are allowed."
+        }
+        if ($_.Length -gt 50) {
+            throw "Task name '$_' is too long (max 50 characters)."
+        }
+        return $true
+    })]
     [string]$NewTask,
 
     [Parameter(ValueFromRemainingArguments)]
@@ -116,10 +149,15 @@ $taskCompleter = {
                 $taskNames = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
                 $projectTasks += $taskNames
             } else {
-                # Extract task name: Verb-My-Custom-Task -> my-custom-task
+                # if there is no TASK tag, use the noun portion of the filename as the task name
+                # Extract task name: Invoke-My-Custom-Task -> my-custom-task
                 # Split on '-', skip first part (verb), join remaining with '-', convert to lowercase
                 $parts = $file.BaseName -split '-'
-                $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+                if ($parts.Count -gt 1) {
+                    $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+                } else {
+                    $taskName = $parts[0].ToLower()
+                }
                 $projectTasks += $taskName
             }
         }
@@ -140,35 +178,155 @@ $taskCompleter = {
 
 Register-ArgumentCompleter -CommandName 'gosh.ps1' -ParameterName 'Task' -ScriptBlock $taskCompleter
 
-function Invoke-CheckGitIndex {
+#region Utility Functions - Available to all tasks
+function Get-ProjectRoot {
     <#
     .SYNOPSIS
-        Checks if the git index is clean
+        Finds the project root directory by looking for .git directory
     .DESCRIPTION
-        Verifies there are no uncommitted changes in the git repository
+        Recursively searches upward from the starting path to find the project root,
+        identified by the presence of a .git directory
+    .PARAMETER StartPath
+        The path to start searching from. Defaults to the current location.
+    .EXAMPLE
+        $root = Get-ProjectRoot
+        Gets the project root starting from the current location
+    .EXAMPLE
+        $root = Get-ProjectRoot -StartPath $PSScriptRoot
+        Gets the project root starting from a specific directory
     #>
     [CmdletBinding()]
+    param(
+        [Parameter()]
+        [string]$StartPath
+    )
+
+    # Default to current location if not specified or if PSScriptRoot is empty
+    if ([string]::IsNullOrWhiteSpace($StartPath)) {
+        $StartPath = Get-Location
+    }
+
+    $projectRoot = $StartPath
+    do {
+        Write-Verbose "$($MyInvocation.MyCommand.Name): Checking for .git in $projectRoot"
+        if (Test-Path (Join-Path $projectRoot '.git')) {
+            return $projectRoot
+        }
+        $parent = Split-Path -Parent $projectRoot
+        if ($parent -eq $projectRoot) {
+            # We've reached the root of the filesystem
+            break
+        }
+        $projectRoot = $parent
+    } while ($projectRoot)
+
+    # If no .git directory found, return the original start path
+    return $StartPath
+}
+
+function Get-GitStatus {
+    <#
+    .SYNOPSIS
+        Gets the current git repository status
+    .DESCRIPTION
+        Checks git availability, repository status, and index cleanliness.
+        Returns structured data without side effects (no Write-Host/Write-Error).
+        This is a pure utility function that can be used by any task.
+    .EXAMPLE
+        $status = Get-GitStatus
+        if ($status.IsClean) {
+            Write-Host "Git is clean" -ForegroundColor Green
+        } else {
+            Write-Host "Git has changes: $($status.Status)" -ForegroundColor Yellow
+        }
+    .OUTPUTS
+        PSCustomObject with the following properties:
+        - IsClean: $true if no uncommitted changes, $false if dirty, $null if error
+        - Status: Output from 'git status --porcelain' or $null
+        - HasGit: $true if git command is available, $false otherwise
+        - InRepo: $true if current directory is in a git repository, $false otherwise
+        - ErrorMessage: Description of error if any, $null otherwise
+    #>
+    [CmdletBinding()]
+    param()
 
     # Check if git is available
     $gitCommand = Get-Command git -ErrorAction SilentlyContinue
     if (-not $gitCommand) {
-        Write-Error "Git is not installed or not in PATH"
-        return $false
+        return [PSCustomObject]@{
+            IsClean      = $null
+            Status       = $null
+            HasGit       = $false
+            InRepo       = $false
+            ErrorMessage = "Git is not installed or not in PATH"
+        }
     }
 
     # Check if we're in a git repository
     $null = git rev-parse --git-dir 2>$null
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Not in a git repository"
-        return $false
+        return [PSCustomObject]@{
+            IsClean      = $null
+            Status       = $null
+            HasGit       = $true
+            InRepo       = $false
+            ErrorMessage = "Not in a git repository"
+        }
     }
+
+    # Get git status
+    $status = git status --porcelain 2>$null
+
+    # Determine if clean and return result
+    $isClean = [string]::IsNullOrWhiteSpace($status)
+
+    return [PSCustomObject]@{
+        IsClean      = $isClean
+        Status       = $status
+        HasGit       = $true
+        InRepo       = $true
+        ErrorMessage = $null
+    }
+}
+
+function Get-GoshUtilities {
+    <#
+    .SYNOPSIS
+        Returns a hashtable of utility functions available to tasks
+    .DESCRIPTION
+        This function exports utility functions that can be injected into task execution contexts
+    #>
+    return @{
+        'Get-ProjectRoot' = ${function:Get-ProjectRoot}
+        'Get-GitStatus'   = ${function:Get-GitStatus}
+    }
+}
+#endregion
+
+function Invoke-CheckGitIndex {
+    <#
+    .SYNOPSIS
+        Checks if the git index is clean
+    .DESCRIPTION
+        Verifies there are no uncommitted changes in the git repository.
+        This task uses Get-GitStatus utility function and provides user-friendly output.
+    #>
+    [CmdletBinding()]
+    param()
 
     Write-Host "Checking git index status..." -ForegroundColor Cyan
 
-    # Get git status
-    $status = git status --porcelain
+    # Use the pure utility function to get git status
+    $gitStatus = Get-GitStatus
 
-    if ([string]::IsNullOrWhiteSpace($status)) {
+    # Handle errors
+    if ($null -ne $gitStatus.ErrorMessage) {
+        Write-Error $gitStatus.ErrorMessage
+        return $false
+    }
+
+    # Check if clean
+    if ($gitStatus.IsClean) {
         Write-Host "✓ Git index is clean - no uncommitted changes" -ForegroundColor Green
         return $true
     } else {
@@ -235,10 +393,38 @@ function Get-ProjectTasks {
 
         # Extract task names
         if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
-            $metadata.Names = @($Matches[1] -split ',' | ForEach-Object { $_.Trim() })
+            $taskNames = $Matches[1] -split ',' | ForEach-Object {
+                $taskName = $_.Trim()
+
+                # SECURITY: Validate task name format (P0 - Task Name Validation)
+                if ($taskName -cnotmatch '^[a-z0-9][a-z0-9\-]*$') {
+                    Write-Warning "Invalid task name format '$taskName' in $FilePath (only lowercase letters, numbers, and hyphens allowed)"
+                    return $null
+                }
+
+                # Enforce reasonable length
+                if ($taskName.Length -gt 50) {
+                    Write-Warning "Task name too long (max 50 chars): $taskName"
+                    return $null
+                }
+
+                return $taskName
+            } | Where-Object { $null -ne $_ }
+
+            if ($taskNames.Count -gt 0) {
+                $metadata.Names = @($taskNames)
+            }
         } else {
             # if there is no TASK tag, use the noun portion of the filename as the task name
-            $metadata.Names = @((Get-Item $FilePath).BaseName).ToLower() -split '-' | Select-Object -Last 1
+            # Extract task name: Invoke-My-Custom-Task -> my-custom-task
+            # Split on '-', skip first part (verb), join remaining with '-', convert to lowercase
+            $parts = (Get-Item $FilePath).BaseName -split '-'
+            if ($parts.Count -gt 1) {
+                $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+            } else {
+                $taskName = $parts[0].ToLower()
+            }
+            $metadata.Names = @($taskName)
         }
 
         # Extract description
@@ -502,8 +688,63 @@ function Invoke-Task {
         $result = & $TaskInfo.Function
         return $result
     } else {
-        # Execute external script
-        & $TaskInfo.ScriptPath @Arguments
+        # Execute external script with utility functions injected
+        try {
+            # SECURITY: Validate script path before interpolation (P0 - Path Sanitization)
+            $scriptPath = $TaskInfo.ScriptPath
+
+            # Check for dangerous characters that could enable code injection
+            if ($scriptPath -match '[`$();{}\[\]|&<>]') {
+                throw "Script path contains potentially dangerous characters: $scriptPath"
+            }
+
+            # Validate path is within project directory
+            $fullScriptPath = [System.IO.Path]::GetFullPath($scriptPath)
+            $projectRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
+
+            if (-not $fullScriptPath.StartsWith($projectRoot + [System.IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -and $fullScriptPath -ne $projectRoot) {
+                throw "Script path is outside project directory: $scriptPath"
+            }
+
+            # Get utility functions from Gosh
+            $utilities = Get-GoshUtilities
+
+            # Build function definitions for injection
+            $utilityDefinitions = @()
+            foreach ($util in $utilities.GetEnumerator()) {
+                $funcDef = $util.Value.ToString()
+                $utilityDefinitions += "function $($util.Key) { $funcDef }"
+            }
+
+            # Create the complete script that:
+            # 1. Defines utility functions
+            # 2. Sets up task context variables
+            # 3. Executes the original task script
+            $scriptContent = @"
+# Injected Gosh utility functions
+$($utilityDefinitions -join "`n")
+
+# Set task context variables
+`$TaskScriptRoot = '$([System.IO.Path]::GetDirectoryName($TaskInfo.ScriptPath))'
+
+# Execute the original task script in the context of its directory
+Push-Location `$TaskScriptRoot
+try {
+    . '$($TaskInfo.ScriptPath)' @Arguments
+} finally {
+    Pop-Location
+}
+"@
+
+            $scriptBlock = [ScriptBlock]::Create($scriptContent)
+
+            # Execute with the injected functions and context
+            & $scriptBlock
+
+        } catch {
+            Write-Error "Error executing task '$primaryName': $_"
+            return $false
+        }
 
         # Check exit code
         if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {

@@ -57,7 +57,7 @@ This is **Gosh**, a self-contained PowerShell build system (`gosh.ps1`) designed
 The project is a **working example** that includes:
 - ✅ Complete build orchestration system (`gosh.ps1`)
 - ✅ Three project tasks: `format`, `lint`, `build`
-- ✅ Pester test suite with comprehensive coverage (43 tests)
+- ✅ Pester test suite with comprehensive coverage (73 tests)
 - ✅ Example Azure infrastructure (App Service + SQL)
 - ✅ Multi-task execution with dependency resolution
 - ✅ Tab completion and help system
@@ -65,6 +65,7 @@ The project is a **working example** that includes:
 - ✅ Task outline visualization (`-Outline`)
 - ✅ Test tags for fast/slow test separation
 - ✅ Cross-platform support (Windows, Linux, macOS)
+- ✅ Security validation suite (path traversal, command injection protection)
 - ✅ MIT License
 - ✅ Comprehensive documentation (README.md, IMPLEMENTATION.md, CONTRIBUTING.md)
 
@@ -418,7 +419,8 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
 This project uses **Pester** for PowerShell testing. The test suite is organized with separate locations for core and module-specific tests:
 
 **Test Structure**:
-- **`tests/gosh.Tests.ps1`** (27 tests) - Core Gosh orchestration using mock fixtures
+- **`tests/gosh.Tests.ps1`** (28 tests) - Core Gosh orchestration using mock fixtures
+- **`tests/security/Security.Tests.ps1`** (29 tests) - Security validation tests (P0 fixes)
 - **`packages/.build-bicep/tests/Tasks.Tests.ps1`** (12 tests) - Bicep task validation tests
 - **`packages/.build-bicep/tests/Integration.Tests.ps1`** (4 tests) - End-to-end Bicep integration tests
 - **`tests/fixtures/`** - Mock tasks for testing Gosh orchestration without external dependencies
@@ -430,12 +432,14 @@ Invoke-Pester -Output Detailed     # With detailed output
 Invoke-Pester -Path tests/gosh.Tests.ps1  # Run specific test file
 
 # Use tags for targeted testing
-Invoke-Pester -Tag Core            # Only core orchestration tests (27 tests, ~1s)
+Invoke-Pester -Tag Core            # Only core orchestration tests (28 tests, ~1s)
+Invoke-Pester -Tag Security        # Only security validation tests (29 tests, ~1s)
 Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (16 tests, ~22s)
 ```
 
 **Test Tags**:
-- **`Core`** (27 tests) - Tests gosh.ps1 orchestration, fast, no external dependencies
+- **`Core`** (28 tests) - Tests gosh.ps1 orchestration, fast, no external dependencies
+- **`Security`** (29 tests) - Tests security validations (P0 fixes), fast, no external dependencies
 - **`Bicep-Tasks`** (16 tests) - Tests Bicep task implementation, slower, requires Bicep CLI
 
 **Test Coverage**:
@@ -444,6 +448,7 @@ Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (16 tests, ~22s)
    - Script validation (syntax, PowerShell version)
    - Task listing (`-ListTasks`, `-Help`)
    - Task discovery from `.build/` and test fixtures
+   - Filename fallback for tasks without metadata (handles Invoke-Verb-Noun.ps1 patterns)
    - Task execution (single, multiple, with dependencies)
    - Dependency resolution and `-Only` flag
    - New task creation (`-NewTask`)
@@ -452,18 +457,25 @@ Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (16 tests, ~22s)
    - Documentation consistency
    - **Uses `-TaskDirectory 'tests/fixtures'` to test with mock tasks**
 
-2. **Bicep Task Tests** (`packages/.build-bicep/tests/Tasks.Tests.ps1`):
+2. **Security Validation Tests** (`tests/security/Security.Tests.ps1`):
+   - Path traversal protection (absolute paths, parent directory references)
+   - Command injection prevention (semicolons, pipes, backticks)
+   - PowerShell injection prevention (special characters, variables, command substitution)
+   - Input sanitization and validation
+   - Error handling security (secure failure modes)
+
+3. **Bicep Task Tests** (`packages/.build-bicep/tests/Tasks.Tests.ps1`):
    - Format task: structure, metadata, aliases
    - Lint task: structure, metadata, dependencies
    - Build task: structure, metadata, dependency chain
 
-3. **Bicep Integration Tests** (`packages/.build-bicep/tests/Integration.Tests.ps1`):
+4. **Bicep Integration Tests** (`packages/.build-bicep/tests/Integration.Tests.ps1`):
    - Format Bicep files (requires Bicep CLI)
    - Lint Bicep files (requires Bicep CLI)
    - Build Bicep files (requires Bicep CLI)
    - Full build pipeline with dependencies
 
-4. **Test Fixtures** (`tests/fixtures/`):
+5. **Test Fixtures** (`tests/fixtures/`):
    - `Invoke-MockSimple.ps1` - No dependencies
    - `Invoke-MockWithDep.ps1` - Single dependency
    - `Invoke-MockComplex.ps1` - Multiple dependencies
@@ -483,7 +495,7 @@ $result = Invoke-Gosh -Arguments @('mock-simple') `
 
 **Test Results**:
 ```
-Tests Passed: 43
+Tests Passed: 73
 Tests Failed: 0
 Skipped: 0
 Total Time: ~27 seconds
@@ -497,6 +509,10 @@ Total Time: ~27 seconds
 - **Bicep validation**: lint task catches syntax errors
 - **Local-first principle**: Tasks run identically locally and in CI (90/10 rule)
 - **Direct testing**: Use `Invoke-Pester` to test the Gosh orchestrator itself
+- **PSScriptAnalyzer**: Always use project settings when running analysis
+  ```powershell
+  Invoke-ScriptAnalyzer -Path "gosh.ps1" -Settings ".vscode/PSScriptAnalyzerSettings.psd1"
+  ```
 
 ## VS Code Integration
 
@@ -565,8 +581,9 @@ The project uses `.editorconfig` for consistent code formatting:
 .\gosh.ps1 format lint build -Only # Multiple tasks without deps
 
 # Testing with Pester
-Invoke-Pester                      # Run all tests (43 tests, ~27s)
-Invoke-Pester -Tag Core            # Only orchestration tests (27 tests, ~1s)
+Invoke-Pester                      # Run all tests (73 tests, ~27s)
+Invoke-Pester -Tag Core            # Only orchestration tests (28 tests, ~1s)
+Invoke-Pester -Tag Security        # Only security tests (29 tests, ~1s)
 Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (16 tests, ~22s)
 Invoke-Pester -Output Detailed     # With detailed output
 
@@ -598,7 +615,8 @@ Ctrl+Shift+P > Tasks: Run Test Task # Select test task
 - `packages/.build-bicep/Invoke-*.ps1` - Bicep task implementations (format, lint, build)
 
 ### Testing
-- `tests/gosh.Tests.ps1` - Core Gosh orchestration tests (27 tests, uses mock fixtures, tag: `Core`)
+- `tests/gosh.Tests.ps1` - Core Gosh orchestration tests (28 tests, uses mock fixtures, tag: `Core`)
+- `tests/security/Security.Tests.ps1` - Security validation tests (29 tests, P0 fixes, tag: `Security`)
 - `packages/.build-bicep/tests/Tasks.Tests.ps1` - Bicep task validation tests (12 tests, tag: `Bicep-Tasks`)
 - `packages/.build-bicep/tests/Integration.Tests.ps1` - End-to-end Bicep integration tests (4 tests, tag: `Bicep-Tasks`)
 - `tests/fixtures/Invoke-Mock*.ps1` - Mock tasks for testing Gosh without external dependencies
