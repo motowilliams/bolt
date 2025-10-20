@@ -73,10 +73,11 @@ if ($success) {
 
 Before submitting changes:
 
-- **Run the test suite**: `Invoke-Pester` to ensure all tests pass (43 tests)
+- **Run the test suite**: `Invoke-Pester` to ensure all tests pass (73 tests)
 - **Use test tags for faster feedback**:
-  - `Invoke-Pester -Tag Core` - Quick orchestration tests (~1s)
-  - `Invoke-Pester -Tag Bicep-Tasks` - Bicep task validation tests (~22s)
+  - `Invoke-Pester -Tag Core` - Quick orchestration tests (28 tests, ~1s)
+  - `Invoke-Pester -Tag Security` - Security validation tests (29 tests, ~1s)
+  - `Invoke-Pester -Tag Bicep-Tasks` - Bicep task validation tests (16 tests, ~22s)
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
 - **Test with custom directories**: Verify `-TaskDirectory` parameter works correctly
@@ -84,6 +85,7 @@ Before submitting changes:
 - **Test cross-platform**: All changes should work on Windows, Linux, and macOS with PowerShell Core
 - **Add new tests**: Choose the appropriate test file:
   - **Core orchestration changes** → `tests/gosh.Tests.ps1` (uses mock fixtures, tag with `Core`)
+  - **Security changes** → `tests/security/Security.Tests.ps1` (validates security fixes, tag with `Security`)
   - **New Bicep tasks** → `packages/.build-bicep/tests/Tasks.Tests.ps1` (validates task structure, tag with `Bicep-Tasks`)
   - **Bicep integrations** → `packages/.build-bicep/tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Bicep-Tasks`)
 

@@ -151,6 +151,44 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
                 $content | Should -Match '(?m)^#\s*TASK:'
             }
         }
+
+        It 'Should derive task name from filename when no TASK metadata exists' {
+            # Create a temporary task directory with test files inside the project
+            $tempDir = Join-Path $projectRoot ".test-fallback-$(Get-Random)"
+            New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+            try {
+                # Test case 1: Single hyphen (Invoke-TestOutput.ps1 -> testoutput)
+                $file1 = Join-Path $tempDir "Invoke-TestOutput.ps1"
+                Set-Content -Path $file1 -Value "Write-Host 'Test'; exit 0"
+
+                # Test case 2: Multiple hyphens (Invoke-Test-Output.ps1 -> test-output)
+                $file2 = Join-Path $tempDir "Invoke-Test-Output.ps1"
+                Set-Content -Path $file2 -Value "Write-Host 'Test'; exit 0"
+
+                # Test case 3: No hyphens (TestOnly.ps1 -> testonly)
+                $file3 = Join-Path $tempDir "TestOnly.ps1"
+                Set-Content -Path $file3 -Value "Write-Host 'Test'; exit 0"
+
+                # Use relative path from project root
+                $relativePath = Split-Path $tempDir -Leaf
+
+                # Verify tasks are discovered with correct names
+                # Capture output using 6>&1 to redirect information stream (Write-Host)
+                $output = & $script:GoshScriptPath -TaskDirectory $relativePath -ListTasks 6>&1 2>&1 | Out-String
+
+                # Should contain derived task names
+                $output | Should -Match '\btestoutput\b'
+                $output | Should -Match '\btest-output\b'
+                $output | Should -Match '\btestonly\b'
+            }
+            finally {
+                # Cleanup
+                if (Test-Path $tempDir) {
+                    Remove-ItemWithRetry -Path $tempDir
+                }
+            }
+        }
     }
 
     Context 'Task Execution' {
