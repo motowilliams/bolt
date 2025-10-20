@@ -307,7 +307,7 @@ exit 0
 
         It "Should accept valid NewTask parameter" {
             # Use a temporary directory within the project with unique name
-            $tempDir = Join-Path $PSScriptRoot "temp-newtask-test-$(Get-Random)"
+            $tempDir = Join-Path $PSScriptRoot "temp-newtask-test-$(New-Guid)"
 
             try {
                 New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
@@ -335,7 +335,7 @@ exit 0
 
         BeforeAll {
             # Create temp directory within project for relative path testing with unique name
-            $script:tempTaskDir = Join-Path $PSScriptRoot "temp-task-validation-$(Get-Random)"
+            $script:tempTaskDir = Join-Path $PSScriptRoot "temp-task-validation-$(New-Guid)"
             New-Item -ItemType Directory -Path $script:tempTaskDir -Force | Out-Null
         }
 

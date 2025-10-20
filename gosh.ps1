@@ -693,7 +693,7 @@ function Invoke-Task {
             $scriptPath = $TaskInfo.ScriptPath
 
             # Check for dangerous characters that could enable code injection
-            if ($scriptPath -match '[`$();{}\[\]|&<>]') {
+            if ($scriptPath -match '[`$();{}\[\]\|&<>]') {
                 throw "Script path contains potentially dangerous characters: $scriptPath"
             }
 
@@ -701,7 +701,7 @@ function Invoke-Task {
             $fullScriptPath = [System.IO.Path]::GetFullPath($scriptPath)
             $projectRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
 
-            if (-not $fullScriptPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            if (-not $fullScriptPath.StartsWith($projectRoot + [System.IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -and $fullScriptPath -ne $projectRoot) {
                 throw "Script path is outside project directory: $scriptPath"
             }
 

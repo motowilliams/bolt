@@ -99,7 +99,7 @@ Below are **specific, actionable tasks** that can be assigned to an AI coding ag
 - ✅ Special characters rejected: `tasks;rm-rf`, `tasks$evil`
 
 **Original Requirement:**
-**Original Requirement:**
+
 ```powershell
 # Before implementation - no validation
 [Parameter()]
