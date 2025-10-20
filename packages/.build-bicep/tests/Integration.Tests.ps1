@@ -39,7 +39,9 @@ BeforeAll {
         )
 
         # Always use the module root task directory for these tests
-        $Parameters['TaskDirectory'] = $moduleRoot
+        # Convert absolute path to relative path from project root
+        $relativePath = [System.IO.Path]::GetRelativePath($projectRoot, $moduleRoot)
+        $Parameters['TaskDirectory'] = $relativePath
 
         # Build splatting hashtable for named parameters
         $splatParams = @{}

@@ -52,6 +52,22 @@ using namespace System.Management.Automation
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false, Position = 0)]
+    [ValidateScript({
+        foreach ($taskArg in $_) {
+            # SECURITY: Validate task name format (P0 - Task Name Validation)
+            # Split on commas first in case user provided comma-separated list
+            $taskNames = $taskArg -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+            foreach ($taskName in $taskNames) {
+                if ($taskName -cnotmatch '^[a-z0-9][a-z0-9\-]*$') {
+                    throw "Task name '$taskName' contains invalid characters. Only lowercase letters, numbers, and hyphens are allowed."
+                }
+                if ($taskName.Length -gt 50) {
+                    throw "Task name '$taskName' is too long (max 50 characters)."
+                }
+            }
+        }
+        return $true
+    })]
     [string[]]$Task,
 
     [Parameter()]
@@ -65,9 +81,26 @@ param(
     [switch]$Outline,
 
     [Parameter()]
+    [ValidatePattern('^[a-zA-Z0-9_\-\./\\]+$')]
+    [ValidateScript({
+        if ($_ -match '\.\.' -or [System.IO.Path]::IsPathRooted($_)) {
+            throw "TaskDirectory must be a relative path without '..' sequences or absolute paths"
+        }
+        return $true
+    })]
     [string]$TaskDirectory = ".build",
 
     [Parameter()]
+    [ValidateScript({
+        # SECURITY: Validate task name format (P0 - Task Name Validation)
+        if ($_ -cnotmatch '^[a-z0-9][a-z0-9\-]*$') {
+            throw "Task name '$_' contains invalid characters. Only lowercase letters, numbers, and hyphens are allowed."
+        }
+        if ($_.Length -gt 50) {
+            throw "Task name '$_' is too long (max 50 characters)."
+        }
+        return $true
+    })]
     [string]$NewTask,
 
     [Parameter(ValueFromRemainingArguments)]
@@ -355,7 +388,27 @@ function Get-ProjectTasks {
 
         # Extract task names
         if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
-            $metadata.Names = @($Matches[1] -split ',' | ForEach-Object { $_.Trim() })
+            $taskNames = $Matches[1] -split ',' | ForEach-Object {
+                $taskName = $_.Trim()
+
+                # SECURITY: Validate task name format (P0 - Task Name Validation)
+                if ($taskName -cnotmatch '^[a-z0-9][a-z0-9\-]*$') {
+                    Write-Warning "Invalid task name format '$taskName' in $FilePath (only lowercase letters, numbers, and hyphens allowed)"
+                    return $null
+                }
+
+                # Enforce reasonable length
+                if ($taskName.Length -gt 50) {
+                    Write-Warning "Task name too long (max 50 chars): $taskName"
+                    return $null
+                }
+
+                return $taskName
+            } | Where-Object { $null -ne $_ }
+
+            if ($taskNames.Count -gt 0) {
+                $metadata.Names = @($taskNames)
+            }
         } else {
             # if there is no TASK tag, use the noun portion of the filename as the task name
             $metadata.Names = @((Get-Item $FilePath).BaseName).ToLower() -split '-' | Select-Object -Last 1
@@ -624,6 +677,22 @@ function Invoke-Task {
     } else {
         # Execute external script with utility functions injected
         try {
+            # SECURITY: Validate script path before interpolation (P0 - Path Sanitization)
+            $scriptPath = $TaskInfo.ScriptPath
+
+            # Check for dangerous characters that could enable code injection
+            if ($scriptPath -match '[`$();{}\[\]|&<>]') {
+                throw "Script path contains potentially dangerous characters: $scriptPath"
+            }
+
+            # Validate path is within project directory
+            $fullScriptPath = [System.IO.Path]::GetFullPath($scriptPath)
+            $projectRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
+
+            if (-not $fullScriptPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Script path is outside project directory: $scriptPath"
+            }
+
             # Get utility functions from Gosh
             $utilities = Get-GoshUtilities
 
