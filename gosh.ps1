@@ -149,6 +149,7 @@ $taskCompleter = {
                 $taskNames = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
                 $projectTasks += $taskNames
             } else {
+                # if there is no TASK tag, use the noun portion of the filename as the task name
                 # Extract task name: Invoke-My-Custom-Task -> my-custom-task
                 # Split on '-', skip first part (verb), join remaining with '-', convert to lowercase
                 $parts = $file.BaseName -split '-'
@@ -693,7 +694,7 @@ function Invoke-Task {
             $scriptPath = $TaskInfo.ScriptPath
 
             # Check for dangerous characters that could enable code injection
-            if ($scriptPath -match '[`$();{}\[\]\|&<>]') {
+            if ($scriptPath -match '[`$();{}\[\]|&<>]') {
                 throw "Script path contains potentially dangerous characters: $scriptPath"
             }
 
