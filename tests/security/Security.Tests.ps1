@@ -12,6 +12,43 @@
 BeforeAll {
     $GoshScript = Join-Path $PSScriptRoot ".." ".." "gosh.ps1"
 
+    # Helper function to safely remove directory with retry logic
+    function Remove-TestDirectory {
+        [CmdletBinding(SupportsShouldProcess)]
+        param([string]$Path)
+
+        if (-not (Test-Path $Path)) {
+            return
+        }
+
+        # Try to remove with retries for file locking issues
+        $attempts = 0
+        $maxAttempts = 3
+        $removed = $false
+
+        while (-not $removed -and $attempts -lt $maxAttempts) {
+            try {
+                # Wait a bit for file handles to be released
+                if ($attempts -gt 0) {
+                    Start-Sleep -Milliseconds (100 * $attempts)
+                }
+
+                # Try to remove read-only attributes first
+                Get-ChildItem -Path $Path -Recurse -Force -ErrorAction SilentlyContinue |
+                    ForEach-Object { $_.Attributes = 'Normal' }
+
+                Remove-Item -Path $Path -Recurse -Force -ErrorAction Stop
+                $removed = $true
+            } catch {
+                $attempts++
+                if ($attempts -ge $maxAttempts) {
+                    Write-Warning "Failed to clean up directory after $maxAttempts attempts: $Path"
+                    Write-Warning "Error: $_"
+                }
+            }
+        }
+    }
+
     # Helper function to invoke Gosh with parameters
     function Invoke-Gosh {
         param(
@@ -269,32 +306,27 @@ exit 0
         }
 
         It "Should accept valid NewTask parameter" {
-            # Use a temporary directory within the project
-            $tempDir = Join-Path $PSScriptRoot "temp-newtask-test"
-            if (Test-Path $tempDir) {
-                Remove-Item $tempDir -Recurse -Force
-            }
-            New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+            # Use a temporary directory within the project with unique name
+            $tempDir = Join-Path $PSScriptRoot "temp-newtask-test-$(Get-Random)"
 
             try {
+                New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
                 # Change to project root so relative path works
                 Push-Location (Join-Path $PSScriptRoot ".." "..")
 
-                $relativePath = "tests/security/temp-newtask-test"
-                $result = Invoke-Gosh -Parameters @{
+                $relativePath = "tests/security/$(Split-Path $tempDir -Leaf)"
+                Invoke-Gosh -Parameters @{
                     NewTask = "my-valid-task"
                     TaskDirectory = $relativePath
-                }
+                } | Out-Null
 
                 # Should successfully create the task
                 $expectedFile = Join-Path $tempDir "Invoke-My-Valid-Task.ps1"
                 $expectedFile | Should -Exist
             } finally {
                 Pop-Location
-                if (Test-Path $tempDir) {
-                    Start-Sleep -Milliseconds 100  # Allow file handles to close
-                    Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-                }
+                Remove-TestDirectory -Path $tempDir
             }
         }
     }
@@ -302,24 +334,18 @@ exit 0
     Context "Task Name Validation from Task Files" {
 
         BeforeAll {
-            # Create temp directory within project for relative path testing
-            $tempTaskDir = Join-Path $PSScriptRoot "temp-task-validation"
-            if (Test-Path $tempTaskDir) {
-                Remove-Item $tempTaskDir -Recurse -Force
-            }
-            New-Item -ItemType Directory -Path $tempTaskDir -Force | Out-Null
+            # Create temp directory within project for relative path testing with unique name
+            $script:tempTaskDir = Join-Path $PSScriptRoot "temp-task-validation-$(Get-Random)"
+            New-Item -ItemType Directory -Path $script:tempTaskDir -Force | Out-Null
         }
 
         AfterAll {
             # Clean up temp directory
-            if (Test-Path $tempTaskDir) {
-                Start-Sleep -Milliseconds 100  # Allow file handles to close
-                Remove-Item $tempTaskDir -Recurse -Force -ErrorAction SilentlyContinue
-            }
+            Remove-TestDirectory -Path $script:tempTaskDir
         }
 
         It "Should warn about invalid task names in task files" {
-            $invalidTaskFile = Join-Path $tempTaskDir "Invoke-InvalidTask.ps1"
+            $invalidTaskFile = Join-Path $script:tempTaskDir "Invoke-InvalidTask.ps1"
             Set-Content -Path $invalidTaskFile -Value @"
 # TASK: valid-task, INVALID-CAPS, another
 # DESCRIPTION: Test task with mixed validity
@@ -328,7 +354,7 @@ exit 0
 "@
 
             # Use relative path from script root
-            $relativeTaskDir = "tests/security/temp-task-validation"
+            $relativeTaskDir = "tests/security/$(Split-Path $script:tempTaskDir -Leaf)"
 
             # Capture all output streams including warnings (3>&1 redirects warnings to stdout)
             $allOutput = & $GoshScript -TaskDirectory $relativeTaskDir -ListTasks 3>&1 2>&1 | Out-String
@@ -338,7 +364,7 @@ exit 0
         }
 
         It "Should accept only valid task names from task files" {
-            $mixedTaskFile = Join-Path $tempTaskDir "Invoke-MixedTask.ps1"
+            $mixedTaskFile = Join-Path $script:tempTaskDir "Invoke-MixedTask.ps1"
             Set-Content -Path $mixedTaskFile -Value @"
 # TASK: good-task, BadTask, another-good-one
 # DESCRIPTION: Mix of valid and invalid
@@ -346,7 +372,7 @@ Write-Host "Test"
 exit 0
 "@
 
-            $relativeTaskDir = "tests/security/temp-task-validation"
+            $relativeTaskDir = "tests/security/$(Split-Path $script:tempTaskDir -Leaf)"
 
             # Capture all output streams: stdout (1), stderr (2), warning (3), and information (6 - Write-Host)
             $output = & $GoshScript -TaskDirectory $relativeTaskDir -ListTasks 6>&1 3>&1 2>&1
@@ -360,7 +386,7 @@ exit 0
         }
 
         It "Should reject task names that are too long in task files" {
-            $longNameFile = Join-Path $tempTaskDir "Invoke-LongName.ps1"
+            $longNameFile = Join-Path $script:tempTaskDir "Invoke-LongName.ps1"
             $longName = "a" * 51
             Set-Content -Path $longNameFile -Value @"
 # TASK: $longName
@@ -369,7 +395,7 @@ Write-Host "Test"
 exit 0
 "@
 
-            $relativeTaskDir = "tests/security/temp-task-validation"
+            $relativeTaskDir = "tests/security/$(Split-Path $script:tempTaskDir -Leaf)"
 
             # Capture all output streams (3>&1 redirects warnings to stdout)
             $allOutput = & $GoshScript -TaskDirectory $relativeTaskDir -ListTasks 3>&1 2>&1 | Out-String

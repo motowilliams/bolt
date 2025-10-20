@@ -497,6 +497,10 @@ Total Time: ~27 seconds
 - **Bicep validation**: lint task catches syntax errors
 - **Local-first principle**: Tasks run identically locally and in CI (90/10 rule)
 - **Direct testing**: Use `Invoke-Pester` to test the Gosh orchestrator itself
+- **PSScriptAnalyzer**: Always use project settings when running analysis
+  ```powershell
+  Invoke-ScriptAnalyzer -Path "gosh.ps1" -Settings ".vscode/PSScriptAnalyzerSettings.psd1"
+  ```
 
 ## VS Code Integration
 
