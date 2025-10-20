@@ -105,7 +105,9 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 │           └── iac/            # Test infrastructure
 ├── tests/                      # Core Gosh tests
 │   ├── fixtures/               # Mock tasks for testing
-│   ├── gosh.Tests.ps1          # Core orchestration tests (27 tests)
+│   ├── gosh.Tests.ps1          # Core orchestration tests (28 tests)
+│   ├── security/
+│   │   └── Security.Tests.ps1  # Security validation tests (29 tests)
 │   └── Invoke-Test.ps1         # Test helper
 └── .github/
     └── copilot-instructions.md # AI agent guidance
@@ -360,10 +362,15 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 ### Test Structure
 
 **Core Tests** (`tests/` directory):
-- **`tests/gosh.Tests.ps1`** (27 tests) - Core orchestration tests
+- **`tests/gosh.Tests.ps1`** (28 tests) - Core orchestration tests
   - Script validation, task discovery, execution, dependency resolution
   - Uses mock fixtures from `tests/fixtures/` to test Gosh itself
   - Tag: `Core`
+
+- **`tests/security/Security.Tests.ps1`** (29 tests) - Security validation tests
+  - Input validation, path sanitization, injection prevention
+  - Validates TaskDirectory, task names, and script paths
+  - Tag: `Security`, `P0`
 
 **Bicep Module Tests** (`packages/.build-bicep/tests/` directory):
 - **`packages/.build-bicep/tests/Tasks.Tests.ps1`** (12 tests) - Task validation
@@ -379,7 +386,7 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 
 ```powershell
 # Run all tests (auto-discovers test files)
-Invoke-Pester                         # 43 tests total
+Invoke-Pester                         # 73 tests total
 
 # Run with detailed output
 Invoke-Pester -Output Detailed
@@ -389,7 +396,8 @@ Invoke-Pester -Path tests/gosh.Tests.ps1
 Invoke-Pester -Path packages/.build-bicep/tests/
 
 # Run tests by tag
-Invoke-Pester -Tag Core               # Core orchestration only (27 tests, ~1s)
+Invoke-Pester -Tag Core               # Core orchestration only (28 tests, ~1s)
+Invoke-Pester -Tag Security           # Security validation only (29 tests, ~1s)
 Invoke-Pester -Tag Bicep-Tasks        # Bicep tasks only (16 tests, ~22s)
 ```
 
@@ -397,10 +405,15 @@ Invoke-Pester -Tag Bicep-Tasks        # Bicep tasks only (16 tests, ~22s)
 
 Tests are organized with tags for flexible execution:
 
-- **`Core`** (27 tests) - Tests gosh.ps1 orchestration itself
+- **`Core`** (28 tests) - Tests gosh.ps1 orchestration itself
   - Fast execution (~1 second)
   - No external tool dependencies
   - Uses mock fixtures from `tests/fixtures/`
+
+- **`Security`** (29 tests) - Tests security validations
+  - Fast execution (~1 second)
+  - Validates input sanitization and injection prevention
+  - Tests P0 security fixes for TaskDirectory, path sanitization, and task name validation
   
 - **`Bicep-Tasks`** (16 tests) - Tests Bicep task implementation
   - Slower execution (~22 seconds)
@@ -413,6 +426,9 @@ Tests are organized with tags for flexible execution:
 # Quick validation during development
 Invoke-Pester -Tag Core
 
+# Security validation
+Invoke-Pester -Tag Security
+
 # Full task testing before commit
 Invoke-Pester -Tag Bicep-Tasks
 
@@ -422,16 +438,24 @@ Invoke-Pester
 
 ### Test Coverage
 
-**Core Orchestration** (`tests/gosh.Tests.ps1` - 27 tests):
+**Core Orchestration** (`tests/gosh.Tests.ps1` - 28 tests):
 - Script validation and PowerShell version requirements
 - Task listing with `-ListTasks` and `-Help` parameters
 - Task discovery from `.build/` directory and test fixtures
+- Filename fallback for tasks without metadata (handles Invoke-Verb-Noun.ps1 patterns)
 - Task execution (single, multiple, with dependencies)
 - Dependency resolution and `-Only` flag behavior
 - New task creation with `-NewTask` parameter
 - Error handling for invalid tasks
 - Parameter validation (comma/space-separated)
 - Documentation consistency
+
+**Security Validation** (`tests/security/Security.Tests.ps1` - 29 tests):
+- Path traversal protection (absolute paths, parent directory references)
+- Command injection prevention (semicolons, pipes, backticks)
+- PowerShell injection prevention (special characters, variables, command substitution)
+- Input sanitization and validation
+- Error handling security (secure failure modes)
 
 **Bicep Tasks** (`packages/.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
 - Format task: existence, syntax, metadata, aliases
