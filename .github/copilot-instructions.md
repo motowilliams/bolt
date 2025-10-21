@@ -412,6 +412,96 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
    - Collides with gosh.ps1's `-Task` parameter in some contexts
    - Use descriptive names like `$currentTask`, `$taskName`, etc.
 
+## Troubleshooting Common Issues
+
+### Task Not Found or Tab Completion Not Working
+
+**Problem**: New task not appearing in `-ListTasks` or tab completion not working.
+
+**Solutions**:
+1. **Verify task metadata format**:
+   ```powershell
+   # First 30 lines must contain properly formatted metadata
+   # TASK: taskname
+   # DESCRIPTION: Task description
+   # DEPENDS: dependency1, dependency2
+   ```
+
+2. **Restart PowerShell** - Tab completion caches task list at shell startup
+   ```powershell
+   # After adding tasks to .build/, restart PowerShell session
+   exit
+   # Then reopen PowerShell
+   ```
+
+3. **Check file naming** - Must follow `Invoke-*.ps1` pattern
+   ```powershell
+   # ✅ CORRECT
+   .build/Invoke-Deploy.ps1
+   
+   # ❌ INCORRECT
+   .build/deploy.ps1
+   ```
+
+### Bicep CLI Not Found
+
+**Problem**: Tasks fail with "Bicep CLI not found" error.
+
+**Solution**: Install Bicep CLI
+```powershell
+# Windows
+winget install Microsoft.Bicep
+
+# Linux/macOS
+# See: https://aka.ms/bicep-install
+```
+
+### Tests Failing with Pester Errors
+
+**Problem**: Pester tests fail or Pester module not found.
+
+**Solution**: Install Pester 5.0+
+```powershell
+Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
+```
+
+### Task Execution Fails with Exit Code Error
+
+**Problem**: Task completes but shows failure or wrong exit code.
+
+**Solution**: Ensure explicit exit codes in task scripts
+```powershell
+# Always end task scripts with explicit exit
+exit 0  # Success
+exit 1  # Failure
+```
+
+### Cross-Platform Path Issues
+
+**Problem**: Tasks work on Windows but fail on Linux/macOS.
+
+**Solution**: Use `Join-Path` for all path construction
+```powershell
+# ✅ CORRECT - Cross-platform
+$path = Join-Path $PSScriptRoot "subfolder" "file.txt"
+
+# ❌ INCORRECT - Windows-only
+$path = "$PSScriptRoot\subfolder\file.txt"
+```
+
+### Dependency Loop or Circular Dependency
+
+**Problem**: Task execution fails with circular dependency error.
+
+**Solution**: Review task dependencies in `.build/` files
+```powershell
+# Check dependency chain with -Outline
+.\gosh.ps1 taskname -Outline
+
+# Verify no task depends on itself directly or indirectly
+# Example: build → lint → format → build (CIRCULAR!)
+```
+
 ## Testing & Validation
 
 ### Pester Testing Framework
