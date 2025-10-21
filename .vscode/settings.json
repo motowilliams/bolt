@@ -3,34 +3,33 @@
   "powershell.codeFormatting.preset": "OTBS",
   "powershell.scriptAnalysis.enable": true,
   "powershell.scriptAnalysis.settingsPath": ".vscode/PSScriptAnalyzerSettings.psd1",
-
   // File associations
   "files.associations": {
     "*.ps1": "powershell",
     "*.bicep": "bicep",
     "*.md": "markdown",
   },
-
+  "spellright.ignoreFiles": [
+    "**/.gitignore",
+    "**/spellright.dict",
+    "**/.spellignore"
+  ],
   // Editor settings
   "editor.formatOnSave": false,
   "editor.tabSize": 4,
   "editor.insertSpaces": true,
-
   // Files to exclude from explorer
   "files.exclude": {
     "**/.git": true,
     "**/*.json": false
   },
-
   // Search exclusions
   "search.exclude": {
     "**/.git": true,
     "**/tests/iac/**/*.json": true
   },
-
   // Terminal settings
   "terminal.integrated.defaultProfile.windows": "PowerShell",
-
   // Bicep settings
   "bicep.experimental.deployPane": true
 }
