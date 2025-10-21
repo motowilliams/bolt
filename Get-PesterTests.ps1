@@ -152,18 +152,25 @@ else {
     $testsByFile = $result.Tests | Group-Object -Property { $_.ScriptBlock.File }
 
     foreach ($fileGroup in $testsByFile) {
+        # Safely resolve file path with error handling
         $resolvedPath = Resolve-Path -Path $fileGroup.Name -ErrorAction SilentlyContinue
         if (-not $resolvedPath) {
             # Skip files that cannot be resolved
             continue
         }
         $filePath = $resolvedPath.Path
-            $filePath = Resolve-Path -Path $fileGroup.Name -ErrorAction Stop
-        $lines = $fileContent -split "`r?\n"
-        catch {
+
+        # Read file content once per file (use cache)
+        if (-not $fileCache.ContainsKey($filePath)) {
+            $fileCache[$filePath] = Get-Content -Path $filePath -Raw
+        }
+        $fileContent = $fileCache[$filePath]
+        $lines = $fileContent -split "`r?`n"
+
         # Parse the file to associate tags with tests using block-aware logic
         $blockStack = @()
         $testTagMap = @{}
+        
         for ($i = 0; $i -lt $lines.Count; $i++) {
             $line = $lines[$i]
 
@@ -182,7 +189,7 @@ else {
                 continue
             }
 
-            # Find It blocks and associate tags
+            # Find It blocks and associate tags from all parent blocks
             if ($line -match '^\s*It\s+["''](.+?)["'']') {
                 $itName = $Matches[1]
                 $tags = @()
@@ -194,23 +201,18 @@ else {
             }
         }
 
+        # Output a PSCustomObject for each test with its tags
         foreach ($test in $fileGroup.Group) {
-            $testTags = $testTagMap[$test.Name]
-                        $remainingContent = $lines[$i..($lines.Count - 1)] -join "`n"
-                        if ($remainingContent -match [regex]::Escape($test.Name)) {
-                            $testTags += $blockTags
-                        }
-                    }
-                }
+            $testTags = if ($testTagMap.ContainsKey($test.Name)) {
+                $testTagMap[$test.Name]
+            } else {
+                @()
             }
 
-            # Remove duplicates and sort
-            $testTags = $testTags | Select-Object -Unique | Sort-Object
-
             [PSCustomObject]@{
-                TestName     = $test.Name
-                Tags         = $testTags
-                FilePath     = $filePath
+                TestName = $test.Name
+                Tags     = $testTags
+                FilePath = $filePath
             }
         }
     }
