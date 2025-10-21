@@ -51,7 +51,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Path = '.',
+    [string]$Path = $PWD,
     [string[]]$Tag,
     [switch]$Report
 )
@@ -152,29 +152,50 @@ else {
     $testsByFile = $result.Tests | Group-Object -Property { $_.ScriptBlock.File }
 
     foreach ($fileGroup in $testsByFile) {
-        $filePath = Resolve-Path -Path $fileGroup.Name
-
-        # Read file content once per file
-        if (-not $fileCache.ContainsKey($filePath)) {
-            $fileCache[$filePath] = Get-Content -Path $filePath -Raw
+        $resolvedPath = Resolve-Path -Path $fileGroup.Name -ErrorAction SilentlyContinue
+        if (-not $resolvedPath) {
+            # Skip files that cannot be resolved
+            continue
         }
-        $fileContent = $fileCache[$filePath]
-        $lines = $fileContent -split "`n"
+        $filePath = $resolvedPath.Path
+            $filePath = Resolve-Path -Path $fileGroup.Name -ErrorAction Stop
+        $lines = $fileContent -split "`r?\n"
+        catch {
+        # Parse the file to associate tags with tests using block-aware logic
+        $blockStack = @()
+        $testTagMap = @{}
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            $line = $lines[$i]
+
+            # Enter Describe/Context block
+            if ($line -match '^\s*(Describe|Context)\s+') {
+                $blockTags = Get-TagsFromLine -Line $line
+                $blockStack += ,@{ Tags = $blockTags }
+                continue
+            }
+
+            # Exit block on closing brace
+            if ($line -match '^\s*\}') {
+                if ($blockStack.Count -gt 0) {
+                    $blockStack = $blockStack[0..($blockStack.Count - 2)]
+                }
+                continue
+            }
+
+            # Find It blocks and associate tags
+            if ($line -match '^\s*It\s+["''](.+?)["'']') {
+                $itName = $Matches[1]
+                $tags = @()
+                foreach ($block in $blockStack) {
+                    $tags += $block.Tags
+                }
+                $tags = $tags | Where-Object { $_ } | Select-Object -Unique | Sort-Object
+                $testTagMap[$itName] = $tags
+            }
+        }
 
         foreach ($test in $fileGroup.Group) {
-            # Find all Describe/Context blocks that might contain this test
-            # by looking for blocks with -Tag parameter
-            $testTags = @()
-
-            for ($i = 0; $i -lt $lines.Count; $i++) {
-                $line = $lines[$i]
-
-                # Check for Describe/Context with -Tag
-                if ($line -match '^\s*(Describe|Context)\s+') {
-                    $blockTags = Get-TagsFromLine -Line $line
-                    if ($blockTags.Count -gt 0) {
-                        # This is a tagged block - check if our test is inside it
-                        # Simple heuristic: if test name appears after this line, assume it's in this block
+            $testTags = $testTagMap[$test.Name]
                         $remainingContent = $lines[$i..($lines.Count - 1)] -join "`n"
                         if ($remainingContent -match [regex]::Escape($test.Name)) {
                             $testTags += $blockTags
