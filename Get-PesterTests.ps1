@@ -170,7 +170,7 @@ else {
         # Parse the file to associate tags with tests using block-aware logic
         $blockStack = @()
         $testTagMap = @{}
-        
+
         for ($i = 0; $i -lt $lines.Count; $i++) {
             $line = $lines[$i]
 
