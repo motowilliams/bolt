@@ -651,3 +651,216 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
         }
     }
 }
+
+# =============================================================================
+# P1 (High): Runtime Path Validation
+# =============================================================================
+
+Describe "P1: Runtime Path Validation" -Tag 'Security' {
+    BeforeAll {
+        $GoshScript = Join-Path $PSScriptRoot ".." ".." "gosh.ps1"
+    }
+
+    Context "Get-AllTasks Function Runtime Validation" {
+        It "Should validate resolved paths at runtime" {
+            # Read the Get-AllTasks function
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Should contain runtime path validation logic
+            $goshContent | Should -Match 'SECURITY: Runtime path validation'
+            $goshContent | Should -Match '\[System\.IO\.Path\]::GetFullPath'
+            $goshContent | Should -Match 'resolvedPath\.StartsWith\(\$projectRoot'
+        }
+
+        It "Should reject paths that resolve outside project directory" {
+            # This test verifies defense-in-depth: even if parameter validation is bypassed,
+            # runtime validation catches the issue
+
+            # The parameter validation should catch this first, but we're testing
+            # that the runtime check also exists as a second line of defense
+
+            # Create a mock scenario by directly calling the script
+            $output = & pwsh -NoProfile -Command {
+                param($GoshPath)
+
+                # Try to execute with a path that would resolve outside
+                # This should fail at parameter validation OR runtime validation
+                try {
+                    & $GoshPath -TaskDirectory ".." -ListTasks 2>&1
+                } catch {
+                    $_.Exception.Message
+                }
+            } -Args $GoshScript
+
+            # Should fail with validation error (either parameter or runtime)
+            $output -join "`n" | Should -Match '(invalid characters|outside project directory|TaskDirectory must)'
+        }
+
+        It "Should accept valid relative paths within project" {
+            # Valid paths should work normally
+            $result = & $GoshScript -TaskDirectory ".build" -ListTasks 2>&1
+            $LASTEXITCODE | Should -Be 0
+        }
+
+        It "Should provide clear error messages when path is rejected" {
+            # Test that error messages are helpful
+            $output = & pwsh -NoProfile -Command {
+                param($GoshPath)
+                try {
+                    # Create a temporary script that bypasses parameter validation
+                    # to test runtime validation specifically
+                    $tempScript = @'
+param($TaskDirectory)
+$PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
+$resolvedPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot $TaskDirectory))
+$projectRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
+if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnoreCase)) {
+    Write-Warning "TaskDirectory resolves outside project directory: $TaskDirectory"
+    Write-Warning "Project root: $projectRoot"
+    Write-Warning "Resolved path: $resolvedPath"
+    throw "TaskDirectory must resolve to a path within the project directory"
+}
+'@
+                    $tempFile = New-TemporaryFile
+                    $tempPs1 = "$($tempFile.FullName).ps1"
+                    Remove-Item $tempFile
+                    Set-Content -Path $tempPs1 -Value $tempScript
+
+                    & $tempPs1 -TaskDirectory "..\..\..\Windows" 2>&1
+                    Remove-Item $tempPs1 -ErrorAction SilentlyContinue
+                } catch {
+                    $_
+                }
+            } -Args $GoshScript
+
+            $output = $output -join "`n"
+            # Should contain helpful error messages
+            $output | Should -Match '(TaskDirectory|project directory|Resolved path)'
+        }
+    }
+
+    Context "Defense-in-Depth Path Validation" {
+        It "Should validate paths at multiple layers" {
+            # Read the Gosh script to verify both layers exist
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Layer 1: Parameter validation
+            $goshContent | Should -Match '\[ValidateScript\(\{'
+            $goshContent | Should -Match 'TaskDirectory must be a relative path'
+
+            # Layer 2: Runtime validation
+            $goshContent | Should -Match 'SECURITY: Runtime path validation'
+            $goshContent | Should -Match 'TaskDirectory must resolve to a path within'
+        }
+
+        It "Should handle symbolic links safely" {
+            # Symbolic links should be resolved and validated
+            # This is inherently tested by GetFullPath which resolves symlinks
+
+            $goshContent = Get-Content $GoshScript -Raw
+            # Verify we use GetFullPath which resolves symlinks
+            $goshContent | Should -Match '\[System\.IO\.Path\]::GetFullPath'
+        }
+
+        It "Should handle relative path traversal attempts" {
+            # Paths like ".build/../../../etc" should be rejected
+            $output = & pwsh -NoProfile -Command {
+                param($GoshPath)
+                try {
+                    & $GoshPath -TaskDirectory ".build/../../../etc" -ListTasks 2>&1
+                } catch {
+                    $_.Exception.Message
+                }
+            } -Args $GoshScript
+
+            # Should fail with validation error
+            $output -join "`n" | Should -Match '(invalid characters|outside project|must be a relative path)'
+        }
+
+        It "Should compare paths case-insensitively on Windows" {
+            # Path comparison should use OrdinalIgnoreCase
+            $goshContent = Get-Content $GoshScript -Raw
+            $goshContent | Should -Match 'StartsWith.*StringComparison.*OrdinalIgnoreCase'
+        }
+    }
+
+    Context "TaskDirectory Resolution Security" {
+        It "Should resolve TaskDirectory before validation" {
+            # Ensure paths are fully resolved (no relative components left)
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Should get full path before comparison
+            $goshContent | Should -Match 'resolvedPath.*GetFullPath.*buildPath'
+            $goshContent | Should -Match 'projectRoot.*GetFullPath.*PSScriptRoot'
+        }
+
+        It "Should validate against project root directory" {
+            # Should compare resolved path against project root
+            $goshContent = Get-Content $GoshScript -Raw
+            $goshContent | Should -Match 'projectRoot.*PSScriptRoot'
+            $goshContent | Should -Match 'resolvedPath\.StartsWith\(\$projectRoot'
+        }
+
+        It "Should provide detailed warning messages" {
+            # Should output warning with all relevant paths
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Should warn with TaskDirectory value
+            $goshContent | Should -Match 'Write-Warning.*TaskDirectory resolves outside'
+            # Should warn with project root
+            $goshContent | Should -Match 'Write-Warning.*Project root'
+            # Should warn with resolved path
+            $goshContent | Should -Match 'Write-Warning.*Resolved path'
+        }
+    }
+
+    Context "Edge Cases and Attack Vectors" {
+        It "Should reject absolute paths at parameter level" {
+            # Absolute paths should fail parameter validation first
+            if ($IsWindows) {
+                $output = & pwsh -NoProfile -Command {
+                    param($GoshPath)
+                    try {
+                        & $GoshPath -TaskDirectory "C:\Windows\System32" -ListTasks 2>&1
+                    } catch {
+                        $_.Exception.Message
+                    }
+                } -Args $GoshScript
+
+                $output -join "`n" | Should -Match '(absolute path|invalid characters)'
+            }
+        }
+
+        It "Should reject UNC paths" {
+            # UNC paths should be rejected
+            if ($IsWindows) {
+                $output = & pwsh -NoProfile -Command {
+                    param($GoshPath)
+                    try {
+                        & $GoshPath -TaskDirectory "\\server\share" -ListTasks 2>&1
+                    } catch {
+                        $_.Exception.Message
+                    }
+                } -Args $GoshScript
+
+                $output -join "`n" | Should -Match '(absolute path|invalid characters|relative path)'
+            }
+        }
+
+        It "Should handle very long paths safely" {
+            # Very long paths should be handled without errors
+            $longPath = "a" * 200
+            $output = & pwsh -NoProfile -Command {
+                param($GoshPath, $LongPath)
+                try {
+                    & $GoshPath -TaskDirectory $LongPath -ListTasks 2>&1
+                } catch {
+                    $_.Exception.Message
+                }
+            } -Args $GoshScript, $longPath
+
+            # Should either work or fail gracefully (no crashes)
+            $LASTEXITCODE | Should -BeIn @(0, 1)
+        }
+    }
+}

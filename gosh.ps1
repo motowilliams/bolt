@@ -473,13 +473,30 @@ function Get-AllTasks {
     }
 
     # Get project-specific tasks from specified directory
-    # Check if TaskDirectory is absolute or relative
+    # SECURITY: Runtime path validation (P1 - Runtime Path Validation)
+    # This is defense-in-depth: parameter validation should catch most issues,
+    # but we validate again at runtime to ensure resolved paths stay within project
+    
+    # Resolve the full path
     if ([System.IO.Path]::IsPathRooted($TaskDirectory)) {
         $buildPath = $TaskDirectory
     } else {
         $buildPath = Join-Path $PSScriptRoot $TaskDirectory
     }
-    $projectTasks = Get-ProjectTasks -BuildPath $buildPath
+    
+    # Get the resolved absolute paths for comparison
+    $resolvedPath = [System.IO.Path]::GetFullPath($buildPath)
+    $projectRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
+    
+    # Ensure the resolved path is within project directory
+    if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        Write-Warning "TaskDirectory resolves outside project directory: $TaskDirectory"
+        Write-Warning "Project root: $projectRoot"
+        Write-Warning "Resolved path: $resolvedPath"
+        throw "TaskDirectory must resolve to a path within the project directory"
+    }
+    
+    $projectTasks = Get-ProjectTasks -BuildPath $resolvedPath
 
     # Project tasks override core tasks if there's a naming conflict
     foreach ($key in $projectTasks.Keys) {
