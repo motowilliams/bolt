@@ -55,6 +55,23 @@ Policy: https://github.com/motowilliams/gosh/blob/main/SECURITY.md
 - [ ] Referenced in README.md
 - [ ] Linked from SECURITY.md
 
+**LLM Prompt for Resolution:**
+```
+Task: Implement RFC 9116 compliant security.txt file for the Gosh project
+
+Context: The project needs a security policy file to facilitate responsible vulnerability disclosure. This follows RFC 9116 standard for security.txt files.
+
+Requirements:
+1. Create a `.well-known/security.txt` file in the repository root
+2. Include required fields: Contact, Expires, Canonical, Policy
+3. Set expiration date 1 year from today
+4. Link to existing SECURITY.md for detailed policy
+5. Update README.md to reference the security.txt file
+6. Ensure the file is accessible at: https://github.com/motowilliams/gosh/.well-known/security.txt
+
+Please implement this security policy file following RFC 9116 specifications and update relevant documentation.
+```
+
 ---
 
 #### [ ] C2: Add Security Event Logging
@@ -108,6 +125,29 @@ Write-SecurityLog -Event "FileCreation" -Details "Created: $filePath" -Severity 
 - [ ] `.gosh/` added to `.gitignore`
 - [ ] Documentation updated with logging instructions
 
+**LLM Prompt for Resolution:**
+```
+Task: Implement security event logging system in gosh.ps1
+
+Context: The build orchestrator needs audit logging to track security-relevant operations for incident investigation and compliance.
+
+Requirements:
+1. Create Write-SecurityLog function in gosh.ps1
+2. Implement opt-in logging via $env:GOSH_AUDIT_LOG environment variable
+3. Log these events:
+   - Task executions (with taskName and TaskDirectory)
+   - File system operations (New-Item, Set-Content with file paths)
+   - External command executions (git, bicep)
+   - Include timestamp, user, machine name, event type, and details
+4. Write logs to .gosh/audit.log with proper formatting
+5. Add .gosh/ to .gitignore to exclude audit logs from version control
+6. Update documentation with logging setup instructions
+
+File to modify: gosh.ps1
+Add logging calls at strategic points: task execution start, file creation, external commands
+Please implement this comprehensive security logging system.
+```
+
 ---
 
 #### [ ] C3: Validate External Command Output Before Display
@@ -149,6 +189,26 @@ Write-Host $sanitizedStatus
 - [ ] Applied to git diff output (if used)
 - [ ] Test with files containing ANSI sequences
 - [ ] No terminal corruption from malicious filenames
+
+**LLM Prompt for Resolution:**
+```
+Task: Implement output sanitization for external commands in gosh.ps1
+
+Context: External command output (git, bicep) may contain ANSI escape sequences or control characters that could cause terminal injection attacks.
+
+Requirements:
+1. Create Remove-AnsiEscapeSequences function in gosh.ps1
+2. Strip ANSI escape sequences using regex: \x1b\[[0-9;]*[a-zA-Z]
+3. Remove control characters (0x00-0x1F, 0x7F-0x9F) except newline, carriage return, tab
+4. Apply sanitization to all git command outputs before display:
+   - git status output (lines 347-348)
+   - git diff output (if used)
+5. Test with malicious filenames containing ANSI sequences
+6. Ensure no terminal corruption occurs
+
+Files to modify: gosh.ps1 (Invoke-CheckGitIndex function and other git output locations)
+Please implement this output sanitization to prevent terminal injection attacks.
+```
 
 ---
 
@@ -206,6 +266,31 @@ function Test-Dependencies {
 - [ ] Clear error messages for missing/outdated dependencies
 - [ ] CI/CD updated to verify dependencies
 
+**LLM Prompt for Resolution:**
+```
+Task: Implement dependency pinning and version checking in Gosh
+
+Context: The project needs to track and verify versions of external dependencies (PowerShell, Git, Pester, Bicep) for supply chain security and reproducible builds.
+
+Requirements:
+1. Create dependencies.json manifest file with:
+   - PowerShell >= 7.2.0
+   - Pester >= 5.0.0
+   - Git >= 2.30.0
+   - Bicep >= 0.20.0 (optional)
+   - Azure CLI >= 2.50.0 (optional)
+2. Implement Test-Dependencies function in gosh.ps1:
+   - Load and parse dependencies.json
+   - Check PowerShell version ($PSVersionTable.PSVersion)
+   - Verify other tools are installed and meet version requirements
+   - Return clear error messages for missing/outdated dependencies
+3. Call Test-Dependencies at gosh.ps1 startup (early in script)
+4. Update CI/CD workflows to verify dependency versions
+5. Document dependency requirements in README.md
+
+Please implement dependency management to ensure consistent, secure builds.
+```
+
 ---
 
 #### [ ] H2: Add Code Signing Verification
@@ -246,6 +331,30 @@ if ($env:GOSH_REQUIRE_SIGNED_TASKS -eq '1') {
 - [ ] Unsigned scripts skipped with warning
 - [ ] Documentation includes signing instructions
 - [ ] Example signing script provided
+
+**LLM Prompt for Resolution:**
+```
+Task: Implement code signing verification for task scripts in gosh.ps1
+
+Context: Task scripts in .build/ directory should optionally support signature verification to ensure code integrity and prevent execution of tampered scripts.
+
+Requirements:
+1. Modify Get-ProjectTasks function (lines 459-465) in gosh.ps1
+2. Add signature verification when $env:GOSH_REQUIRE_SIGNED_TASKS=1:
+   - Use Get-AuthenticodeSignature to check each .ps1 file
+   - Skip unsigned or invalid scripts with clear warning
+   - Only execute scripts with Status='Valid'
+3. Create example signing script (Sign-TaskScripts.ps1):
+   - Show how to sign .ps1 files with Set-AuthenticodeSignature
+   - Include certificate acquisition instructions
+4. Document the signing process in CONTRIBUTING.md:
+   - How to obtain a code signing certificate
+   - How to sign task scripts
+   - How to enable verification mode
+5. Test with both signed and unsigned scripts
+
+Please implement optional code signing verification for enhanced security.
+```
 
 ---
 
@@ -300,6 +409,30 @@ function Test-RateLimit {
 - [ ] Clear error message when limit exceeded
 - [ ] History cleared after successful execution
 
+**LLM Prompt for Resolution:**
+```
+Task: Implement rate limiting for task execution in gosh.ps1
+
+Context: Prevent DoS attacks and resource exhaustion from rapid or infinite task execution loops.
+
+Requirements:
+1. Add global execution tracking in gosh.ps1:
+   - $script:ExecutionHistory hashtable to track task execution timestamps
+   - $script:MaxExecutionsPerMinute = 10 (configurable via $env:GOSH_RATE_LIMIT)
+2. Create Test-RateLimit function:
+   - Accept $TaskName parameter
+   - Track execution times per task
+   - Remove entries older than 1 minute
+   - Return $false if limit exceeded, $true otherwise
+3. Call Test-RateLimit before each task execution in Invoke-Task function
+4. Provide clear error message when rate limit exceeded
+5. Allow configuration via environment variable
+6. Test with rapid task execution scenarios
+
+Files to modify: gosh.ps1 (add function and integrate into Invoke-Task)
+Please implement rate limiting to prevent resource exhaustion attacks.
+```
+
 ---
 
 #### [ ] H4: Sanitize File Paths in Error Messages
@@ -351,6 +484,31 @@ Write-Warning "Project root: $(Get-SanitizedPath $projectRoot -Verbose)"
 - [ ] Verbose mode shows full paths
 - [ ] Relative paths displayed by default
 - [ ] No user-specific information leaked
+
+**LLM Prompt for Resolution:**
+```
+Task: Sanitize file paths in error and warning messages in gosh.ps1
+
+Context: Full file paths in error messages expose sensitive directory structure and user information.
+
+Requirements:
+1. Create Get-SanitizedPath function in gosh.ps1:
+   - Accept path and optional -Verbose switch
+   - Convert absolute paths to relative paths from project root
+   - Remove user-specific components (usernames, home directories)
+   - Show full paths only when -Verbose or $VerbosePreference='Continue'
+2. Apply sanitization to all error and warning messages at these locations:
+   - Line 336 (git error messages)
+   - Line 413 (task name validation warnings)
+   - Lines 505-507 (TaskDirectory warnings)
+   - Line 774 (task execution errors)
+   - Lines 826, 835 (file creation errors)
+3. Test that sanitized paths hide sensitive information
+4. Ensure debugging is still possible with -Verbose flag
+
+Files to modify: gosh.ps1 (add function and update all Write-Error/Write-Warning calls)
+Please implement path sanitization to prevent information disclosure.
+```
 
 ---
 
@@ -408,6 +566,32 @@ function Test-TaskScriptForSecrets {
 - [ ] Pre-commit hook script provided
 - [ ] Documentation includes secrets management guide
 
+**LLM Prompt for Resolution:**
+```
+Task: Implement secrets detection scanner for task scripts in gosh.ps1
+
+Context: Prevent accidental commits of API keys, passwords, tokens, and other secrets in .build/ task scripts.
+
+Requirements:
+1. Create Test-TaskScriptForSecrets function in gosh.ps1:
+   - Scan file content for common secret patterns (API keys, passwords, tokens, connection strings, private keys)
+   - Use regex patterns to detect: api[_-]?key, password, token, connection[_-]?string, -----BEGIN.*PRIVATE KEY-----
+   - Return $false if secrets found, $true otherwise
+   - Display clear warnings with detected secret types
+2. Integrate scanning:
+   - Call during -NewTask creation (validate template before writing)
+   - Optionally scan before task execution when $env:GOSH_SCAN_SECRETS=1
+3. Create pre-commit hook script (.githooks/pre-commit):
+   - Scan all .ps1 files in .build/ before commit
+   - Block commits if secrets detected
+4. Document secrets management best practices:
+   - Use environment variables for sensitive data
+   - Use Azure Key Vault or similar for production secrets
+   - How to enable secret scanning
+
+Please implement comprehensive secrets detection to prevent credential leaks.
+```
+
 ---
 
 #### [ ] M2: Implement Content Security Policy for Output
@@ -447,6 +631,31 @@ Write-Host "    $safeDescription" -ForegroundColor Gray
 - [ ] Applied to task names in output
 - [ ] Test with malicious HTML/JavaScript
 - [ ] No code execution via task metadata
+
+**LLM Prompt for Resolution:**
+```
+Task: Implement content security policy and HTML encoding for task output in gosh.ps1
+
+Context: Task descriptions and names displayed in -ListTasks and -Outline outputs could contain HTML/JavaScript that executes if output is rendered in a web context.
+
+Requirements:
+1. Create ConvertTo-SafeHtml function in gosh.ps1:
+   - Encode HTML entities: & < > " '
+   - Convert to: &amp; &lt; &gt; &quot; &#39;
+   - Return sanitized string
+2. Apply HTML encoding to all task display outputs:
+   - Task descriptions in -ListTasks output
+   - Task names in -Outline tree display
+   - Task descriptions in -Outline display
+   - Any other user-controlled content shown to terminal
+3. Test with malicious inputs:
+   - Task name: "test<script>alert('xss')</script>"
+   - Description: "Click <a href='evil.com'>here</a>"
+4. Ensure no code execution possible via task metadata
+
+Files to modify: gosh.ps1 (add function and apply to Show-TaskOutline and task listing code)
+Please implement output encoding to prevent injection attacks.
+```
 
 ---
 
@@ -508,6 +717,33 @@ Send-Telemetry -EventType 'TaskExecution' -Properties @{ TaskName = $taskName; S
 - [ ] Privacy policy documented
 - [ ] Fails gracefully if endpoint unavailable
 
+**LLM Prompt for Resolution:**
+```
+Task: Implement opt-in telemetry and crash reporting in gosh.ps1
+
+Context: Anonymous usage telemetry helps identify security issues and crashes in production environments while respecting user privacy.
+
+Requirements:
+1. Create Send-Telemetry function in gosh.ps1:
+   - Only send data when $env:GOSH_TELEMETRY=1 (opt-in)
+   - Collect: timestamp, version, PowerShell version, OS, event type, properties, session ID
+   - Never collect: usernames, file paths, task content, or other PII
+   - Send to configurable endpoint (Application Insights or similar)
+   - Fail silently - don't break script on telemetry errors
+2. Add telemetry calls for key events:
+   - TaskExecution: record task name and success/failure
+   - UnhandledException: capture error types (not messages)
+   - ScriptStart: track PowerShell/OS versions
+3. Document privacy policy:
+   - What data is collected
+   - How it's used
+   - How to opt-in/opt-out
+   - Data retention period
+4. Configure telemetry endpoint in dependencies.json
+
+Please implement privacy-respecting telemetry for security monitoring.
+```
+
 ---
 
 #### [ ] M4: Implement Backup and Recovery for Task Files
@@ -551,6 +787,33 @@ function Backup-TaskDirectory {
 - [ ] Rotation implemented (keep 10 most recent)
 - [ ] Restore script provided
 - [ ] `.gosh/` added to `.gitignore`
+
+**LLM Prompt for Resolution:**
+```
+Task: Implement automatic backup and recovery for task files in gosh.ps1
+
+Context: Protect against accidental deletion or corruption of task scripts in .build/ directory.
+
+Requirements:
+1. Create Backup-TaskDirectory function in gosh.ps1:
+   - Accept TaskDirectory parameter
+   - Create timestamped backup in .gosh/backups/YYYYMMDD-HHMMSS/
+   - Copy entire task directory recursively
+   - Implement rotation: keep only last 10 backups, delete older ones
+   - Log backup location with Write-Verbose
+2. Call backup before modifications:
+   - Before -NewTask overwrites existing file
+   - Before any automated task file changes
+3. Create Restore-TaskDirectory script:
+   - List available backups
+   - Allow selection of backup to restore
+   - Restore entire directory or individual files
+4. Add .gosh/ to .gitignore
+5. Document backup/restore process in README.md
+
+Files to create/modify: gosh.ps1 (add function), Restore-TaskDirectory.ps1 (new script)
+Please implement backup system to protect against data loss.
+```
 
 ---
 
@@ -606,6 +869,34 @@ function Confirm-CriticalTaskExecution {
 - [ ] Configurable via metadata
 - [ ] Documentation updated
 
+**LLM Prompt for Resolution:**
+```
+Task: Implement multi-factor authentication for critical tasks in gosh.ps1
+
+Context: Sensitive tasks (like production deployments) require additional confirmation to prevent unauthorized or accidental execution.
+
+Requirements:
+1. Add CRITICAL metadata support in task files:
+   - # CRITICAL: true in task metadata
+   - Parse in Get-TaskMetadata function
+2. Create Confirm-CriticalTaskExecution function:
+   - Display warning with task name
+   - Require user to type 'CONFIRM' to proceed
+   - Optional: Support TOTP verification when $env:GOSH_REQUIRE_TOTP=1
+   - Return $false if confirmation fails, $true if succeeds
+3. Integrate into Invoke-Task:
+   - Check if task is marked CRITICAL
+   - Call confirmation function before execution
+   - Skip confirmation with $env:GOSH_SKIP_CONFIRMATION=1 (for CI/CD)
+4. Document critical task marking:
+   - How to mark tasks as critical
+   - How MFA/confirmation works
+   - How to configure TOTP (if implemented)
+
+Files to modify: gosh.ps1 (add metadata parsing and confirmation function)
+Please implement MFA to protect sensitive operations.
+```
+
 ---
 
 #### [ ] L2: Add Sandbox Mode for Untrusted Tasks
@@ -648,6 +939,31 @@ function Invoke-TaskInSandbox {
 - [ ] Opt-in via `--sandbox` flag
 - [ ] Documentation includes limitations
 
+**LLM Prompt for Resolution:**
+```
+Task: Implement sandbox mode for untrusted tasks in gosh.ps1
+
+Context: Isolate potentially untrusted task scripts by running them in PowerShell's constrained language mode with limited cmdlet access.
+
+Requirements:
+1. Create Invoke-TaskInSandbox function:
+   - Create constrained session with InitialSessionState.CreateDefault2()
+   - Set LanguageMode to RestrictedLanguage
+   - Define allowlist of safe cmdlets: Get-ChildItem, Get-Content, Write-Host, Write-Output
+   - Prevent network access (no Invoke-WebRequest, Invoke-RestMethod)
+   - Limit file system access to task directory only
+2. Add --Sandbox parameter to gosh.ps1
+3. Modify Invoke-Task to use sandbox when flag present
+4. Document sandbox limitations:
+   - Which cmdlets are allowed/blocked
+   - What operations are restricted
+   - When to use sandbox mode
+5. Test with various task scenarios
+
+Files to modify: gosh.ps1 (add sandbox function and parameter)
+Please implement sandbox isolation for untrusted task execution.
+```
+
 ---
 
 #### [ ] L3: Implement License Compliance Scanning
@@ -682,6 +998,34 @@ function Test-LicenseCompliance {
 - [ ] NOTICE.txt generated
 - [ ] CI/CD integration
 - [ ] Documentation updated
+
+**LLM Prompt for Resolution:**
+```
+Task: Implement license compliance scanning for dependencies in gosh.ps1
+
+Context: Ensure all PowerShell module dependencies have MIT-compatible licenses to comply with project licensing requirements.
+
+Requirements:
+1. Create Test-LicenseCompliance function:
+   - Get list of all PowerShell modules used (Get-Module -ListAvailable)
+   - Check module manifests for license information
+   - Identify incompatible licenses (GPL, AGPL)
+   - Return warnings for incompatible licenses
+2. Generate NOTICE.txt file:
+   - List all dependencies with their licenses
+   - Include copyright notices
+   - Attribution requirements
+3. Add license check to CI/CD:
+   - Run Test-LicenseCompliance in GitHub Actions workflow
+   - Fail build if incompatible licenses detected
+4. Document license policy:
+   - Which licenses are acceptable
+   - How to verify module licenses
+   - Alternative modules for incompatible licenses
+
+Files to create/modify: gosh.ps1 (add function), .github/workflows/ci.yml (add license check)
+Please implement license compliance scanning.
+```
 
 ---
 
@@ -729,6 +1073,34 @@ function ConvertTo-SecureHtmlOutput {
 - [ ] Content sanitized
 - [ ] Optional feature (off by default)
 - [ ] Documentation includes web security guide
+
+**LLM Prompt for Resolution:**
+```
+Task: Add security headers for web-based task output display
+
+Context: If task output is ever displayed in a web UI, it needs proper security headers to prevent XSS and other web attacks.
+
+Requirements:
+1. Create ConvertTo-SecureHtmlOutput function:
+   - Generate complete HTML document with proper security headers
+   - Include Content-Security-Policy: default-src 'self'; script-src 'none'
+   - Include X-Content-Type-Options: nosniff
+   - Include X-Frame-Options: DENY
+   - Include Referrer-Policy: no-referrer
+   - Sanitize content using ConvertTo-SafeHtml before insertion
+2. Make this an optional output format:
+   - Add -HtmlOutput parameter to gosh.ps1
+   - Only generate HTML when explicitly requested
+   - Default to plain text output
+3. Document web security integration:
+   - How to use HTML output mode
+   - Security considerations for web display
+   - CSP policy explanation
+4. Test that all security headers are present and effective
+
+Files to modify: gosh.ps1 (add HTML output function and parameter)
+Please implement secure web output format.
+```
 
 ---
 
@@ -785,6 +1157,35 @@ jobs:
 - [ ] Runs on PRs and weekly
 - [ ] Security alerts monitored
 
+**LLM Prompt for Resolution:**
+```
+Task: Enable and configure GitHub security features for the Gosh repository
+
+Context: GitHub provides built-in security scanning tools that should be enabled to detect vulnerabilities, secrets, and code issues.
+
+Requirements:
+1. Create .github/workflows/security.yml workflow:
+   - Enable CodeQL code scanning (note: PowerShell support limited, use JavaScript as proxy)
+   - Add TruffleHog for secret scanning
+   - Run on: push to main, pull requests, weekly schedule (cron: '0 0 * * 0')
+   - Set permissions: security-events: write for CodeQL
+2. Enable GitHub Security Features in repository settings:
+   - Go to Settings > Security & analysis
+   - Enable Dependabot security alerts
+   - Enable Secret scanning (if available)
+   - Enable Code scanning alerts
+3. Configure security policy:
+   - Ensure SECURITY.md exists (already present ✓)
+   - Link to vulnerability reporting process
+4. Set up alert monitoring:
+   - Configure notifications for security alerts
+   - Assign security champion to review alerts
+5. Document security workflow in CONTRIBUTING.md
+
+Files to create: .github/workflows/security.yml
+Please enable comprehensive GitHub security features.
+```
+
 ---
 
 ### [ ] GH2: Implement Branch Protection Rules
@@ -821,6 +1222,35 @@ jobs:
 - [ ] CODEOWNERS file created
 - [ ] Documented in CONTRIBUTING.md
 
+**LLM Prompt for Resolution:**
+```
+Task: Implement branch protection rules for the main branch
+
+Context: Protect the main branch from direct commits and require code review for all changes.
+
+Requirements:
+1. Configure branch protection for 'main' branch (GitHub UI: Settings > Branches):
+   - Require pull request before merging
+   - Require at least 1 approving review
+   - Dismiss stale pull request approvals when new commits pushed
+   - Require review from code owners (requires CODEOWNERS file - see GH3)
+   - Require status checks to pass: "ci/test", "security-scan"
+   - Require branches to be up to date before merging
+   - Enforce restrictions for administrators
+   - Optional: Require signed commits
+2. Alternative: Use GitHub API or Terraform to configure:
+   - Create branch protection config JSON (example provided in report)
+   - Apply via API: PUT /repos/:owner/:repo/branches/:branch/protection
+3. Update CONTRIBUTING.md:
+   - Document branch protection requirements
+   - Explain PR review process
+   - Note that direct commits to main are blocked
+4. Test protection rules work as expected
+
+Configuration location: GitHub repository settings
+Please implement branch protection to enforce code review.
+```
+
 ---
 
 ### [ ] GH3: Add CODEOWNERS File
@@ -852,6 +1282,35 @@ jobs:
 - [ ] Owners assigned
 - [ ] Integrated with branch protection
 - [ ] Documented in CONTRIBUTING.md
+
+**LLM Prompt for Resolution:**
+```
+Task: Create CODEOWNERS file to require reviews from designated owners
+
+Context: Ensure security-critical files are reviewed by appropriate team members before changes are merged.
+
+Requirements:
+1. Create .github/CODEOWNERS file with ownership assignments:
+   - /gosh.ps1 → @motowilliams (main script)
+   - /SECURITY.md → @motowilliams (security documentation)
+   - /security-github.md → @motowilliams (security report)
+   - /.github/workflows/ → @motowilliams (CI/CD workflows)
+   - /.build/ → @motowilliams (task scripts)
+   - /tests/ → @motowilliams (test suite)
+2. Understand CODEOWNERS syntax:
+   - Use glob patterns or specific paths
+   - Assign GitHub usernames or teams (@org/team-name)
+   - Last matching pattern takes precedence
+3. Integrate with branch protection (see GH2):
+   - Enable "Require review from Code Owners" in branch protection
+4. Document code ownership:
+   - Add CODEOWNERS explanation to CONTRIBUTING.md
+   - Describe review process for security-critical changes
+5. Test that owner reviews are required
+
+File to create: .github/CODEOWNERS
+Please implement code ownership for security-critical files.
+```
 
 ---
 
@@ -896,6 +1355,37 @@ Please include:
 - [ ] Private reporting enabled in GitHub
 - [ ] Response SLAs defined
 - [ ] Process tested with mock vulnerability
+
+**LLM Prompt for Resolution:**
+```
+Task: Configure security advisories and vulnerability disclosure process
+
+Context: Establish a formal process for receiving, triaging, and responding to security vulnerability reports.
+
+Requirements:
+1. Enable private vulnerability reporting in GitHub:
+   - Go to Settings > Security > Private vulnerability reporting
+   - Enable "Allow users to privately report potential security vulnerabilities"
+2. Update SECURITY.md with vulnerability reporting section:
+   - Add GitHub Security Advisories as preferred reporting method
+   - Provide link: https://github.com/motowilliams/gosh/security/advisories/new
+   - Include alternative contact method (email)
+   - Define response SLAs:
+     * Initial response: Within 48 hours
+     * Triage: Within 7 days
+     * Fix development: Within 30 days (critical issues)
+     * Public disclosure: 90 days after fix (coordinated disclosure)
+   - Specify required information: description, reproduction steps, impact, suggested fix
+3. Create security advisory workflow:
+   - Document triage process
+   - Assign security champion
+   - Define severity levels
+4. Test process with mock vulnerability report
+5. Document in CONTRIBUTING.md
+
+Files to modify: SECURITY.md (add reporting section), GitHub settings
+Please implement comprehensive vulnerability disclosure process.
+```
 
 ---
 
