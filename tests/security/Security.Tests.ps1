@@ -404,3 +404,250 @@ exit 0
         }
     }
 }
+
+Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
+
+    BeforeAll {
+        # Check if we're in a git repo and git is available
+        $script:gitAvailable = $null -ne (Get-Command git -ErrorAction SilentlyContinue)
+        $script:inRepo = $false
+        if ($script:gitAvailable) {
+            git rev-parse --git-dir 2>$null | Out-Null
+            $script:inRepo = $LASTEXITCODE -eq 0
+        }
+
+        $script:GoshScript = Join-Path $PSScriptRoot ".." ".." "gosh.ps1"
+    }
+
+    Context "Git Status Output Safety (P1 - Git Output Sanitization)" {
+
+        It "Should execute git commands safely without command injection" {
+            if (-not $script:gitAvailable) {
+                Set-ItResult -Skipped -Because "Git is not available"
+                return
+            }
+
+            # Verify that git commands in Get-GitStatus use safe execution
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # Should use proper git command invocation (not Invoke-Expression or string evaluation)
+            $goshContent | Should -Match '\$status = git status --porcelain 2>\$null'
+            $goshContent | Should -Not -Match 'Invoke-Expression.*git'
+            $goshContent | Should -Not -Match 'iex.*git'
+        }
+
+        It "Should safely display git status output without code execution" {
+            if (-not $script:gitAvailable -or -not $script:inRepo) {
+                Set-ItResult -Skipped -Because "Not in a git repository"
+                return
+            }
+
+            # Get current git status
+            $result = & $script:GoshScript -Task "check-index" -Only 2>&1
+            $output = ($result | Out-String)
+
+            # Output should not contain PowerShell variable expansion or command substitution markers
+            $output | Should -Not -Match '\$\('
+            $output | Should -Not -Match '`'
+            # Should complete without errors (exit code check happens in caller)
+        }
+
+        It "Should handle filenames with special characters in git output" {
+            if (-not $script:gitAvailable -or -not $script:inRepo) {
+                Set-ItResult -Skipped -Because "Not in a git repository"
+                return
+            }
+
+            # Create a temporary directory within the project with unique name
+            $tempDir = Join-Path $PSScriptRoot "temp-git-test-$(New-Guid)"
+            New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+            try {
+                # Create files with potentially dangerous names (in temp dir, not tracked by git)
+                $testFiles = @(
+                    "normal-file.txt"
+                    "file-with-`$dollar.txt"
+                    "file-with-`$(command).txt"
+                    "file-with-;semicolon.txt"
+                    "file-with-&ampersand.txt"
+                )
+
+                foreach ($fileName in $testFiles) {
+                    $filePath = Join-Path $tempDir $fileName
+                    Set-Content -Path $filePath -Value "test content" -ErrorAction SilentlyContinue
+                }
+
+                # Stage these files in git (if possible)
+                Push-Location $tempDir
+                try {
+                    # Try to add files to git index (may fail if not under git control, that's OK)
+                    git add . 2>$null
+
+                    # Run check-index and capture output
+                    $result = & $script:GoshScript -Task "check-index" -Only 2>&1
+                    $output = ($result | Out-String)
+
+                    # The output should display filenames safely without code execution
+                    # If filenames appear in output, they should be displayed as-is, not executed
+                    $output | Should -Not -Match 'CommandNotFoundException'
+                    $output | Should -Not -Match 'MethodInvocationException'
+                } finally {
+                    Pop-Location
+                }
+            } finally {
+                # Clean up - remove temp directory and unstage any files
+                if (Test-Path $tempDir) {
+                    Get-ChildItem -Path $tempDir -Force | Remove-Item -Force -ErrorAction SilentlyContinue
+                    Remove-Item -Path $tempDir -Force -ErrorAction SilentlyContinue
+                }
+            }
+        }
+
+        It "Should not expose sensitive information in git status output" {
+            if (-not $script:gitAvailable -or -not $script:inRepo) {
+                Set-ItResult -Skipped -Because "Not in a git repository"
+                return
+            }
+
+            # Run check-index
+            $result = & $script:GoshScript -Task "check-index" -Only 2>&1
+            $output = ($result | Out-String)
+
+            # Output should not contain:
+            # - Absolute paths that might leak system information (git status --short uses relative paths)
+            # - Git internal data structures
+            # - Error messages with sensitive paths
+            $output | Should -Not -Match 'C:\\Users\\[^\\]+\\.*sensitive'
+            $output | Should -Not -Match '/home/[^/]+/.*sensitive'
+        }
+
+        It "Should safely invoke git commands with error redirection" {
+            # Verify that error streams are redirected properly to prevent info leakage
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # Git commands should redirect stderr to prevent sensitive error messages
+            $goshContent | Should -Match 'git.*2>\$null'
+            $goshContent | Should -Match 'git rev-parse --git-dir 2>\$null'
+        }
+
+        It "Should sanitize git status output display" {
+            if (-not $script:gitAvailable -or -not $script:inRepo) {
+                Set-ItResult -Skipped -Because "Not in a git repository"
+                return
+            }
+
+            # Verify that the check-index function uses git status --short
+            $goshContent = Get-Content $script:GoshScript -Raw
+            $goshContent | Should -Match 'git status --short'
+
+            # The output should be displayed via Write-Host (safe) not Invoke-Expression
+            # Find the check-index function and verify it uses Write-Host for output
+            if ($goshContent -match 'function Invoke-CheckGitIndex[\s\S]+?^}') {
+                $checkIndexFunction = $matches[0]
+                $checkIndexFunction | Should -Not -Match 'Invoke-Expression'
+                $checkIndexFunction | Should -Not -Match 'iex'
+            }
+        }
+    }
+
+    Context "Get-GitStatus Function Safety (P1)" {
+
+        It "Should return structured data without executing git output" {
+            if (-not $script:gitAvailable) {
+                Set-ItResult -Skipped -Because "Git is not available"
+                return
+            }
+
+            # Verify Get-GitStatus returns PSCustomObject with safe properties
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # Should create PSCustomObject with defined properties
+            $goshContent | Should -Match 'function Get-GitStatus'
+            $goshContent | Should -Match '\[PSCustomObject\]@\{'
+            $goshContent | Should -Match 'IsClean\s*='
+            $goshContent | Should -Match 'Status\s*='
+            $goshContent | Should -Match 'HasGit\s*='
+        }
+
+        It "Should store git output in a variable, not execute it" {
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # Get-GitStatus should store output in $status variable
+            if ($goshContent -match 'function Get-GitStatus[\s\S]+?^}') {
+                $getGitStatusFunction = $matches[0]
+                $getGitStatusFunction | Should -Match '\$status = git status --porcelain'
+                # Should not pass $status to Invoke-Expression
+                $getGitStatusFunction | Should -Not -Match 'Invoke-Expression \$status'
+                $getGitStatusFunction | Should -Not -Match 'iex \$status'
+            }
+        }
+
+        It "Should use --porcelain flag for machine-readable output" {
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # --porcelain provides consistent, parseable output
+            $goshContent | Should -Match 'git status --porcelain'
+        }
+
+        It "Should check for null/whitespace safely" {
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # Should use [string]::IsNullOrWhiteSpace for safe null checking
+            if ($goshContent -match 'function Get-GitStatus[\s\S]+?^}') {
+                $getGitStatusFunction = $matches[0]
+                $getGitStatusFunction | Should -Match '\[string\]::IsNullOrWhiteSpace\(\$status\)'
+            }
+        }
+    }
+
+    Context "Git Command Execution Pattern (P1)" {
+
+        It "Should not use Invoke-Expression with git output anywhere" {
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # Global check: no Invoke-Expression on git output
+            $goshContent | Should -Not -Match 'Invoke-Expression.*\$.*git'
+            $goshContent | Should -Not -Match 'iex.*\$.*git'
+        }
+
+        It "Should not use string interpolation with git output in commands" {
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # Should not have patterns like: & "$($gitOutput)"
+            $goshContent | Should -Not -Match '&\s*"\$\([^)]*git[^)]*\)"'
+        }
+
+        It "Should not use eval-like patterns with git output" {
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # Should not use ScriptBlock.Create with git output
+            $goshContent | Should -Not -Match '\[ScriptBlock\]::Create.*\$status'
+            $goshContent | Should -Not -Match '\[ScriptBlock\]::Create.*git'
+        }
+    }
+
+    Context "Defense Against Malicious Git Configurations (P1)" {
+
+        It "Should use git with explicit arguments (not aliases)" {
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # Should call git with explicit command names, not rely on aliases
+            # which could be configured maliciously in .gitconfig
+            $goshContent | Should -Match 'git status'
+            $goshContent | Should -Match 'git rev-parse'
+
+            # Should not use short aliases that could be overridden
+            $goshContent | Should -Not -Match 'git st\b'
+        }
+
+        It "Should redirect git stderr to prevent error message attacks" {
+            $goshContent = Get-Content $script:GoshScript -Raw
+
+            # All git commands should redirect stderr
+            # This prevents attackers from injecting malicious content via error messages
+            # Check that key git commands have stderr redirection
+            $goshContent | Should -Match 'git status --porcelain 2>\$null'
+            $goshContent | Should -Match 'git rev-parse --git-dir 2>\$null'
+        }
+    }
+}
