@@ -107,6 +107,18 @@ param(
     [string[]]$Arguments
 )
 
+# SECURITY: Execution policy awareness (P2 - Action Item #7)
+$executionPolicy = Get-ExecutionPolicy
+if ($executionPolicy -eq 'Unrestricted' -or $executionPolicy -eq 'Bypass') {
+    Write-Verbose "Running with permissive execution policy: $executionPolicy"
+    Write-Verbose "Consider using RemoteSigned or AllSigned for better security"
+}
+elseif ($executionPolicy -eq 'Restricted') {
+    Write-Warning "PowerShell execution policy is set to Restricted"
+    Write-Warning "You may need to change it to run this script"
+    Write-Warning "Run: Set-ExecutionPolicy RemoteSigned -Scope CurrentUser"
+}
+
 # Main script logic
 # Note: Don't override $ErrorActionPreference here - respect the common parameter from CmdletBinding
 # Default ErrorActionPreference for scripts is 'Continue', but we want 'Stop' unless user specifies otherwise

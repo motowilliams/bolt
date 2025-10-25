@@ -11,3 +11,4 @@ tests/iac/*.json
 TestResults.xml
 coverage.xml
 .build-test/**/*
+tests/security/temp-git-test-*/**/*

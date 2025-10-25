@@ -1186,3 +1186,166 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
         }
     }
 }
+
+Describe "P2: Execution Policy Awareness" -Tag "Security" {
+    BeforeAll {
+        $GoshScript = Join-Path $PSScriptRoot ".." ".." "gosh.ps1"
+    }
+
+    Context "Execution Policy Detection" {
+        It "Should check execution policy on script start" {
+            # Verify the code contains execution policy check
+            $goshContent = Get-Content $GoshScript -Raw
+
+            $goshContent | Should -Match 'Get-ExecutionPolicy'
+            $goshContent | Should -Match 'SECURITY.*Execution policy awareness'
+        }
+
+        It "Should detect Unrestricted policy" {
+            # Verify code handles Unrestricted
+            $goshContent = Get-Content $GoshScript -Raw
+
+            $goshContent | Should -Match "Unrestricted.*Bypass"
+            $goshContent | Should -Match "permissive execution policy"
+        }
+
+        It "Should detect Bypass policy" {
+            # Verify code handles Bypass
+            $goshContent = Get-Content $GoshScript -Raw
+
+            $goshContent | Should -Match "Bypass"
+        }
+
+        It "Should detect Restricted policy" {
+            # Verify code handles Restricted
+            $goshContent = Get-Content $GoshScript -Raw
+
+            $goshContent | Should -Match "Restricted"
+            $goshContent | Should -Match "Set-ExecutionPolicy RemoteSigned"
+        }
+    }
+
+    Context "Warning Messages" {
+        It "Should provide warning for permissive policies" {
+            # Verify verbose message exists for permissive policies
+            $goshContent = Get-Content $GoshScript -Raw
+
+            $goshContent | Should -Match "Write-Verbose.*permissive execution policy"
+            $goshContent | Should -Match "Consider using RemoteSigned or AllSigned"
+        }
+
+        It "Should provide warning for Restricted policy" {
+            # Verify warning message exists for Restricted policy
+            $goshContent = Get-Content $GoshScript -Raw
+
+            $goshContent | Should -Match "Write-Warning.*execution policy is set to Restricted"
+            $goshContent | Should -Match "You may need to change it"
+        }
+
+        It "Should suggest remediation for Restricted policy" {
+            # Verify remediation suggestion exists
+            $goshContent = Get-Content $GoshScript -Raw
+
+            $goshContent | Should -Match "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser"
+        }
+    }
+
+    Context "Policy Impact on Execution" {
+        It "Should not block execution for RemoteSigned policy" {
+            # RemoteSigned is the recommended policy - script should run normally
+            $currentPolicy = Get-ExecutionPolicy
+
+            if ($currentPolicy -in @('RemoteSigned', 'Unrestricted', 'Bypass')) {
+                Push-Location (Join-Path $PSScriptRoot ".." "..")
+                try {
+                    { & ".\gosh.ps1" -ListTasks -ErrorAction Stop 2>&1 | Out-Null } | Should -Not -Throw
+                }
+                finally {
+                    Pop-Location
+                }
+            }
+            else {
+                Set-ItResult -Skipped -Because "Current execution policy is $currentPolicy"
+            }
+        }
+
+        It "Should not block execution for AllSigned policy" {
+            # AllSigned is acceptable - script should run if signed
+            $currentPolicy = Get-ExecutionPolicy
+
+            if ($currentPolicy -in @('AllSigned', 'RemoteSigned', 'Unrestricted', 'Bypass')) {
+                Push-Location (Join-Path $PSScriptRoot ".." "..")
+                try {
+                    { & ".\gosh.ps1" -ListTasks -ErrorAction Stop 2>&1 | Out-Null } | Should -Not -Throw
+                }
+                finally {
+                    Pop-Location
+                }
+            }
+            else {
+                Set-ItResult -Skipped -Because "Current execution policy is $currentPolicy"
+            }
+        }
+
+        It "Should provide clear guidance without blocking legitimate use" {
+            # The check should inform but not prevent execution
+            # (except when system policy like Restricted is in place)
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Should not contain throw statements in policy check section
+            $policySection = ($goshContent -split 'SECURITY.*Execution policy awareness')[1]
+            $policySection = ($policySection -split 'Main script logic')[0]
+
+            $policySection | Should -Not -Match 'throw.*execution policy'
+        }
+    }
+
+    Context "Security Best Practices" {
+        It "Should recommend RemoteSigned or AllSigned policies" {
+            # Verify recommendations for secure policies
+            $goshContent = Get-Content $GoshScript -Raw
+
+            $goshContent | Should -Match "RemoteSigned or AllSigned"
+        }
+
+        It "Should use Write-Verbose for informational messages" {
+            # Verbose messages don't interrupt normal workflow
+            $goshContent = Get-Content $GoshScript -Raw
+
+            $goshContent | Should -Match "Write-Verbose.*permissive"
+        }
+
+        It "Should use Write-Warning for actionable concerns" {
+            # Warnings are appropriate for Restricted policy
+            $goshContent = Get-Content $GoshScript -Raw
+
+            $goshContent | Should -Match "Write-Warning.*Restricted"
+        }
+    }
+
+    Context "Integration with Script Flow" {
+        It "Should check policy before main logic" {
+            # Policy check should be early in script
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Get positions
+            $policyPos = $goshContent.IndexOf('Get-ExecutionPolicy')
+            $mainLogicPos = $goshContent.IndexOf('Main script logic')
+
+            $policyPos | Should -BeLessThan $mainLogicPos
+        }
+
+        It "Should not interfere with normal operations" {
+            # Policy check should be passive - just informing user
+            Push-Location (Join-Path $PSScriptRoot ".." "..")
+            try {
+                # Run a simple command - should work regardless of policy check
+                $output = & ".\gosh.ps1" -Help 2>&1
+                $LASTEXITCODE | Should -Be 0
+            }
+            finally {
+                Pop-Location
+            }
+        }
+    }
+}
