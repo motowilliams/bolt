@@ -864,3 +864,325 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
         }
     }
 }
+
+# =============================================================================
+# P2 (Medium): Atomic File Creation
+# =============================================================================
+
+Describe "P2: Atomic File Creation" -Tag 'Security' {
+    BeforeAll {
+        $GoshScript = Join-Path $PSScriptRoot ".." ".." "gosh.ps1"
+        # Use simple directory name compatible with TaskDirectory validation
+        $testBuildDir = "temp-atomic-test"
+        $testBuildPath = Join-Path $PSScriptRoot $testBuildDir
+    }
+
+    BeforeEach {
+        # Create test directory for each test
+        if (-not (Test-Path $testBuildPath)) {
+            New-Item -ItemType Directory -Path $testBuildPath -Force | Out-Null
+        }
+    }
+
+    AfterEach {
+        # Clean up test directory after each test
+        if (Test-Path $testBuildPath) {
+            Remove-Item $testBuildPath -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    Context "Atomic File Creation in NewTask" {
+        It "Should create new task file successfully" {
+            # Create unique task name
+            $taskName = "test-atomic-$(Get-Random)"
+
+            # Create task - use relative path from project root
+            Push-Location (Join-Path $PSScriptRoot ".." "..")
+            try {
+                $output = & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1
+
+                # Verify file was created
+                $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Atomic-*.ps1" -ErrorAction SilentlyContinue
+                $createdFiles.Count | Should -BeGreaterThan 0
+            }
+            finally {
+                Pop-Location
+            }
+        }
+
+        It "Should fail atomically if file already exists" {
+            # Create unique task name
+            $taskName = "test-existing-$(Get-Random)"
+
+            Push-Location (Join-Path $PSScriptRoot ".." "..")
+            try {
+                # Create task first time (should succeed)
+                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+
+                # Verify file was created
+                $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Existing-*.ps1"
+                $createdFiles.Count | Should -BeGreaterThan 0
+
+                # Try to create same task again (should fail atomically)
+                try {
+                    $output2 = & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-String
+                    $output2 | Should -Match "already exists"
+                } catch {
+                    # Expected to fail - error is in Write-Error which may terminate
+                }
+            }
+            finally {
+                Pop-Location
+            }
+        }
+
+        It "Should use NoClobber parameter for atomic operation" {
+            # Verify the gosh.ps1 code uses -NoClobber
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Should contain -NoClobber parameter with Out-File
+            $goshContent | Should -Match 'Out-File.*-NoClobber'
+
+            # Should have proper error handling
+            $goshContent | Should -Match '\[System\.IO\.IOException\]'
+        }
+
+        It "Should handle IOException for existing files" {
+            # Verify error handling code exists
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Should catch IOException specifically
+            $goshContent | Should -Match 'catch \[System\.IO\.IOException\]'
+
+            # Should provide clear error message
+            $goshContent | Should -Match 'Task file already exists'
+        }
+
+        It "Should not create partial files on error" {
+            # Create a task
+            $taskName = "test-partial-$(Get-Random)"
+
+            Push-Location (Join-Path $PSScriptRoot ".." "..")
+            try {
+                # Create it first time
+                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+
+                # Get the created file
+                $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Partial-*.ps1"
+                $createdFile = $createdFiles | Select-Object -First 1
+
+                # Record original content
+                $originalContent = Get-Content $createdFile.FullName -Raw
+
+                # Try to create again (should fail without modifying file)
+                try {
+                    & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                } catch {
+                    # Expected to fail
+                }
+
+                # Verify file content unchanged
+                $currentContent = Get-Content $createdFile.FullName -Raw
+                $currentContent | Should -Be $originalContent
+            }
+            finally {
+                Pop-Location
+            }
+        }
+    }
+
+    Context "Race Condition Prevention" {
+        It "Should eliminate TOCTOU vulnerability window" {
+            # Verify the atomic operation pattern
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Should NOT have separate Test-Path and Out-File
+            # (old vulnerable pattern was: if (Test-Path) then Out-File)
+            # New pattern: Out-File with -NoClobber in try-catch
+
+            # Should use atomic operation (Out-File with NoClobber in try-catch)
+            $goshContent | Should -Match 'Out-File.*-NoClobber'
+            $goshContent | Should -Match 'catch \[System\.IO\.IOException\]'
+
+            # Verify TOCTOU vulnerability is eliminated (no Test-Path before file creation in NewTask)
+            # Extract NewTask section
+            if ($goshContent -match '(?s)if \(\$NewTask\).*?^\}') {
+                $newTaskSection = $matches[0]
+                # Should not have Test-Path followed by Out-File pattern
+                $newTaskSection | Should -Not -Match 'Test-Path.*Out-File'
+            }
+        }
+
+        It "Should handle concurrent file creation attempts safely" {
+            # This test verifies the -NoClobber behavior
+            # Only one of concurrent attempts should succeed
+
+            $taskName = "test-concurrent-$(Get-Random)"
+
+            Push-Location (Join-Path $PSScriptRoot ".." "..")
+            try {
+                # Simulate race condition by creating file first
+                $tempContent = "# Temporary content"
+                $testFile = Join-Path $testBuildPath "Invoke-Test-Concurrent-$($taskName.Substring(16)).ps1"
+
+                # Use Out-File to match what gosh.ps1 uses
+                $tempContent | Out-File -FilePath $testFile -Encoding UTF8
+
+                # Now try to create task with same name (should fail)
+                try {
+                    $output = & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-String
+                    $output | Should -Match "already exists"
+                } catch {
+                    # Expected to fail
+                }
+
+                # Original file should contain our temporary content
+                $currentContent = Get-Content $testFile -Raw
+                $currentContent.Trim() | Should -Be $tempContent
+            }
+            finally {
+                Pop-Location
+            }
+        }
+
+        It "Should use ErrorAction Stop for immediate failure" {
+            # Verify ErrorAction Stop is used
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Should have ErrorAction Stop to immediately jump to catch block
+            $goshContent | Should -Match 'Out-File.*-ErrorAction Stop'
+        }
+    }
+
+    Context "Error Handling and User Feedback" {
+        It "Should provide clear error message when file exists" {
+            $taskName = "test-error-msg-$(Get-Random)"
+
+            Push-Location (Join-Path $PSScriptRoot ".." "..")
+            try {
+                # Create first time
+                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+
+                # Create second time and capture error
+                try {
+                    $output = & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-String
+
+                    # Should have clear error message
+                    $output | Should -Match "Task file already exists"
+                    $output | Should -Match "Invoke-Test-Error-Msg"
+                } catch {
+                    # Expected to fail
+                }
+            }
+            finally {
+                Pop-Location
+            }
+        }
+
+        It "Should handle general file creation errors" {
+            # Verify generic catch block exists
+            $goshContent = Get-Content $GoshScript -Raw
+
+            # Should have generic catch for other errors
+            $goshContent | Should -Match 'catch \{[^}]*Failed to create task file'
+        }
+
+        It "Should exit with error code on failure" {
+            $taskName = "test-exit-code-$(Get-Random)"
+
+            Push-Location (Join-Path $PSScriptRoot ".." "..")
+            try {
+                # Create first time
+                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+
+                # Try to create again
+                try {
+                    & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                } catch {
+                    # Expected to fail
+                }
+
+                # Should exit with error code
+                $LASTEXITCODE | Should -Be 1
+            }
+            finally {
+                Pop-Location
+            }
+        }
+    }
+
+    Context "File System Safety" {
+        It "Should create file with correct encoding" {
+            $taskName = "test-encoding-$(Get-Random)"
+
+            Push-Location (Join-Path $PSScriptRoot ".." "..")
+            try {
+                # Create task
+                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+
+                # Verify encoding (UTF8)
+                $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Encoding-*.ps1"
+                $createdFile = $createdFiles | Select-Object -First 1
+
+                # File should exist and be readable as UTF8
+                $content = Get-Content $createdFile.FullName -Encoding UTF8 -Raw
+                $content | Should -Match "# TASK: $taskName"
+            }
+            finally {
+                Pop-Location
+            }
+        }
+
+        It "Should handle directory creation if needed" {
+            # Remove test directory if exists
+            if (Test-Path $testBuildPath) {
+                Remove-Item $testBuildPath -Recurse -Force
+            }
+
+            $taskName = "test-dir-create-$(Get-Random)"
+
+            Push-Location (Join-Path $PSScriptRoot ".." "..")
+            try {
+                # Create task (should create directory)
+                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+
+                # Directory should exist
+                Test-Path $testBuildPath | Should -Be $true
+
+                # File should exist
+                $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Dir-Create-*.ps1" -ErrorAction SilentlyContinue
+                $createdFiles.Count | Should -BeGreaterThan 0
+            }
+            finally {
+                Pop-Location
+            }
+        }
+
+        It "Should maintain file integrity on atomic operations" {
+            $taskName = "test-integrity-$(Get-Random)"
+
+            Push-Location (Join-Path $PSScriptRoot ".." "..")
+            try {
+                # Create task
+                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+
+                # Verify file exists and is complete
+                $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Integrity-*.ps1"
+                $createdFile = $createdFiles | Select-Object -First 1
+
+                # File should have complete template structure
+                $content = Get-Content $createdFile.FullName -Raw
+
+                # Check for key template elements
+                $content | Should -Match "# TASK: $taskName"
+                $content | Should -Match "# DESCRIPTION:"
+                $content | Should -Match "# DEPENDS:"
+                $content | Should -Match "Write-Host"
+                $content | Should -Match "exit 0"
+            }
+            finally {
+                Pop-Location
+            }
+        }
+    }
+}

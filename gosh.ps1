@@ -476,18 +476,18 @@ function Get-AllTasks {
     # SECURITY: Runtime path validation (P1 - Runtime Path Validation)
     # This is defense-in-depth: parameter validation should catch most issues,
     # but we validate again at runtime to ensure resolved paths stay within project
-    
+
     # Resolve the full path
     if ([System.IO.Path]::IsPathRooted($TaskDirectory)) {
         $buildPath = $TaskDirectory
     } else {
         $buildPath = Join-Path $PSScriptRoot $TaskDirectory
     }
-    
+
     # Get the resolved absolute paths for comparison
     $resolvedPath = [System.IO.Path]::GetFullPath($buildPath)
     $projectRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
-    
+
     # Ensure the resolved path is within project directory
     if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnoreCase)) {
         Write-Warning "TaskDirectory resolves outside project directory: $TaskDirectory"
@@ -495,7 +495,7 @@ function Get-AllTasks {
         Write-Warning "Resolved path: $resolvedPath"
         throw "TaskDirectory must resolve to a path within the project directory"
     }
-    
+
     $projectTasks = Get-ProjectTasks -BuildPath $resolvedPath
 
     # Project tasks override core tasks if there's a naming conflict
@@ -790,12 +790,6 @@ if (-not [string]::IsNullOrWhiteSpace($NewTask)) {
     $fileName = "Invoke-$taskNameCapitalized.ps1"
     $filePath = Join-Path $buildPath $fileName
 
-    # Check if file already exists
-    if (Test-Path $filePath) {
-        Write-Error "Task file already exists: $fileName"
-        exit 1
-    }
-
     # Create task file template
     $template = @"
 # TASK: $($NewTask.ToLower())
@@ -810,8 +804,19 @@ Write-Host "✓ Task completed successfully" -ForegroundColor Green
 exit 0
 "@
 
-    # Write the file
-    Set-Content -Path $filePath -Value $template -Encoding UTF8
+    # SECURITY: Use atomic file creation to prevent race conditions (P2 - Atomic File Creation)
+    # Use -NoClobber to fail if file exists (atomic check-and-create)
+    try {
+        $template | Out-File -FilePath $filePath -Encoding UTF8 -NoClobber -ErrorAction Stop
+    }
+    catch [System.IO.IOException] {
+        Write-Error "Task file already exists: $fileName"
+        exit 1
+    }
+    catch {
+        Write-Error "Failed to create task file: $_"
+        exit 1
+    }
 
     Write-Host ""
     Write-Host "✓ Created task file: $fileName" -ForegroundColor Green
