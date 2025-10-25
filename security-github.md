@@ -10,6 +10,41 @@
 
 ---
 
+## 📋 Table of Contents
+
+### Quick Navigation
+- [Executive Summary](#executive-summary)
+- [Actionable Security Tasks](#actionable-security-tasks)
+  - [🔴 Critical Priority (P0)](#-critical-priority-p0) - 3 tasks
+  - [🟠 High Priority (P1)](#-high-priority-p1) - 4 tasks
+  - [🟡 Medium Priority (P2)](#-medium-priority-p2) - 2 tasks
+  - [🔵 Low Priority (P3)](#-low-priority-p3) - 4 tasks (Won't Implement)
+- [GitHub-Specific Security Recommendations](#github-specific-security-recommendations) - 4 tasks
+- [Testing Requirements](#testing-requirements)
+- [Compliance Considerations](#compliance-considerations)
+- [Risk Assessment Matrix](#risk-assessment-matrix)
+- [Additional Resources](#additional-resources)
+
+### Summary of Findings
+| Priority | Finding | Category | Status |
+|----------|---------|----------|--------|
+| P0 | [C1: Security Policy File](#-c1-implement-security-policy-file) | Security Operations | ⏳ Pending |
+| P0 | [C2: Security Event Logging](#-c2-add-security-event-logging) | Security Monitoring | ⏳ Pending |
+| P0 | [C3: Output Validation](#-c3-validate-external-command-output-before-display) | Output Security | ⏳ Pending |
+| P1 | [H1: Dependency Pinning](#-h1-implement-dependency-pinning) | Supply Chain Security | ⏳ Pending |
+| P1 | [H2: Code Signing](#-h2-add-code-signing-verification) | Code Integrity | ⏳ Pending |
+| P1 | [H3: Rate Limiting](#-h3-implement-rate-limiting-for-task-execution) | DoS Prevention | ⏳ Pending |
+| P1 | [H4: Path Sanitization](#-h4-sanitize-file-paths-in-error-messages) | Information Disclosure | ⏳ Pending |
+| P2 | [M1: Secrets Scanner](#-m1-add-secrets-detection-scanner) | Secrets Management | ⏳ Pending |
+| P2 | [M2: Content Security](#-m2-implement-content-security-policy-for-output) | Output Security | ⏳ Pending |
+| P3 | [L1-L4: Won't Implement](#-low-priority-p3) | Various | ❌ Won't Implement |
+| GH | [GH1: GitHub Security Features](#-gh1-enable-github-security-features) | Platform Security | ⏳ Pending |
+| GH | [GH2: Branch Protection](#-gh2-implement-branch-protection-rules) | Code Review Security | ⏳ Pending |
+| GH | [GH3: CODEOWNERS](#-gh3-add-codeowners-file) | Access Control | ⏳ Pending |
+| GH | [GH4: Security Advisories](#-gh4-configure-security-advisories-process) | Vulnerability Management | ⏳ Pending |
+
+---
+
 ## Executive Summary
 
 This security evaluation identifies **13 total (9 actionable + 4 marked as Won't Implement) security findings** across multiple categories. The assessment reveals that while the project has implemented several security controls (as documented in SECURITY.md), there are additional concerns from a GitHub security perspective, particularly around supply chain security, secrets management, and operational security.
@@ -70,6 +105,12 @@ Requirements:
 6. Ensure the file is accessible at: https://github.com/motowilliams/gosh/.well-known/security.txt
 
 Please implement this security policy file following RFC 9116 specifications and update relevant documentation.
+
+Testing & Documentation Requirements:
+- Write Pester tests to verify .well-known/security.txt exists and is valid per RFC 9116
+- Update README.md to document the security policy file location
+- Update SECURITY.md to reference the security.txt file
+- Document the security disclosure process in CONTRIBUTING.md
 ```
 
 ---
@@ -146,6 +187,15 @@ Requirements:
 File to modify: gosh.ps1
 Add logging calls at strategic points: task execution start, file creation, external commands
 Please implement this comprehensive security logging system.
+
+Testing & Documentation Requirements:
+- Write Pester tests to verify Write-SecurityLog function works correctly
+- Test that logging is opt-in via $env:GOSH_AUDIT_LOG
+- Verify logs are written to .gosh/audit.log with correct format
+- Test that .gosh/ is properly ignored by git (.gitignore)
+- Update README.md with security logging documentation
+- Document logging setup and usage in IMPLEMENTATION.md
+- Add examples of how to enable and review audit logs
 ```
 
 ---
@@ -208,6 +258,15 @@ Requirements:
 
 Files to modify: gosh.ps1 (Invoke-CheckGitIndex function and other git output locations)
 Please implement this output sanitization to prevent terminal injection attacks.
+
+Testing & Documentation Requirements:
+- Write Pester tests for Remove-AnsiEscapeSequences function
+- Test with various ANSI escape sequences and control characters
+- Create test cases with malicious filenames containing ANSI codes
+- Verify no terminal corruption occurs with test inputs
+- Update README.md security section to document output sanitization
+- Document the sanitization approach in SECURITY.md
+- Add inline code comments explaining the regex patterns
 ```
 
 ---
@@ -289,6 +348,16 @@ Requirements:
 5. Document dependency requirements in README.md
 
 Please implement dependency management to ensure consistent, secure builds.
+
+Testing & Documentation Requirements:
+- Write Pester tests for Test-Dependencies function
+- Test version checking logic with various PowerShell versions
+- Mock Get-Module and other dependency checks in tests
+- Verify clear error messages for missing/outdated dependencies
+- Update README.md with dependency requirements section
+- Document how to check and update dependencies
+- Add CI/CD documentation for dependency verification
+- Update CONTRIBUTING.md with dependency management guidelines
 ```
 
 ---
@@ -354,6 +423,17 @@ Requirements:
 5. Test with both signed and unsigned scripts
 
 Please implement optional code signing verification for enhanced security.
+
+Testing & Documentation Requirements:
+- Write Pester tests for signature verification logic
+- Test with signed and unsigned task scripts
+- Mock Get-AuthenticodeSignature in tests
+- Verify warnings are displayed for unsigned scripts
+- Create example signing script (Sign-TaskScripts.ps1) with tests
+- Update CONTRIBUTING.md with code signing documentation
+- Document certificate acquisition process
+- Add examples of how to enable signature verification mode
+- Update README.md security section
 ```
 
 ---
@@ -431,6 +511,16 @@ Requirements:
 
 Files to modify: gosh.ps1 (add function and integrate into Invoke-Task)
 Please implement rate limiting to prevent resource exhaustion attacks.
+
+Testing & Documentation Requirements:
+- Write Pester tests for Test-RateLimit function
+- Test rate limit enforcement with rapid task execution
+- Test cooldown period functionality
+- Verify error messages are clear when limit exceeded
+- Mock date/time functions in tests for deterministic testing
+- Update README.md with rate limiting documentation
+- Document how to configure rate limits via environment variables
+- Add troubleshooting guide for rate limit issues
 ```
 
 ---
@@ -508,6 +598,16 @@ Requirements:
 
 Files to modify: gosh.ps1 (add function and update all Write-Error/Write-Warning calls)
 Please implement path sanitization to prevent information disclosure.
+
+Testing & Documentation Requirements:
+- Write Pester tests for Get-SanitizedPath function
+- Test with absolute paths, relative paths, and edge cases
+- Verify user-specific information is redacted
+- Test -Verbose mode shows full paths correctly
+- Update all error/warning messages to use sanitized paths
+- Document path sanitization in SECURITY.md
+- Add examples in README.md security section
+- Update inline code comments for clarity
 ```
 
 ---
@@ -590,6 +690,17 @@ Requirements:
    - How to enable secret scanning
 
 Please implement comprehensive secrets detection to prevent credential leaks.
+
+Testing & Documentation Requirements:
+- Write Pester tests for Test-TaskScriptForSecrets function
+- Test detection of various secret patterns (API keys, passwords, tokens)
+- Create test files with and without secrets for validation
+- Verify warnings are displayed correctly
+- Create pre-commit hook script with tests
+- Update CONTRIBUTING.md with secrets management guidelines
+- Document best practices for handling sensitive data
+- Add examples of proper environment variable usage
+- Update README.md security section
 ```
 
 ---
@@ -655,6 +766,16 @@ Requirements:
 
 Files to modify: gosh.ps1 (add function and apply to Show-TaskOutline and task listing code)
 Please implement output encoding to prevent injection attacks.
+
+Testing & Documentation Requirements:
+- Write Pester tests for ConvertTo-SafeHtml function
+- Test with various HTML/JavaScript injection attempts
+- Test with special characters and edge cases
+- Verify no code execution possible via task metadata
+- Test with malicious task names and descriptions
+- Update SECURITY.md with output encoding documentation
+- Document when and how encoding is applied
+- Add examples to README.md
 ```
 
 ---
@@ -739,6 +860,8 @@ Requirements:
 
 Files to modify: gosh.ps1 (add metadata parsing and confirmation function)
 Please implement MFA to protect sensitive operations.
+
+Note: This feature will not be implemented. No testing or documentation updates required.
 ```
 
 ---
@@ -808,6 +931,8 @@ Requirements:
 
 Files to modify: gosh.ps1 (add sandbox function and parameter)
 Please implement sandbox isolation for untrusted task execution.
+
+Note: This feature will not be implemented. No testing or documentation updates required.
 ```
 
 ---
@@ -873,6 +998,8 @@ Requirements:
 
 Files to create/modify: gosh.ps1 (add function), .github/workflows/ci.yml (add license check)
 Please implement license compliance scanning.
+
+Note: This feature will not be implemented. No testing or documentation updates required.
 ```
 
 ---
@@ -950,6 +1077,8 @@ Requirements:
 
 Files to modify: gosh.ps1 (add HTML output function and parameter)
 Please implement secure web output format.
+
+Note: This feature will not be implemented. No testing or documentation updates required.
 ```
 
 ---
@@ -1034,6 +1163,14 @@ Requirements:
 
 Files to create: .github/workflows/security.yml
 Please enable comprehensive GitHub security features.
+
+Testing & Documentation Requirements:
+- Verify security.yml workflow runs successfully in CI/CD
+- Test CodeQL and TruffleHog scanning on sample code
+- Document GitHub security features in README.md
+- Update CONTRIBUTING.md with security workflow information
+- Create documentation for monitoring security alerts
+- Add troubleshooting guide for security scan failures
 ```
 
 ---
@@ -1099,6 +1236,15 @@ Requirements:
 
 Configuration location: GitHub repository settings
 Please implement branch protection to enforce code review.
+
+Testing & Documentation Requirements:
+- Test that direct commits to main are blocked
+- Verify PR review requirements work as expected
+- Test status check requirements
+- Document branch protection setup in CONTRIBUTING.md
+- Add screenshots/examples of protection rules
+- Update README.md with contribution workflow
+- Document how to request exceptions if needed
 ```
 
 ---
@@ -1160,6 +1306,15 @@ Requirements:
 
 File to create: .github/CODEOWNERS
 Please implement code ownership for security-critical files.
+
+Testing & Documentation Requirements:
+- Test that code owner reviews are required for protected files
+- Verify CODEOWNERS syntax is correct
+- Test with sample PRs modifying security-critical files
+- Document code ownership in CONTRIBUTING.md
+- Add examples of how code review requests work
+- Update README.md with code ownership information
+- Document the rationale for each ownership assignment
 ```
 
 ---
@@ -1235,6 +1390,16 @@ Requirements:
 
 Files to modify: SECURITY.md (add reporting section), GitHub settings
 Please implement comprehensive vulnerability disclosure process.
+
+Testing & Documentation Requirements:
+- Test private vulnerability reporting is enabled in GitHub settings
+- Verify security advisory workflow with a test advisory
+- Test email notifications for security reports
+- Update SECURITY.md with complete disclosure process
+- Document response SLAs and escalation procedures
+- Add examples of well-formatted vulnerability reports
+- Update README.md to reference security reporting
+- Create internal documentation for security team triage process
 ```
 
 ---
