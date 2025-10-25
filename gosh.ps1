@@ -912,18 +912,18 @@ foreach ($arg in $Arguments) {
     }
 }
 
+# Handle -Outline flag (before validation so we can show missing tasks)
+if ($Outline) {
+    Show-TaskOutline -TaskNames $taskList -AllTasks $availableTasks -SkipDependencies $Only
+    exit 0
+}
+
 # Validate all tasks exist
 foreach ($taskName in $taskList) {
     if (-not $availableTasks.ContainsKey($taskName)) {
         Write-Error "Task '$taskName' not found. Available tasks: $($availableTasks.Keys | Sort-Object -Unique | Join-String -Separator ', ')"
         exit 1
     }
-}
-
-# Handle -Outline flag
-if ($Outline) {
-    Show-TaskOutline -TaskNames $taskList -AllTasks $availableTasks -SkipDependencies $Only
-    exit 0
 }
 
 function Write-Separator {
