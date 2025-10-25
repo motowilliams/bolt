@@ -10,5 +10,10 @@ tests/iac/*.json
 # Pester test results
 TestResults.xml
 coverage.xml
-.build-test/**/*
-tests/security/temp-git-test-*/**/*
+testResults.xml
+
+# Test temporary directories
+.build-test/
+tests/security/temp-*/
+tests/security/temp-*/**
+tests/*temp*/**
