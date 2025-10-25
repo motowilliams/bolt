@@ -12,7 +12,7 @@
 
 ## Executive Summary
 
-This security evaluation identifies **12 actionable security findings** across multiple categories. The assessment reveals that while the project has implemented several security controls (as documented in SECURITY.md), there are additional concerns from a GitHub security perspective, particularly around supply chain security, secrets management, and operational security.
+This security evaluation identifies **13 total (9 actionable + 4 marked as Won't Implement) security findings** across multiple categories. The assessment reveals that while the project has implemented several security controls (as documented in SECURITY.md), there are additional concerns from a GitHub security perspective, particularly around supply chain security, secrets management, and operational security.
 
 **Overall Risk Level:** 🟡 MODERATE
 
@@ -659,168 +659,12 @@ Please implement output encoding to prevent injection attacks.
 
 ---
 
-#### [ ] M3: Add Telemetry and Crash Reporting
-**Category:** Security Operations  
-**Risk:** Unknown security issues in production  
-**Current State:** No telemetry or crash reporting  
-
-**Action Items:**
-- [ ] Implement opt-in telemetry
-- [ ] Collect anonymous usage statistics
-- [ ] Report unhandled exceptions
-- [ ] Include PowerShell version, OS, task types
-- [ ] Send to secure endpoint (e.g., Application Insights)
-- [ ] Respect privacy (no PII)
-
-**Implementation:**
-```powershell
-function Send-Telemetry {
-    param(
-        [string]$EventType,
-        [hashtable]$Properties
-    )
-    
-    # Only if opt-in
-    if ($env:GOSH_TELEMETRY -ne '1') {
-        return
-    }
-    
-    $telemetryData = @{
-        timestamp = (Get-Date).ToUniversalTime().ToString('o')
-        version = '1.0.0'
-        psVersion = $PSVersionTable.PSVersion.ToString()
-        os = $PSVersionTable.OS
-        eventType = $EventType
-        properties = $Properties
-        sessionId = [Guid]::NewGuid().ToString()
-    }
-    
-    # Send to telemetry endpoint (pseudo-code)
-    try {
-        $json = $telemetryData | ConvertTo-Json -Compress
-        # Invoke-RestMethod -Uri 'https://telemetry.example.com/api/events' -Method Post -Body $json
-    }
-    catch {
-        # Fail silently - don't break script execution
-        Write-Verbose "Telemetry failed: $_"
-    }
-}
-
-# Usage:
-Send-Telemetry -EventType 'TaskExecution' -Properties @{ TaskName = $taskName; Success = $true }
-```
-
-**Acceptance Criteria:**
-- [ ] Telemetry function implemented
-- [ ] Opt-in via `$env:GOSH_TELEMETRY=1`
-- [ ] No PII collected
-- [ ] Privacy policy documented
-- [ ] Fails gracefully if endpoint unavailable
-
-**LLM Prompt for Resolution:**
-```
-Task: Implement opt-in telemetry and crash reporting in gosh.ps1
-
-Context: Anonymous usage telemetry helps identify security issues and crashes in production environments while respecting user privacy.
-
-Requirements:
-1. Create Send-Telemetry function in gosh.ps1:
-   - Only send data when $env:GOSH_TELEMETRY=1 (opt-in)
-   - Collect: timestamp, version, PowerShell version, OS, event type, properties, session ID
-   - Never collect: usernames, file paths, task content, or other PII
-   - Send to configurable endpoint (Application Insights or similar)
-   - Fail silently - don't break script on telemetry errors
-2. Add telemetry calls for key events:
-   - TaskExecution: record task name and success/failure
-   - UnhandledException: capture error types (not messages)
-   - ScriptStart: track PowerShell/OS versions
-3. Document privacy policy:
-   - What data is collected
-   - How it's used
-   - How to opt-in/opt-out
-   - Data retention period
-4. Configure telemetry endpoint in dependencies.json
-
-Please implement privacy-respecting telemetry for security monitoring.
-```
-
----
-
-#### [ ] M4: Implement Backup and Recovery for Task Files
-**Category:** Availability  
-**Risk:** Accidental deletion or corruption of task scripts  
-**Current State:** No backup mechanism for `.build/` directory  
-
-**Action Items:**
-- [ ] Create automatic backup before task modifications
-- [ ] Store backups in `.gosh/backups/`
-- [ ] Implement backup rotation (keep last 10)
-- [ ] Add restore functionality
-- [ ] Backup before -NewTask overwrites
-
-**Implementation:**
-```powershell
-function Backup-TaskDirectory {
-    param([string]$TaskDirectory)
-    
-    $backupRoot = Join-Path $PSScriptRoot '.gosh' 'backups'
-    $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-    $backupPath = Join-Path $backupRoot $timestamp
-    
-    if (Test-Path $TaskDirectory) {
-        Copy-Item -Path $TaskDirectory -Destination $backupPath -Recurse -Force
-        Write-Verbose "Backup created: $backupPath"
-        
-        # Rotate backups (keep last 10)
-        $backups = Get-ChildItem $backupRoot | Sort-Object Name -Descending
-        if ($backups.Count -gt 10) {
-            $backups | Select-Object -Skip 10 | Remove-Item -Recurse -Force
-        }
-    }
-}
-```
-
-**Acceptance Criteria:**
-- [ ] Backup function implemented
-- [ ] Called before task modifications
-- [ ] Stored in `.gosh/backups/`
-- [ ] Rotation implemented (keep 10 most recent)
-- [ ] Restore script provided
-- [ ] `.gosh/` added to `.gitignore`
-
-**LLM Prompt for Resolution:**
-```
-Task: Implement automatic backup and recovery for task files in gosh.ps1
-
-Context: Protect against accidental deletion or corruption of task scripts in .build/ directory.
-
-Requirements:
-1. Create Backup-TaskDirectory function in gosh.ps1:
-   - Accept TaskDirectory parameter
-   - Create timestamped backup in .gosh/backups/YYYYMMDD-HHMMSS/
-   - Copy entire task directory recursively
-   - Implement rotation: keep only last 10 backups, delete older ones
-   - Log backup location with Write-Verbose
-2. Call backup before modifications:
-   - Before -NewTask overwrites existing file
-   - Before any automated task file changes
-3. Create Restore-TaskDirectory script:
-   - List available backups
-   - Allow selection of backup to restore
-   - Restore entire directory or individual files
-4. Add .gosh/ to .gitignore
-5. Document backup/restore process in README.md
-
-Files to create/modify: gosh.ps1 (add function), Restore-TaskDirectory.ps1 (new script)
-Please implement backup system to protect against data loss.
-```
-
----
-
 ### 🔵 Low Priority (P3)
 
-#### [ ] L1: Implement Multi-Factor Authentication for Critical Tasks
+#### [x] L1 (Won't Implement): Implement Multi-Factor Authentication for Critical Tasks
 **Category:** Access Control  
+
+> **Note:** This feature will not be added to Gosh. The project is designed as a lightweight build orchestrator for trusted development environments. Multi-factor authentication is beyond the scope of this tool.
 **Risk:** Unauthorized execution of sensitive tasks  
 **Current State:** No authentication mechanism  
 
@@ -899,8 +743,10 @@ Please implement MFA to protect sensitive operations.
 
 ---
 
-#### [ ] L2: Add Sandbox Mode for Untrusted Tasks
+#### [x] L2 (Won't Implement): Add Sandbox Mode for Untrusted Tasks
 **Category:** Isolation  
+
+> **Note:** This feature will not be added to Gosh. The project operates in trusted development environments where task scripts are under developer control. Sandboxing would limit legitimate use cases without significant security benefit in the intended usage context.
 **Risk:** Execution of malicious task scripts  
 **Current State:** Tasks run with full user permissions  
 
@@ -966,8 +812,10 @@ Please implement sandbox isolation for untrusted task execution.
 
 ---
 
-#### [ ] L3: Implement License Compliance Scanning
+#### [x] L3 (Won't Implement): Implement License Compliance Scanning
 **Category:** Legal Compliance  
+
+> **Note:** This feature will not be added to Gosh. License compliance scanning is not applicable to this build orchestrator project. Dependencies are managed at the system level (PowerShell modules, Bicep CLI, Git) and are the responsibility of the development environment, not the build script.
 **Risk:** Use of incompatible licenses in dependencies  
 **Current State:** No license scanning  
 
@@ -1029,8 +877,10 @@ Please implement license compliance scanning.
 
 ---
 
-#### [ ] L4: Add Security Headers for Web-Based Task Outputs
+#### [x] L4 (Won't Implement): Add Security Headers for Web-Based Task Outputs
 **Category:** Web Security  
+
+> **Note:** This feature will not be added to Gosh. The project outputs to terminal/console, not web interfaces. Web security headers are not applicable to a command-line build orchestrator.
 **Risk:** XSS if task output is displayed in web UI  
 **Current State:** No consideration for web display  
 
@@ -1464,9 +1314,7 @@ Please implement comprehensive vulnerability disclosure process.
 | H4: Path Disclosure | Low | High | Low | P1 |
 | M1: No Secrets Scanner | Medium | Medium | Medium | P2 |
 | M2: Output Injection | Low | Low | Low | P2 |
-| M3: No Telemetry | Low | Low | Low | P2 |
-| M4: No Backups | Low | Medium | Medium | P2 |
-| L1: No MFA | Low | Low | High | P3 |
+| L1-L4: Won't Implement | N/A | N/A | N/A | N/A |
 
 ---
 
