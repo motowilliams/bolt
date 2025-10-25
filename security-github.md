@@ -6,6 +6,8 @@
 **Scope:** Complete security assessment of gosh.ps1 v1.0  
 **Methodology:** Code review, threat modeling, dependency analysis, configuration review
 
+> **Note:** This report complements the existing [SECURITY.md](./SECURITY.md) file. While SECURITY.md focuses on code-level security fixes (P0-P2 implementation tasks), this GitHub evaluation focuses on operational security, supply chain security, and GitHub platform integration.
+
 ---
 
 ## Executive Summary
