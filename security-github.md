@@ -28,20 +28,20 @@
 ### Summary of Findings
 | Priority | Finding | Category | Status |
 |----------|---------|----------|--------|
-| P0 | [C1: Security Policy File](#-c1-implement-security-policy-file) | Security Operations | ⏳ Pending |
-| P0 | [C2: Security Event Logging](#-c2-add-security-event-logging) | Security Monitoring | ⏳ Pending |
-| P0 | [C3: Output Validation](#-c3-validate-external-command-output-before-display) | Output Security | ⏳ Pending |
-| P1 | [H1: Dependency Pinning](#-h1-implement-dependency-pinning) | Supply Chain Security | ⏳ Pending |
-| P1 | [H2: Code Signing](#-h2-add-code-signing-verification) | Code Integrity | ⏳ Pending |
-| P1 | [H3: Rate Limiting](#-h3-implement-rate-limiting-for-task-execution) | DoS Prevention | ⏳ Pending |
-| P1 | [H4: Path Sanitization](#-h4-sanitize-file-paths-in-error-messages) | Information Disclosure | ⏳ Pending |
-| P2 | [M1: Secrets Scanner](#-m1-add-secrets-detection-scanner) | Secrets Management | ⏳ Pending |
-| P2 | [M2: Content Security](#-m2-implement-content-security-policy-for-output) | Output Security | ⏳ Pending |
+| P0 | [C1: Security Policy File](#--c1-implement-security-policy-file) | Security Operations | ⏳ Pending |
+| P0 | [C2: Security Event Logging](#--c2-add-security-event-logging) | Security Monitoring | ⏳ Pending |
+| P0 | [C3: Output Validation](#--c3-validate-external-command-output-before-display) | Output Security | ⏳ Pending |
+| P1 | [H1: Dependency Pinning](#--h1-implement-dependency-pinning) | Supply Chain Security | ⏳ Pending |
+| P1 | [H2: Code Signing](#--h2-add-code-signing-verification) | Code Integrity | ⏳ Pending |
+| P1 | [H3: Rate Limiting](#--h3-implement-rate-limiting-for-task-execution) | DoS Prevention | ⏳ Pending |
+| P1 | [H4: Path Sanitization](#--h4-sanitize-file-paths-in-error-messages) | Information Disclosure | ⏳ Pending |
+| P2 | [M1: Secrets Scanner](#--m1-add-secrets-detection-scanner) | Secrets Management | ⏳ Pending |
+| P2 | [M2: Content Security](#--m2-implement-content-security-policy-for-output) | Output Security | ⏳ Pending |
 | P3 | [L1-L4: Won't Implement](#-low-priority-p3) | Various | ❌ Won't Implement |
-| GH | [GH1: GitHub Security Features](#-gh1-enable-github-security-features) | Platform Security | ⏳ Pending |
-| GH | [GH2: Branch Protection](#-gh2-implement-branch-protection-rules) | Code Review Security | ⏳ Pending |
-| GH | [GH3: CODEOWNERS](#-gh3-add-codeowners-file) | Access Control | ⏳ Pending |
-| GH | [GH4: Security Advisories](#-gh4-configure-security-advisories-process) | Vulnerability Management | ⏳ Pending |
+| GH | [GH1: GitHub Security Features](#--gh1-enable-github-security-features) | Platform Security | ⏳ Pending |
+| GH | [GH2: Branch Protection](#--gh2-implement-branch-protection-rules) | Code Review Security | ⏳ Pending |
+| GH | [GH3: CODEOWNERS](#--gh3-add-codeowners-file) | Access Control | ⏳ Pending |
+| GH | [GH4: Security Advisories](#--gh4-configure-security-advisories-process) | Vulnerability Management | ⏳ Pending |
 
 ---
 
