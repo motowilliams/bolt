@@ -190,6 +190,65 @@ $taskCompleter = {
 
 Register-ArgumentCompleter -CommandName 'gosh.ps1' -ParameterName 'Task' -ScriptBlock $taskCompleter
 
+#region Security Event Logging
+function Write-SecurityLog {
+    <#
+    .SYNOPSIS
+        Writes security-relevant events to audit log
+    .DESCRIPTION
+        Logs security events to .gosh/audit.log when $env:GOSH_AUDIT_LOG is set to 1.
+        Captures timestamp, severity, user context, event type, and details.
+    .PARAMETER Event
+        The type of security event (e.g., TaskExecution, FileCreation, CommandExecution)
+    .PARAMETER Details
+        Additional details about the event
+    .PARAMETER Severity
+        The severity level: Info, Warning, or Error
+    .EXAMPLE
+        Write-SecurityLog -Event "TaskExecution" -Details "Task: build, Directory: .build"
+        Write-SecurityLog -Event "FileCreation" -Details "Created: .build/Invoke-Deploy.ps1" -Severity "Warning"
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [string]$Event,
+
+        [Parameter(Mandatory)]
+        [string]$Details,
+
+        [Parameter()]
+        [ValidateSet('Info', 'Warning', 'Error')]
+        [string]$Severity = 'Info'
+    )
+
+    # Only log if audit logging is enabled
+    if ($env:GOSH_AUDIT_LOG -ne '1') {
+        return
+    }
+
+    try {
+        $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        $user = [Environment]::UserName
+        $machine = [Environment]::MachineName
+        $entry = "$timestamp | $Severity | $user@$machine | $Event | $Details"
+
+        $logPath = Join-Path $PSScriptRoot '.gosh' 'audit.log'
+        $logDir = Split-Path $logPath -Parent
+
+        # Create .gosh directory if it doesn't exist
+        if (-not (Test-Path $logDir)) {
+            New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+        }
+
+        # Append log entry
+        Add-Content -Path $logPath -Value $entry -Encoding UTF8
+    }
+    catch {
+        # Silently fail - don't interrupt script execution if logging fails
+        Write-Verbose "Failed to write security log: $_"
+    }
+}
+#endregion
+
 #region Utility Functions - Available to all tasks
 function Get-ProjectRoot {
     <#
@@ -287,6 +346,9 @@ function Get-GitStatus {
     }
 
     # Get git status
+    # SECURITY: Log external command execution (P0 - Security Event Logging)
+    Write-SecurityLog -Event "CommandExecution" -Details "Executing: git status --porcelain" -Severity "Info"
+
     $status = git status --porcelain 2>$null
 
     # Determine if clean and return result
@@ -713,10 +775,21 @@ function Invoke-Task {
 
     # Execute the task
     if ($TaskInfo.IsCore) {
+        # SECURITY: Log core task execution (P0 - Security Event Logging)
+        Write-SecurityLog -Event "TaskExecution" -Details "Core task: $primaryName" -Severity "Info"
+
         # Execute core task function
         $result = & $TaskInfo.Function
+
+        # Log completion
+        $status = if ($result) { "succeeded" } else { "failed" }
+        Write-SecurityLog -Event "TaskCompletion" -Details "Core task: $primaryName ($status)" -Severity $(if ($result) { "Info" } else { "Error" })
+
         return $result
     } else {
+        # SECURITY: Log task execution (P0 - Security Event Logging)
+        Write-SecurityLog -Event "TaskExecution" -Details "Task: $primaryName, Script: $($TaskInfo.ScriptPath)" -Severity "Info"
+
         # Execute external script with utility functions injected
         try {
             # SECURITY: Validate script path before interpolation (P0 - Path Sanitization)
@@ -772,19 +845,28 @@ try {
 
         } catch {
             Write-Error "Error executing task '$primaryName': $_"
+            Write-SecurityLog -Event "TaskCompletion" -Details "Task: $primaryName (failed with error: $_)" -Severity "Error"
             return $false
         }
 
         # Check exit code
         if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {
+            Write-SecurityLog -Event "TaskCompletion" -Details "Task: $primaryName (failed with exit code: $LASTEXITCODE)" -Severity "Error"
             return $false
         }
+
+        Write-SecurityLog -Event "TaskCompletion" -Details "Task: $primaryName (succeeded)" -Severity "Info"
         return $true
     }
 }
 
 # Discover all available tasks
 $availableTasks = Get-AllTasks -TaskDirectory $TaskDirectory
+
+# SECURITY: Log TaskDirectory usage if non-default (P0 - Security Event Logging)
+if ($TaskDirectory -ne ".build") {
+    Write-SecurityLog -Event "TaskDirectoryUsage" -Details "TaskDirectory: $TaskDirectory" -Severity "Info"
+}
 
 # Handle -NewTask flag
 if (-not [string]::IsNullOrWhiteSpace($NewTask)) {
@@ -820,6 +902,9 @@ exit 0
     # Use -NoClobber to fail if file exists (atomic check-and-create)
     try {
         $template | Out-File -FilePath $filePath -Encoding UTF8 -NoClobber -ErrorAction Stop
+
+        # SECURITY: Log file creation event (P0 - Security Event Logging)
+        Write-SecurityLog -Event "FileCreation" -Details "Created task file: $fileName in $TaskDirectory" -Severity "Info"
     }
     catch [System.IO.IOException] {
         Write-Error "Task file already exists: $fileName"

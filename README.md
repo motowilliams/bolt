@@ -688,6 +688,42 @@ Gosh implements comprehensive security measures including:
 - **Execution Policy Awareness**: Runtime checks for PowerShell security settings
 - **Atomic File Operations**: Race condition prevention in file creation
 - **Git Output Sanitization**: Safe handling of external command output
+- **Security Event Logging**: Opt-in audit logging for security-relevant operations
+
+### Security Event Logging
+
+Gosh can optionally log security-relevant events for audit and compliance purposes. Logging is **disabled by default** to minimize performance impact and respect privacy.
+
+**Enable logging:**
+```powershell
+# Windows (PowerShell)
+$env:GOSH_AUDIT_LOG = '1'
+.\gosh.ps1 build
+
+# Linux/macOS (Bash)
+export GOSH_AUDIT_LOG=1
+pwsh -File gosh.ps1 build
+```
+
+**Logs are written to:** `.gosh/audit.log` (automatically created, excluded from git)
+
+**What gets logged:**
+- Task executions (name, script path, user, timestamp)
+- File creations (via `-NewTask`)
+- Custom `TaskDirectory` usage
+- External command executions (e.g., `git status`)
+- Task completion status (success/failure with exit codes)
+
+**Log format:**
+```
+2025-10-26 14:30:45 | Info | username@machine | TaskExecution | Task: build, Script: .build/Invoke-Build.ps1
+2025-10-26 14:30:46 | Info | username@machine | TaskCompletion | Task 'build' succeeded
+```
+
+**View logs:**
+```powershell
+Get-Content .gosh/audit.log
+```
 
 For security best practices and vulnerability reporting, see:
 - **[SECURITY.md](SECURITY.md)** - Complete security documentation and analysis

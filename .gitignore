@@ -17,3 +17,6 @@ testResults.xml
 tests/security/temp-*/
 tests/security/temp-*/**
 tests/*temp*/**
+
+# Security audit logs (opt-in logging)
+.gosh/
