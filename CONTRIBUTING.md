@@ -209,6 +209,19 @@ When updating documentation:
 - Check existing issues and PRs first
 - Be respectful and constructive
 
+## Security
+
+**Found a security vulnerability?**
+
+Please **DO NOT** report security vulnerabilities through public GitHub issues.
+
+Instead, report them via:
+- **GitHub Security Advisories** (preferred): https://github.com/motowilliams/gosh/security/advisories/new
+- **Security Policy**: See [SECURITY.md](SECURITY.md) for complete vulnerability disclosure process
+- **RFC 9116 Policy**: See [.well-known/security.txt](.well-known/security.txt)
+
+You should receive a response within 48 hours. For more details on our security process, response timelines, and coordinated disclosure policy, see [SECURITY.md](SECURITY.md).
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the MIT License.

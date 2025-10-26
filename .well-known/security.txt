@@ -1,0 +1,34 @@
+# Security Policy for Gosh! PowerShell Build System
+#
+# This file follows RFC 9116 (https://www.rfc-editor.org/rfc/rfc9116)
+# to provide security researchers with information on how to
+# responsibly disclose security vulnerabilities.
+
+Contact: https://github.com/motowilliams/gosh/security/advisories/new
+Expires: 2026-10-26T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://raw.githubusercontent.com/motowilliams/gosh/main/.well-known/security.txt
+Policy: https://github.com/motowilliams/gosh/blob/main/SECURITY.md
+
+# Reporting a Vulnerability
+#
+# Please report security vulnerabilities through GitHub Security Advisories
+# (preferred) using the Contact link above. You can also open a private
+# security advisory directly from the repository's Security tab.
+#
+# Do NOT report security vulnerabilities through public GitHub issues.
+#
+# You should receive a response within 48 hours. If you do not receive a
+# response, please follow up via GitHub issues mentioning @motowilliams.
+#
+# Please include in your report:
+# - Description of the vulnerability
+# - Steps to reproduce
+# - Potential impact assessment
+# - Suggested fix (if available)
+#
+# See our full Security Policy at the Policy URL above for:
+# - Response timelines and SLAs
+# - Coordinated disclosure process
+# - Scope of security coverage
+# - Known limitations and acceptable risks

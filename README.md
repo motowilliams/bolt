@@ -679,7 +679,23 @@ Invoke-Pester             # All tests
 
 This follows the **90/10 principle**: 90% of the workflow should be identical locally and in CI.
 
-## �💡 Why "Gosh"?
+## 🔒 Security
+
+Gosh implements comprehensive security measures including:
+
+- **Input Validation**: Task names, paths, and parameters are validated
+- **Path Sanitization**: Protection against directory traversal attacks
+- **Execution Policy Awareness**: Runtime checks for PowerShell security settings
+- **Atomic File Operations**: Race condition prevention in file creation
+- **Git Output Sanitization**: Safe handling of external command output
+
+For security best practices and vulnerability reporting, see:
+- **[SECURITY.md](SECURITY.md)** - Complete security documentation and analysis
+- **[.well-known/security.txt](.well-known/security.txt)** - RFC 9116 compliant security policy
+
+**Report security vulnerabilities** via [GitHub Security Advisories](https://github.com/motowilliams/gosh/security/advisories/new). Do not report vulnerabilities through public issues.
+
+## 💡 Why "Gosh"?
 
 **Go** (the entry point) + **powerShell** (PowerShell) = **Gosh!**
 
