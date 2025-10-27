@@ -360,7 +360,9 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
 
 **Configuration**:
 - **Platforms**: Ubuntu (Linux) and Windows (matrix strategy)
-- **Triggers**: Pull requests to `main`, push to `main` branch, manual dispatch via `workflow_dispatch`
+- **Triggers**: All branch pushes, pull requests to `main`, manual dispatch via `workflow_dispatch`
+  - Push builds run on all branches (including topic branches)
+  - Duplicate builds prevented when PR is open (only PR build runs)
 - **Branch Protection**: Main branch should be protected (requires GitHub settings configuration)
 
 **Pipeline Steps**:

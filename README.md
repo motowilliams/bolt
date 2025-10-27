@@ -707,7 +707,9 @@ Task is automatically discovered—no registration needed! Restart your shell to
 
 Gosh includes a GitHub Actions workflow that runs on Ubuntu and Windows:
 
-- **Triggers**: Pull requests to `main`, push to `main` branch, manual dispatch
+- **Triggers**: All branch pushes, pull requests to `main`, manual dispatch
+  - Push builds run on all branches (including topic branches)
+  - Duplicate builds prevented when PR is open (only PR build runs)
 - **Platforms**: Ubuntu (Linux) and Windows
 - **Pipeline**: Core tests → Tasks tests → Full build (format → lint → build)
 - **Dependencies**: Automatically installs PowerShell 7.0+ and Bicep CLI
