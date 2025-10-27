@@ -359,25 +359,30 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should not track audit logs in git" {
-            $env:GOSH_AUDIT_LOG = '1'
-            & $GoshScript -ListTasks | Out-Null
-
-            # Check if git is available
+            # Check if git is available first
             $gitAvailable = Get-Command git -ErrorAction SilentlyContinue
 
-            if ($gitAvailable -and (Test-Path $LogFile)) {
-                Push-Location $ProjectRoot
-                try {
-                    $status = git status --porcelain .gosh/ 2>$null
-                    $status | Should -BeNullOrEmpty
-                } finally {
-                    Pop-Location
-                }
-            } else {
-                Set-ItResult -Skipped -Because "Git not available or log file not created"
+            if (-not $gitAvailable) {
+                Set-ItResult -Skipped -Because "Git is not available"
+                return
             }
 
-            $env:GOSH_AUDIT_LOG = $null
+            # Enable logging and execute a task to create log file
+            $env:GOSH_AUDIT_LOG = '1'
+            & $GoshScript -TaskDirectory 'tests/fixtures' mock-simple | Out-Null
+
+            # Verify log file was created
+            Test-Path $LogFile | Should -BeTrue
+
+            # Verify .gosh/ is not tracked by git
+            Push-Location $ProjectRoot
+            try {
+                $status = git status --porcelain .gosh/ 2>$null
+                $status | Should -BeNullOrEmpty
+            } finally {
+                Pop-Location
+                $env:GOSH_AUDIT_LOG = $null
+            }
         }
     }
 
