@@ -247,6 +247,109 @@ function Write-SecurityLog {
         Write-Verbose "Failed to write security log: $_"
     }
 }
+
+function Test-CommandOutput {
+    <#
+    .SYNOPSIS
+        Validates and sanitizes external command output before display
+
+    .DESCRIPTION
+        Protects against terminal injection attacks by validating and sanitizing
+        output from external commands (git, bicep, etc.). Removes ANSI escape
+        sequences, control characters, and excessively long output.
+
+    .PARAMETER Output
+        The raw command output to validate and sanitize
+
+    .PARAMETER MaxLength
+        Maximum allowed output length in characters (default: 100KB)
+
+    .PARAMETER MaxLines
+        Maximum allowed number of lines (default: 1000)
+
+    .EXAMPLE
+        $gitOutput = git status --porcelain 2>&1
+        $safeOutput = Test-CommandOutput -Output $gitOutput
+        Write-Host $safeOutput
+
+    .NOTES
+        This function:
+        - Strips ANSI escape sequences (\x1b[...m)
+        - Removes dangerous control characters (0x00-0x1F, 0x7F-0x9F)
+        - Preserves newline (\n), carriage return (\r), and tab (\t)
+        - Truncates excessively long output
+        - Detects and warns about suspicious content
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [AllowEmptyString()]
+        [string]$Output,
+
+        [Parameter()]
+        [int]$MaxLength = 102400,  # 100KB default
+
+        [Parameter()]
+        [int]$MaxLines = 1000
+    )
+
+    begin {
+        Write-Verbose "Validating command output (MaxLength: $MaxLength, MaxLines: $MaxLines)"
+    }
+
+    process {
+        # Handle null or empty input
+        if ([string]::IsNullOrEmpty($Output)) {
+            return ''
+        }
+
+        $sanitized = $Output
+        $warnings = @()
+
+        # Check for suspicious binary content (null bytes)
+        if ($sanitized -match '\x00') {
+            $warnings += 'Binary content detected in output'
+            # Remove null bytes
+            $sanitized = $sanitized -replace '\x00', '?'
+        }
+
+        # Remove ANSI escape sequences (e.g., \x1b[31m for red text)
+        # Pattern: ESC [ <parameters> <command>
+        # \x1b\[ matches the escape sequence start
+        # [0-9;]* matches parameters (numbers and semicolons)
+        # [a-zA-Z] matches the command character
+        if ($sanitized -match '\x1b\[') {
+            Write-Verbose 'ANSI escape sequences detected - sanitizing'
+            $sanitized = $sanitized -replace '\x1b\[[0-9;]*[a-zA-Z]', ''
+        }
+
+        # Remove other dangerous control characters
+        # Preserve: \n (0x0A), \r (0x0D), \t (0x09)
+        # Remove: 0x00-0x08, 0x0B-0x0C, 0x0E-0x1F, 0x7F-0x9F
+        $sanitized = $sanitized -replace '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]', '?'
+
+        # Check output length
+        if ($sanitized.Length -gt $MaxLength) {
+            $warnings += "Output truncated (exceeded $MaxLength characters)"
+            $sanitized = $sanitized.Substring(0, $MaxLength) + "`n... [output truncated]"
+        }
+
+        # Check line count
+        $lines = $sanitized -split '\r?\n'
+        if ($lines.Count -gt $MaxLines) {
+            $warnings += "Output truncated (exceeded $MaxLines lines)"
+            $sanitized = ($lines | Select-Object -First $MaxLines) -join "`n"
+            $sanitized += "`n... [output truncated]"
+        }
+
+        # Write warnings if any were collected
+        foreach ($warning in $warnings) {
+            Write-Warning "Output validation: $warning"
+        }
+
+        return $sanitized
+    }
+}
 #endregion
 
 #region Utility Functions - Available to all tasks
@@ -406,7 +509,12 @@ function Invoke-CheckGitIndex {
     } else {
         Write-Host "✗ Git index is dirty - uncommitted changes detected:" -ForegroundColor Red
         Write-Host ""
-        git status --short
+
+        # SECURITY: Validate git output before display (P0 - Output Validation)
+        $rawGitOutput = (git status --short 2>&1) -join "`n"
+        $sanitizedOutput = Test-CommandOutput -Output $rawGitOutput
+        Write-Host $sanitizedOutput
+
         Write-Host ""
         Write-Warning "Please commit or stash your changes before proceeding"
         return $false

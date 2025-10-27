@@ -688,6 +688,7 @@ Gosh implements comprehensive security measures including:
 - **Execution Policy Awareness**: Runtime checks for PowerShell security settings
 - **Atomic File Operations**: Race condition prevention in file creation
 - **Git Output Sanitization**: Safe handling of external command output
+- **Output Validation**: ANSI escape sequence removal and control character filtering
 - **Security Event Logging**: Opt-in audit logging for security-relevant operations
 
 ### Security Event Logging
