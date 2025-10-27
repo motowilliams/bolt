@@ -231,8 +231,8 @@ function Write-SecurityLog {
         $machine = [Environment]::MachineName
         $entry = "$timestamp | $Severity | $user@$machine | $Event | $Details"
 
-        $logPath = Join-Path $PSScriptRoot '.gosh' 'audit.log'
-        $logDir = Split-Path $logPath -Parent
+        $logDir = Join-Path $PSScriptRoot '.gosh'
+        $logPath = Join-Path $logDir 'audit.log'
 
         # Create .gosh directory if it doesn't exist
         if (-not (Test-Path $logDir)) {

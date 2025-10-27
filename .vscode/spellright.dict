@@ -6,3 +6,9 @@ symlinks
 allowlist
 Dependabot
 motowilliams
+en
+boolean
+gitignored
+stdout
+json
+github
