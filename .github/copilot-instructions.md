@@ -57,7 +57,7 @@ This is **Gosh**, a self-contained PowerShell build system (`gosh.ps1`) designed
 The project is a **working example** that includes:
 - ✅ Complete build orchestration system (`gosh.ps1`)
 - ✅ Three project tasks: `format`, `lint`, `build`
-- ✅ Pester test suite with comprehensive coverage (73 tests)
+- ✅ Pester test suite with comprehensive coverage (261 tests)
 - ✅ Example Azure infrastructure (App Service + SQL)
 - ✅ Multi-task execution with dependency resolution
 - ✅ Tab completion and help system
@@ -510,7 +510,10 @@ This project uses **Pester** for PowerShell testing. The test suite is organized
 
 **Test Structure**:
 - **`tests/gosh.Tests.ps1`** (28 tests) - Core Gosh orchestration using mock fixtures
-- **`tests/security/Security.Tests.ps1`** (29 tests) - Security validation tests (P0 fixes)
+- **`tests/security/Security.Tests.ps1`** (87 tests) - Core security validation tests (P0 fixes)
+- **`tests/security/SecurityTxt.Tests.ps1`** (20 tests) - RFC 9116 compliance tests
+- **`tests/security/SecurityLogging.Tests.ps1`** (26 tests) - Security event logging tests
+- **`tests/security/OutputValidation.Tests.ps1`** (44 tests) - Terminal injection protection tests
 - **`packages/.build-bicep/tests/Tasks.Tests.ps1`** (12 tests) - Bicep task validation tests
 - **`packages/.build-bicep/tests/Integration.Tests.ps1`** (4 tests) - End-to-end Bicep integration tests
 - **`tests/fixtures/`** - Mock tasks for testing Gosh orchestration without external dependencies
@@ -529,7 +532,7 @@ Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (16 tests, ~22s)
 
 **Test Tags**:
 - **`Core`** (28 tests) - Tests gosh.ps1 orchestration, fast, no external dependencies
-- **`Security`** (29 tests) - Tests security validations (P0 fixes), fast, no external dependencies
+- **`Security`** (205 tests) - Tests all security features (validation, RFC 9116, logging, output sanitization)
 - **`Bicep-Tasks`** (16 tests) - Tests Bicep task implementation, slower, requires Bicep CLI
 
 **Test Coverage**:
@@ -585,10 +588,10 @@ $result = Invoke-Gosh -Arguments @('mock-simple') `
 
 **Test Results**:
 ```
-Tests Passed: 73
+Tests Passed: 261
 Tests Failed: 0
 Skipped: 0
-Total Time: ~27 seconds
+Total Time: ~15 seconds
 ```
 
 ### Validation Strategy
@@ -671,9 +674,9 @@ The project uses `.editorconfig` for consistent code formatting:
 .\gosh.ps1 format lint build -Only # Multiple tasks without deps
 
 # Testing with Pester
-Invoke-Pester                      # Run all tests (73 tests, ~27s)
+Invoke-Pester                      # Run all tests (261 tests, ~15s)
 Invoke-Pester -Tag Core            # Only orchestration tests (28 tests, ~1s)
-Invoke-Pester -Tag Security        # Only security tests (29 tests, ~1s)
+Invoke-Pester -Tag Security        # Only security tests (205 tests, ~10s)
 Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (16 tests, ~22s)
 Invoke-Pester -Output Detailed     # With detailed output
 
@@ -706,7 +709,10 @@ Ctrl+Shift+P > Tasks: Run Test Task # Select test task
 
 ### Testing
 - `tests/gosh.Tests.ps1` - Core Gosh orchestration tests (28 tests, uses mock fixtures, tag: `Core`)
-- `tests/security/Security.Tests.ps1` - Security validation tests (29 tests, P0 fixes, tag: `Security`)
+- `tests/security/Security.Tests.ps1` - Security validation tests (87 tests, P0 fixes, tag: `Security`)
+- `tests/security/SecurityTxt.Tests.ps1` - RFC 9116 compliance tests (20 tests, tag: `SecurityTxt`, `Operational`)
+- `tests/security/SecurityLogging.Tests.ps1` - Security event logging tests (26 tests, tag: `SecurityLogging`, `Operational`)
+- `tests/security/OutputValidation.Tests.ps1` - Output sanitization tests (44 tests, tag: `OutputValidation`, `Security`)
 - `packages/.build-bicep/tests/Tasks.Tests.ps1` - Bicep task validation tests (12 tests, tag: `Bicep-Tasks`)
 - `packages/.build-bicep/tests/Integration.Tests.ps1` - End-to-end Bicep integration tests (4 tests, tag: `Bicep-Tasks`)
 - `tests/fixtures/Invoke-Mock*.ps1` - Mock tasks for testing Gosh without external dependencies

@@ -73,10 +73,10 @@ if ($success) {
 
 Before submitting changes:
 
-- **Run the test suite**: `Invoke-Pester` to ensure all tests pass (73 tests)
+- **Run the test suite**: `Invoke-Pester` to ensure all tests pass (261 tests)
 - **Use test tags for faster feedback**:
   - `Invoke-Pester -Tag Core` - Quick orchestration tests (28 tests, ~1s)
-  - `Invoke-Pester -Tag Security` - Security validation tests (29 tests, ~1s)
+  - `Invoke-Pester -Tag Security` - Security validation tests (205 tests, ~10s)
   - `Invoke-Pester -Tag Bicep-Tasks` - Bicep task validation tests (16 tests, ~22s)
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag

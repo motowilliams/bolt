@@ -107,8 +107,13 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 │   ├── fixtures/               # Mock tasks for testing
 │   ├── gosh.Tests.ps1          # Core orchestration tests (28 tests)
 │   ├── security/
-│   │   └── Security.Tests.ps1  # Security validation tests (29 tests)
+│   │   ├── Security.Tests.ps1  # Security validation tests (87 tests)
+│   │   ├── SecurityTxt.Tests.ps1 # RFC 9116 compliance tests (20 tests)
+│   │   ├── SecurityLogging.Tests.ps1 # Audit logging tests (26 tests)
+│   │   └── OutputValidation.Tests.ps1 # Output sanitization tests (44 tests)
 │   └── Invoke-Test.ps1         # Test helper
+├── .well-known/
+│   └── security.txt            # RFC 9116 security policy
 └── .github/
     └── copilot-instructions.md # AI agent guidance
 ```
@@ -367,10 +372,25 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
   - Uses mock fixtures from `tests/fixtures/` to test Gosh itself
   - Tag: `Core`
 
-- **`tests/security/Security.Tests.ps1`** (29 tests) - Security validation tests
+- **`tests/security/Security.Tests.ps1`** (87 tests) - Security validation tests
   - Input validation, path sanitization, injection prevention
   - Validates TaskDirectory, task names, and script paths
   - Tag: `Security`, `P0`
+
+- **`tests/security/SecurityTxt.Tests.ps1`** (20 tests) - RFC 9116 compliance
+  - Validates .well-known/security.txt file format and content
+  - Verifies required and recommended fields
+  - Tag: `SecurityTxt`, `Operational`
+
+- **`tests/security/SecurityLogging.Tests.ps1`** (26 tests) - Security event logging
+  - Tests opt-in audit logging functionality
+  - Validates log format, file management, and GitIgnore integration
+  - Tag: `SecurityLogging`, `Operational`
+
+- **`tests/security/OutputValidation.Tests.ps1`** (44 tests) - Output sanitization
+  - Tests ANSI escape sequence removal and control character filtering
+  - Validates length/line limits and malicious input handling
+  - Tag: `OutputValidation`, `Security`
 
 **Bicep Module Tests** (`packages/.build-bicep/tests/` directory):
 - **`packages/.build-bicep/tests/Tasks.Tests.ps1`** (12 tests) - Task validation
@@ -386,7 +406,7 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 
 ```powershell
 # Run all tests (auto-discovers test files)
-Invoke-Pester                         # 73 tests total
+Invoke-Pester                         # 261 tests total
 
 # Run with detailed output
 Invoke-Pester -Output Detailed
@@ -397,7 +417,7 @@ Invoke-Pester -Path packages/.build-bicep/tests/
 
 # Run tests by tag
 Invoke-Pester -Tag Core               # Core orchestration only (28 tests, ~1s)
-Invoke-Pester -Tag Security           # Security validation only (29 tests, ~1s)
+Invoke-Pester -Tag Security           # Security validation only (205 tests, ~10s)
 Invoke-Pester -Tag Bicep-Tasks        # Bicep tasks only (16 tests, ~22s)
 ```
 
@@ -410,10 +430,11 @@ Tests are organized with tags for flexible execution:
   - No external tool dependencies
   - Uses mock fixtures from `tests/fixtures/`
 
-- **`Security`** (29 tests) - Tests security validations
-  - Fast execution (~1 second)
-  - Validates input sanitization and injection prevention
-  - Tests P0 security fixes for TaskDirectory, path sanitization, and task name validation
+- **`Security`** (205 tests) - Tests security validations and features
+  - Moderate execution (~10 seconds)
+  - Includes Security.Tests.ps1, SecurityTxt.Tests.ps1, SecurityLogging.Tests.ps1, OutputValidation.Tests.ps1
+  - Validates input sanitization, RFC 9116 compliance, audit logging, and output validation
+  - Tests P0 security fixes for TaskDirectory, path sanitization, task name validation, and terminal injection protection
   
 - **`Bicep-Tasks`** (16 tests) - Tests Bicep task implementation
   - Slower execution (~22 seconds)
@@ -450,12 +471,47 @@ Invoke-Pester
 - Parameter validation (comma/space-separated)
 - Documentation consistency
 
-**Security Validation** (`tests/security/Security.Tests.ps1` - 29 tests):
-- Path traversal protection (absolute paths, parent directory references)
-- Command injection prevention (semicolons, pipes, backticks)
-- PowerShell injection prevention (special characters, variables, command substitution)
-- Input sanitization and validation
-- Error handling security (secure failure modes)
+**Security Tests** (`tests/security/` - 205 tests total):
+
+1. **Security.Tests.ps1** (87 tests) - Core security validation:
+   - Path traversal protection (absolute paths, parent directory references)
+   - Command injection prevention (semicolons, pipes, backticks)
+   - PowerShell injection prevention (special characters, variables, command substitution)
+   - Input sanitization and validation
+   - Error handling security (secure failure modes)
+
+2. **SecurityTxt.Tests.ps1** (20 tests) - RFC 9116 compliance:
+   - File existence and location (.well-known/security.txt)
+   - Required fields (Contact, Expires)
+   - Recommended fields (Preferred-Languages, Canonical, Policy)
+   - Contact information validity (GitHub Security Advisories)
+   - File format and structure (UTF-8 encoding, field names)
+   - Security policy content (vulnerability reporting guidance)
+   - Repository integration (GitHub references, git tracking)
+
+3. **SecurityLogging.Tests.ps1** (26 tests) - Audit logging:
+   - Logging disabled by default (no overhead when not enabled)
+   - Opt-in via `$env:GOSH_AUDIT_LOG` environment variable
+   - Log entry format (timestamp, severity, user, machine, event, details)
+   - TaskDirectory usage logging (custom directories only)
+   - File creation logging (via -NewTask)
+   - Task execution logging (start, completion, success/failure)
+   - External command logging (git operations)
+   - Log file management (append mode, sequential writes)
+   - GitIgnore integration (.gosh/ excluded from version control)
+   - Error handling (silent failures, directory conflicts)
+
+4. **OutputValidation.Tests.ps1** (44 tests) - Terminal injection protection:
+   - Normal output pass-through (no modification of safe content)
+   - ANSI escape sequence removal (colors, cursor control)
+   - Control character filtering (null bytes, bell, backspace, etc.)
+   - Length validation and truncation (100KB default limit)
+   - Line count validation and truncation (1000 lines default)
+   - Malicious input handling (command injection attempts)
+   - Real-world git scenarios (status output, branch names)
+   - Pipeline support (accepts input from pipeline)
+   - Verbose output (detailed logging of sanitization)
+   - Integration tests (check-index task output validation)
 
 **Bicep Tasks** (`packages/.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
 - Format task: existence, syntax, metadata, aliases
@@ -528,10 +584,10 @@ Use Pester directly in CI pipelines:
 ### Test Results
 
 ```
-Tests Passed: 43
+Tests Passed: 261
 Tests Failed: 0
 Skipped: 0
-Total Time: ~27 seconds
+Total Time: ~15 seconds
 ```
 
 ## 🔧 Requirements
