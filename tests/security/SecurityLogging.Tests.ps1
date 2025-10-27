@@ -25,14 +25,14 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
     BeforeEach {
         # Clean up any existing log file
-        if (Test-Path $LogDir) {
+        if (Test-Path -PathType Container $LogDir) {
             Remove-Item $LogDir -Recurse -Force
         }
     }
 
     AfterEach {
         # Clean up after each test
-        if (Test-Path $LogDir) {
+        if (Test-Path -PathType Container $LogDir) {
             Remove-Item $LogDir -Recurse -Force
         }
     }
@@ -43,7 +43,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
             # Run a simple task without enabling logging
             & $GoshScript -ListTasks | Out-Null
 
-            Test-Path $LogDir | Should -Be $false
+            Test-Path -PathType Container $LogDir | Should -Be $false
         }
 
         It "Should not create audit.log when logging is disabled" {
@@ -80,8 +80,8 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
             # Execute a simple task to trigger logging
             & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
 
-            Test-Path $LogDir | Should -Be $true
-            (Get-Item $LogDir).PSIsContainer | Should -Be $true
+            Test-Path -PathType Container $LogDir | Should -Be $true
+            (Get-Item -Force $LogDir).PSIsContainer | Should -Be $true
         }
 
         It "Should create audit.log file when logging is enabled" {

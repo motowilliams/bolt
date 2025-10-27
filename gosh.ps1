@@ -235,7 +235,7 @@ function Write-SecurityLog {
         $logPath = Join-Path $logDir 'audit.log'
 
         # Create .gosh directory if it doesn't exist
-        if (-not (Test-Path $logDir)) {
+        if (-not (Test-Path -PathType Container $logDir)) {
             New-Item -Path $logDir -ItemType Directory -Force | Out-Null
         }
 
