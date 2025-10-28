@@ -13,10 +13,6 @@ jobs:
   test:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    # Prevent duplicate runs: cancel in-progress runs when new commits pushed
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
     strategy:
       fail-fast: false # Continue testing other platforms if one fails
       matrix:
