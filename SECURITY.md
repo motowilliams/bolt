@@ -1381,7 +1381,7 @@ function Write-SecurityLog {
         $logPath = Join-Path $PSScriptRoot '.gosh' 'audit.log'
         $logDir = Split-Path $logPath -Parent
         
-        if (-not (Test-Path -Type Container $logDir)) {
+        if (-not (Test-Path -PathType Container $logDir)) {
             New-Item -Path $logDir -ItemType Directory -Force | Out-Null
         }
         
