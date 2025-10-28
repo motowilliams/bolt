@@ -14,7 +14,6 @@ jobs:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     # Skip push builds if there's an open PR for this branch
-    if: github.event_name != 'push' || github.event.pull_request == null
     strategy:
       fail-fast: false # Continue testing other platforms if one fails
       matrix:
