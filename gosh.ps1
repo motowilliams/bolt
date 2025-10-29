@@ -48,6 +48,9 @@ using namespace System.Management.Automation
 .EXAMPLE
     .\gosh.ps1 format,lint,build -ErrorAction Continue
     Runs all tasks even if one fails (useful for seeing all errors at once).
+.EXAMPLE
+    .\gosh.ps1 -AsModule
+    Installs Gosh as a PowerShell module for the current user, enabling the 'gosh' command.
 #>
 [CmdletBinding()]
 param(
@@ -102,6 +105,9 @@ param(
         return $true
     })]
     [string]$NewTask,
+
+    [Parameter()]
+    [switch]$AsModule,
 
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Arguments
@@ -478,6 +484,316 @@ function Get-GoshUtilities {
         'Get-GitStatus'   = ${function:Get-GitStatus}
     }
 }
+
+function Install-GoshModule {
+    <#
+    .SYNOPSIS
+        Installs Gosh as a PowerShell module for the current user
+    .DESCRIPTION
+        Creates a PowerShell module in ~/Documents/PowerShell/Modules/Gosh/
+        that allows running 'gosh' commands from any directory. The module
+        searches upward from the current directory for .build/ folders.
+    #>
+    [CmdletBinding()]
+    param()
+
+    Write-Host "Installing Gosh as a PowerShell module..." -ForegroundColor Cyan
+    Write-Host ""
+
+    # Determine module installation path
+    $moduleName = "Gosh"
+    $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
+
+    # Create module directory (overwrites if exists for idempotency)
+    if (Test-Path $userModulePath) {
+        Write-Host "Module directory exists, updating..." -ForegroundColor Yellow
+        Remove-Item -Path $userModulePath -Recurse -Force
+    }
+
+    New-Item -Path $userModulePath -ItemType Directory -Force | Out-Null
+    Write-Host "Created module directory: $userModulePath" -ForegroundColor Gray
+
+    # Generate module manifest (.psd1)
+    $manifestPath = Join-Path $userModulePath "$moduleName.psd1"
+    $manifestContent = @"
+@{
+    # Module metadata
+    RootModule = '$moduleName.psm1'
+    ModuleVersion = '1.0.0'
+    GUID = '$(New-Guid)'
+    Author = 'Gosh Contributors'
+    CompanyName = 'Unknown'
+    Copyright = '(c) Gosh Contributors. All rights reserved.'
+    Description = 'Gosh! Build orchestration for PowerShell - A self-contained build system with extensible task orchestration.'
+
+    # Minimum PowerShell version
+    PowerShellVersion = '7.0'
+
+    # Functions and aliases to export
+    FunctionsToExport = @('Invoke-Gosh')
+    AliasesToExport = @('gosh')
+    CmdletsToExport = @()
+    VariablesToExport = @()
+
+    # Private data
+    PrivateData = @{
+        PSData = @{
+            Tags = @('Build', 'Task', 'Orchestration', 'PowerShell', 'Bicep', 'Azure')
+            LicenseUri = 'https://github.com/motowilliams/gosh/blob/main/LICENSE'
+            ProjectUri = 'https://github.com/motowilliams/gosh'
+        }
+    }
+}
+"@
+
+    $manifestContent | Out-File -FilePath $manifestPath -Encoding UTF8 -Force
+    Write-Host "Created module manifest: $moduleName.psd1" -ForegroundColor Gray
+
+    # Copy gosh.ps1 to the module directory (so it can be invoked as a script)
+    $goshCorePath = Join-Path $userModulePath "gosh-core.ps1"
+    Copy-Item -Path $PSCommandPath -Destination $goshCorePath -Force
+    Write-Host "Copied gosh core script to module" -ForegroundColor Gray
+
+    # Generate module script (.psm1) that wraps gosh.ps1 with upward directory search
+    $moduleScriptPath = Join-Path $userModulePath "$moduleName.psm1"
+
+    $moduleScript = @"
+#Requires -Version 7.0
+using namespace System.Management.Automation
+
+<#
+.SYNOPSIS
+    Gosh! Build orchestration for PowerShell (Module Version)
+.DESCRIPTION
+    PowerShell module version of Gosh that searches upward from the current directory
+    for .build/ folders, enabling 'gosh' command usage from any project directory.
+#>
+
+function Find-BuildDirectory {
+    <#
+    .SYNOPSIS
+        Searches upward from current directory for .build folder
+    .DESCRIPTION
+        Recursively searches parent directories for .build folder, similar to how
+        git searches for .git directory. Returns the path to .build if found.
+    .PARAMETER StartPath
+        The directory to start searching from. Defaults to current location.
+    .PARAMETER TaskDirectory
+        The directory name to search for. Defaults to '.build'.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]`$StartPath = (Get-Location).Path,
+        [string]`$TaskDirectory = '.build'
+    )
+
+    `$currentPath = `$StartPath
+    `$iterations = 0
+    `$maxIterations = 100  # Prevent infinite loops
+
+    while (`$currentPath -and `$iterations -lt `$maxIterations) {
+        `$buildPath = Join-Path `$currentPath `$TaskDirectory
+
+        Write-Verbose "Searching for '`$TaskDirectory' in: `$currentPath"
+
+        if (Test-Path `$buildPath -PathType Container) {
+            Write-Verbose "Found '`$TaskDirectory' at: `$buildPath"
+            return `$buildPath
+        }
+
+        # Move to parent directory
+        `$parent = Split-Path `$currentPath -Parent
+
+        # Check if we've reached the root
+        if (`$parent -eq `$currentPath -or [string]::IsNullOrEmpty(`$parent)) {
+            break
+        }
+
+        `$currentPath = `$parent
+        `$iterations++
+    }
+
+    Write-Verbose "'`$TaskDirectory' not found in any parent directory"
+    return `$null
+}
+
+function Invoke-Gosh {
+    <#
+    .SYNOPSIS
+        Gosh! Build orchestration
+    .DESCRIPTION
+        Executes Gosh build tasks. When running as a module, searches upward from
+        the current directory for .build/ folder.
+    .PARAMETER Task
+        One or more task names to execute
+    .PARAMETER ListTasks
+        Display all available tasks
+    .PARAMETER Only
+        Skip task dependencies
+    .PARAMETER Outline
+        Show task execution plan without running
+    .PARAMETER TaskDirectory
+        Override the default .build directory name
+    .PARAMETER NewTask
+        Create a new task file
+    .PARAMETER Arguments
+        Additional arguments to pass to tasks
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Position = 0)]
+        [string[]]`$Task,
+
+        [Alias('Help')]
+        [switch]`$ListTasks,
+
+        [switch]`$Only,
+
+        [switch]`$Outline,
+
+        [string]`$TaskDirectory = '.build',
+
+        [string]`$NewTask,
+
+        [Parameter(ValueFromRemainingArguments)]
+        [string[]]`$Arguments
+    )
+
+    # Find the project root with .build directory
+    `$buildPath = Find-BuildDirectory -TaskDirectory `$TaskDirectory
+
+    if (-not `$buildPath) {
+        Write-Error "Could not find '`$TaskDirectory' directory in current path or any parent directory."
+        Write-Host "Searched from: `$(Get-Location)" -ForegroundColor Yellow
+        Write-Host "Make sure you're in a directory within a project that has a '`$TaskDirectory' folder." -ForegroundColor Yellow
+        return
+    }
+
+    # Get the project root (parent of .build)
+    `$projectRoot = Split-Path `$buildPath -Parent
+
+    Write-Verbose "Project root: `$projectRoot"
+    Write-Verbose "Build path: `$buildPath"
+
+    # Get path to the gosh-core.ps1 script in this module
+    `$goshCorePath = Join-Path `$PSScriptRoot "gosh-core.ps1"
+
+    # Build parameter hashtable for splatting
+    `$goshParams = @{}
+    if (`$Task) { `$goshParams['Task'] = `$Task }
+    if (`$ListTasks) { `$goshParams['ListTasks'] = `$true }
+    if (`$Only) { `$goshParams['Only'] = `$true }
+    if (`$Outline) { `$goshParams['Outline'] = `$true }
+    if (`$TaskDirectory -ne '.build') { `$goshParams['TaskDirectory'] = `$TaskDirectory }
+    if (`$NewTask) { `$goshParams['NewTask'] = `$NewTask }
+    if (`$Arguments) { `$goshParams['Arguments'] = `$Arguments }
+
+    # Execute gosh-core.ps1 from the project root directory
+    # Set environment variable to signal module mode and pass the project root
+    try {
+        Push-Location `$projectRoot
+
+        # Set environment variable to tell gosh.ps1 it's running in module mode
+        `$env:GOSH_PROJECT_ROOT = `$projectRoot
+
+        # Execute gosh.ps1 with proper parameter splatting
+        & `$goshCorePath @goshParams
+
+        # Propagate exit code
+        if (`$LASTEXITCODE -ne 0 -and `$null -ne `$LASTEXITCODE) {
+            exit `$LASTEXITCODE
+        }
+
+    } finally {
+        # Clean up environment variable
+        Remove-Item Env:GOSH_PROJECT_ROOT -ErrorAction SilentlyContinue
+        Pop-Location
+    }
+}
+
+# Create alias first, then export
+Set-Alias -Name gosh -Value Invoke-Gosh
+Export-ModuleMember -Function Invoke-Gosh -Alias gosh
+
+# Register argument completer for tab completion
+`$taskCompleter = {
+    param(`$commandName, `$parameterName, `$wordToComplete, `$commandAst, `$fakeBoundParameters)
+
+    # Check if -TaskDirectory was specified in the command
+    `$taskDir = '.build'
+    if (`$fakeBoundParameters.ContainsKey('TaskDirectory')) {
+        `$taskDir = `$fakeBoundParameters['TaskDirectory']
+    }
+
+    # Find the build directory by searching upward
+    `$buildPath = Find-BuildDirectory -TaskDirectory `$taskDir
+
+    if (-not `$buildPath) {
+        return @()
+    }
+
+    # Scan for project-specific tasks in task directory
+    `$projectTasks = @()
+    if (Test-Path `$buildPath) {
+        `$buildFiles = Get-ChildItem `$buildPath -Filter '*.ps1' -File -Force
+        foreach (`$file in `$buildFiles) {
+            # Extract task name from file
+            `$lines = Get-Content `$file.FullName -First 20 -ErrorAction SilentlyContinue
+            `$content = `$lines -join "``n"
+            if (`$content -match '(?m)^#\s*TASK:\s*(.+)`$') {
+                `$taskNames = `$Matches[1] -split ',' | ForEach-Object { `$_.Trim() }
+                `$projectTasks += `$taskNames
+            } else {
+                # If there is no TASK tag, use the noun portion of the filename as the task name
+                `$parts = `$file.BaseName -split '-'
+                if (`$parts.Count -gt 1) {
+                    `$taskName = (`$parts[1..(`$parts.Count-1)] -join '-').ToLower()
+                } else {
+                    `$taskName = `$parts[0].ToLower()
+                }
+                `$projectTasks += `$taskName
+            }
+        }
+    }
+
+    # Core tasks (defined in gosh-core.ps1)
+    `$coreTasks = @('check-index', 'check')
+
+    # Combine and get unique task names
+    `$allTasks = (`$coreTasks + `$projectTasks) | Select-Object -Unique | Sort-Object
+
+    # Return matching completions
+    `$allTasks | Where-Object { `$_ -like "`$wordToComplete*" } |
+    ForEach-Object {
+        [System.Management.Automation.CompletionResult]::new(`$_, `$_, 'ParameterValue', `$_)
+    }
+}
+
+Register-ArgumentCompleter -CommandName 'Invoke-Gosh' -ParameterName 'Task' -ScriptBlock `$taskCompleter
+Register-ArgumentCompleter -CommandName 'gosh' -ParameterName 'Task' -ScriptBlock `$taskCompleter
+"@
+
+    $moduleScript | Out-File -FilePath $moduleScriptPath -Encoding UTF8 -Force
+    Write-Host "Created module script: $moduleName.psm1" -ForegroundColor Gray
+
+    Write-Host ""
+    Write-Host "✓ Gosh module installed successfully!" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Next steps:" -ForegroundColor Cyan
+    Write-Host "  1. Restart your PowerShell session (or run: Import-Module Gosh -Force)" -ForegroundColor Gray
+    Write-Host "  2. Navigate to any project directory with a .build/ folder" -ForegroundColor Gray
+    Write-Host "  3. Run: gosh build" -ForegroundColor Gray
+    Write-Host "  4. Use: gosh -ListTasks to see available tasks" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "The module searches upward from your current directory to find .build/ folders," -ForegroundColor Yellow
+    Write-Host "so you can run gosh from any subdirectory within your project!" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Module location: $userModulePath" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "To update the module after modifying gosh.ps1, run: .\gosh.ps1 -AsModule" -ForegroundColor DarkGray
+
+    return $true
+}
 #endregion
 
 function Invoke-CheckGitIndex {
@@ -643,7 +959,8 @@ function Get-AllTasks {
         Returns all available tasks (core + project-specific)
     #>
     param(
-        [string]$TaskDirectory
+        [string]$TaskDirectory,
+        [string]$ScriptRoot = $PSScriptRoot
     )
 
     $allTasks = @{}
@@ -663,12 +980,12 @@ function Get-AllTasks {
     if ([System.IO.Path]::IsPathRooted($TaskDirectory)) {
         $buildPath = $TaskDirectory
     } else {
-        $buildPath = Join-Path $PSScriptRoot $TaskDirectory
+        $buildPath = Join-Path $ScriptRoot $TaskDirectory
     }
 
     # Get the resolved absolute paths for comparison
     $resolvedPath = [System.IO.Path]::GetFullPath($buildPath)
-    $projectRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
+    $projectRoot = [System.IO.Path]::GetFullPath($ScriptRoot)
 
     # Ensure the resolved path is within project directory
     if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnoreCase)) {
@@ -910,7 +1227,7 @@ function Invoke-Task {
 
             # Validate path is within project directory
             $fullScriptPath = [System.IO.Path]::GetFullPath($scriptPath)
-            $projectRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
+            $projectRoot = [System.IO.Path]::GetFullPath($script:EffectiveScriptRoot)
 
             if (-not $fullScriptPath.StartsWith($projectRoot + [System.IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -and $fullScriptPath -ne $projectRoot) {
                 throw "Script path is outside project directory: $scriptPath"
@@ -968,8 +1285,25 @@ try {
     }
 }
 
+# Handle -AsModule flag (before task discovery)
+if ($AsModule) {
+    $installResult = Install-GoshModule
+    exit $(if ($installResult) { 0 } else { 1 })
+}
+
+# Determine the effective script root
+# When running as a module, use GOSH_PROJECT_ROOT environment variable
+# When running as a script, use $PSScriptRoot
+$script:EffectiveScriptRoot = if ($env:GOSH_PROJECT_ROOT) {
+    Write-Verbose "Running in module mode, using project root: $env:GOSH_PROJECT_ROOT"
+    $env:GOSH_PROJECT_ROOT
+} else {
+    Write-Verbose "Running in script mode, using PSScriptRoot: $PSScriptRoot"
+    $PSScriptRoot
+}
+
 # Discover all available tasks
-$availableTasks = Get-AllTasks -TaskDirectory $TaskDirectory
+$availableTasks = Get-AllTasks -TaskDirectory $TaskDirectory -ScriptRoot $EffectiveScriptRoot
 
 # SECURITY: Log TaskDirectory usage if non-default (P0 - Security Event Logging)
 if ($TaskDirectory -ne ".build") {
@@ -981,7 +1315,7 @@ if (-not [string]::IsNullOrWhiteSpace($NewTask)) {
     Write-Host "Creating new task: $NewTask" -ForegroundColor Cyan
 
     # Ensure task directory exists
-    $buildPath = Join-Path $PSScriptRoot $TaskDirectory
+    $buildPath = Join-Path $EffectiveScriptRoot $TaskDirectory
     if (-not (Test-Path $buildPath)) {
         New-Item -Path $buildPath -ItemType Directory | Out-Null
         Write-Host "Created $TaskDirectory directory" -ForegroundColor Gray
