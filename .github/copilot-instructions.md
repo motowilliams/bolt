@@ -60,9 +60,10 @@ The project is a **working example** that includes:
 - ✅ Pester test suite with comprehensive coverage (261 tests)
 - ✅ Example Azure infrastructure (App Service + SQL)
 - ✅ Multi-task execution with dependency resolution
-- ✅ Tab completion and help system
+- ✅ Tab completion and help system (script and module mode)
 - ✅ Parameterized task directory (`-TaskDirectory`)
 - ✅ Task outline visualization (`-Outline`)
+- ✅ Module installation (`-AsModule`) with upward directory search
 - ✅ Test tags for fast/slow test separation
 - ✅ Cross-platform support (Windows, Linux, macOS)
 - ✅ Security validation suite (path traversal, command injection protection)
@@ -102,6 +103,7 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files (or 
 ### Building & Testing
 
 ```powershell
+# ===== Script Mode =====
 # Single task with dependencies
 .\gosh.ps1 build              # Runs: format → lint → build
 
@@ -128,6 +130,20 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files (or 
 # Individual steps
 .\gosh.ps1 format            # Format all .bicep files
 .\gosh.ps1 lint              # Validate all .bicep files
+
+# ===== Module Mode =====
+# Install as module first (one-time setup)
+.\gosh.ps1 -AsModule
+
+# Then use globally with 'gosh' command
+gosh build                   # Runs from any subdirectory
+gosh -ListTasks              # Lists all tasks
+gosh build -Outline          # Preview execution plan
+gosh format lint build -Only # Multiple tasks without dependencies
+
+# Module finds .build/ directory by searching upward
+cd tests/iac
+gosh build                   # Works from subdirectories (searches up)
 ```
 
 **Important**: 
@@ -178,6 +194,7 @@ Key cross-platform patterns:
 - **Use `-Force` with `Get-ChildItem`** - ensures consistent behavior with hidden files/directories (e.g., `.build`)
 - **Avoid platform-specific commands** - stick to PowerShell Core cmdlets that work everywhere
 - **Test on multiple platforms** - especially when modifying task discovery or file operations
+- **Use platform-specific paths for module installation** - Windows uses `MyDocuments`, Linux/macOS use `LocalApplicationData`
 
 Example cross-platform path handling:
 ```powershell
@@ -187,6 +204,22 @@ $bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File -For
 
 # ❌ BAD - Windows-only
 $bicepFiles = Get-ChildItem -Path "tests\iac" -Filter "*.bicep" -Recurse
+```
+
+Module installation paths (cross-platform):
+```powershell
+# ✅ GOOD - Cross-platform module path detection
+if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
+    # Windows: ~/Documents/PowerShell/Modules/
+    $modulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
+}
+else {
+    # Linux/macOS: ~/.local/share/powershell/Modules/
+    $modulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "powershell" "Modules" $moduleName
+}
+
+# ❌ BAD - Windows-only
+$modulePath = Join-Path $HOME "Documents" "PowerShell" "Modules" $moduleName
 ```
 
 ### Bicep File Conventions
@@ -689,6 +722,11 @@ Invoke-Pester -Output Detailed     # With detailed output
 # Task discovery
 Get-ChildItem .build               # See all project tasks
 Select-String "# TASK:" .build/*.ps1  # See task names
+
+# Module installation
+.\gosh.ps1 -AsModule               # Install as PowerShell module for current user
+gosh build                         # Use globally after installation
+gosh -ListTasks                    # Works from any subdirectory (upward search)
 
 # VS Code shortcuts
 Ctrl+Shift+B                       # Run default build task

@@ -7,12 +7,14 @@
 ### 1. Core Build System (`gosh.ps1`)
 - **Task Discovery**: Automatically finds tasks in `.build/` directory (or custom directory via `-TaskDirectory`)
 - **Dependency Resolution**: Executes dependencies before main tasks
-- **Tab Completion**: Task names auto-complete in PowerShell (respects `-TaskDirectory`)
+- **Tab Completion**: Task names auto-complete in PowerShell (respects `-TaskDirectory`, works in script and module mode)
 - **Metadata Support**: Tasks defined via comment-based metadata
 - **Circular Dependency Prevention**: Tracks executed tasks
 - **Exit Code Handling**: Properly propagates errors
 - **Parameterized Task Directory**: Use `-TaskDirectory` to specify custom task locations
 - **Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
+- **Module Installation**: Install as PowerShell module with `-AsModule` for global `gosh` command
+- **Upward Directory Search**: Module mode finds `.build/` by searching parent directories (like git)
 
 ### 2. Build Tasks
 

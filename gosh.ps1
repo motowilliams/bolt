@@ -490,8 +490,11 @@ function Install-GoshModule {
     .SYNOPSIS
         Installs Gosh as a PowerShell module for the current user
     .DESCRIPTION
-        Creates a PowerShell module in ~/Documents/PowerShell/Modules/Gosh/
-        that allows running 'gosh' commands from any directory. The module
+        Creates a PowerShell module in the user module path:
+        - Windows: ~/Documents/PowerShell/Modules/Gosh/
+        - Linux/macOS: ~/.local/share/powershell/Modules/Gosh/
+
+        The module allows running 'gosh' commands from any directory and
         searches upward from the current directory for .build/ folders.
     #>
     [CmdletBinding()]
@@ -500,9 +503,20 @@ function Install-GoshModule {
     Write-Host "Installing Gosh as a PowerShell module..." -ForegroundColor Cyan
     Write-Host ""
 
-    # Determine module installation path
+    # Determine module installation path (cross-platform)
     $moduleName = "Gosh"
-    $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
+
+    # Use the first user-writable path from $env:PSModulePath
+    # Windows: ~/Documents/PowerShell/Modules (via MyDocuments)
+    # Linux/macOS: ~/.local/share/powershell/Modules (via LocalApplicationData)
+    if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
+        # Windows
+        $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
+    }
+    else {
+        # Linux/macOS
+        $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "powershell" "Modules" $moduleName
+    }
 
     # Create module directory (overwrites if exists for idempotency)
     if (Test-Path $userModulePath) {
