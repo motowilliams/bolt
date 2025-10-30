@@ -694,6 +694,226 @@ The project uses `.editorconfig` for consistent code formatting:
 
 **Applies automatically** with EditorConfig-compatible editors (VS Code, Visual Studio, etc.)
 
+## Changelog Maintenance
+
+This project follows [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1.1.0/) format for documenting changes.
+
+**When to update CHANGELOG.md**:
+- Adding new features or functionality
+- Making breaking changes
+- Fixing bugs
+- Deprecating features
+- Removing features
+- Addressing security vulnerabilities
+- Making significant documentation changes
+
+**Do NOT update CHANGELOG.md for**:
+- Typo fixes in comments or minor documentation tweaks
+- Refactoring that doesn't change behavior
+- Internal code reorganization
+- Test-only changes (unless adding new test categories)
+
+### Changelog Format
+
+**Structure**:
+```markdown
+## [Unreleased]
+
+### Added
+- New features and capabilities
+
+### Changed
+- Changes to existing functionality
+
+### Deprecated
+- Features marked for removal in future versions
+
+### Removed
+- Features removed in this version
+
+### Fixed
+- Bug fixes
+
+### Security
+- Security vulnerability fixes
+```
+
+### Adding Entries
+
+**Always add to `[Unreleased]` section** under the appropriate category:
+
+```markdown
+## [Unreleased]
+
+### Added
+- **Feature Name**: Brief description of the feature
+  - Sub-bullet for important details
+  - Cross-reference with `-Parameter` names or function names
+  - Mention platform-specific behavior if applicable
+```
+
+**Writing good changelog entries**:
+- Start with a brief, descriptive summary in **bold**
+- Include enough context for users to understand the change
+- Reference specific parameters, functions, or files when relevant
+- Use present tense ("Add" not "Added")
+- Be consistent with existing entry style
+- Group related changes together with sub-bullets
+
+**Examples**:
+```markdown
+### Added
+- **Module Installation**: `-AsModule` parameter to install Gosh as a PowerShell module
+  - Enables global `gosh` command accessible from any directory
+  - Cross-platform support (Windows, Linux, macOS)
+  - Automatic upward directory search for `.build/` folders
+
+### Changed
+- Updated task discovery to support both script and module modes
+- Modified `Get-AllTasks` to accept `$ScriptRoot` parameter
+
+### Fixed
+- Cross-platform compatibility for module installation paths
+```
+
+### Release Process
+
+When creating a new release:
+
+1. **Move `[Unreleased]` content** to a new version section:
+   ```markdown
+   ## [1.1.0] - 2025-10-30
+   
+   ### Added
+   - Content from Unreleased section
+   ```
+
+2. **Use Semantic Versioning**:
+   - **Major (X.0.0)**: Breaking changes to core functionality or task metadata format
+   - **Minor (1.X.0)**: New features, new parameters, backward-compatible enhancements
+   - **Patch (1.0.X)**: Bug fixes, documentation updates, minor improvements
+
+3. **Add version comparison links** at bottom:
+   ```markdown
+   [Unreleased]: https://github.com/motowilliams/gosh/compare/v1.1.0...HEAD
+   [1.1.0]: https://github.com/motowilliams/gosh/compare/v1.0.0...v1.1.0
+   [1.0.0]: https://github.com/motowilliams/gosh/releases/tag/v1.0.0
+   ```
+
+4. **Create empty `[Unreleased]` section** for next changes
+
+### Common Patterns
+
+**New Parameters**:
+```markdown
+### Added
+- **Parameter Name**: `-ParameterName` to enable specific behavior
+  - Description of what it does
+  - Usage example if helpful
+```
+
+**Breaking Changes**:
+```markdown
+### Changed
+- **BREAKING**: Old behavior replaced with new behavior
+  - Migration path: how to update existing usage
+  - Affected functionality: what will break
+```
+
+**Bug Fixes**:
+```markdown
+### Fixed
+- Task execution now correctly handles edge case X
+- Cross-platform path resolution in module installation
+```
+
+**Security Issues**:
+```markdown
+### Security
+- Fixed command injection vulnerability in task parameter handling
+- Added input sanitization for user-provided task names
+```
+
+### Documenting Failed Approaches
+
+**CRITICAL**: Document approaches that didn't work to avoid wasting time repeating them.
+
+Add a **`### Technical Notes`** subsection within relevant changelog entries to capture:
+- Implementation attempts that failed
+- Why they didn't work
+- What was learned
+- The solution that ultimately worked
+
+**Format**:
+```markdown
+## [Unreleased]
+
+### Added
+- **Module Installation**: `-AsModule` parameter to install Gosh as a PowerShell module
+  - Enables global `gosh` command accessible from any directory
+  - Cross-platform support (Windows, Linux, macOS)
+  - Automatic upward directory search for `.build/` folders
+  
+  **Technical Notes**:
+  - ❌ **Failed**: Attempted to fake `$PSScriptRoot` in module mode using `Set-Variable -Scope Script`
+    - PowerShell doesn't allow overriding automatic variables
+    - Module execution always uses module's location, not project root
+  - ❌ **Failed**: Tried passing project root as function parameter to every function
+    - Required massive refactoring of all functions
+    - Made function signatures inconsistent and hard to maintain
+  - ✅ **Solution**: Used environment variable `$env:GOSH_PROJECT_ROOT` to pass context
+    - Module sets variable before invoking gosh-core.ps1
+    - Core script checks variable and sets `$script:EffectiveScriptRoot`
+    - All functions use `$script:EffectiveScriptRoot` instead of `$PSScriptRoot`
+```
+
+**Benefits**:
+- Prevents future developers from trying the same failed approaches
+- Documents the reasoning behind current implementation
+- Provides learning context for similar problems
+- Shows evolution of the solution
+
+**When to add Technical Notes**:
+- Complex features with multiple attempted solutions
+- Non-obvious implementation decisions
+- Cross-platform compatibility issues
+- Performance optimizations
+- Security fixes with multiple iterations
+- Breaking changes requiring careful migration
+
+**Example patterns**:
+```markdown
+### Changed
+- **BREAKING**: Updated task discovery to use upward directory search
+  
+  **Technical Notes**:
+  - ❌ **Failed**: Tried using Git repository root detection
+    - Not all projects use Git
+    - Breaks in subdirectories without `.git/` folder
+  - ❌ **Failed**: Used current working directory
+    - Doesn't work when invoked from arbitrary locations
+    - Breaks when calling from VS Code tasks
+  - ✅ **Solution**: Search upward for `.build/` directory (like Git searches for `.git/`)
+    - Works from any subdirectory
+    - No external dependencies (Git, etc.)
+    - Consistent with developer mental model
+
+### Fixed
+- Cross-platform module installation paths
+  
+  **Technical Notes**:
+  - ❌ **Failed**: Used `$HOME/Documents/PowerShell/Modules` directly
+    - Hardcoded path separator breaks on Linux
+    - `Documents` folder doesn't exist on Linux/macOS
+  - ❌ **Failed**: Used `[Environment]::GetFolderPath('MyDocuments')` for all platforms
+    - Linux/macOS returns empty or unexpected paths
+    - PowerShell module path differs by platform
+  - ✅ **Solution**: Platform detection with appropriate folder paths
+    - Windows: `GetFolderPath('MyDocuments')` + `PowerShell/Modules`
+    - Linux/macOS: `GetFolderPath('LocalApplicationData')` + `powershell/Modules`
+    - Uses `$IsWindows`, `$IsLinux`, `$IsMacOS` automatic variables
+```
+
 ## Quick Reference
 
 ```powershell
