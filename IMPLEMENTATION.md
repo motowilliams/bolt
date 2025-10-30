@@ -15,6 +15,7 @@
 - **Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
 - **Module Installation**: Install as PowerShell module with `-AsModule` for global `gosh` command
 - **Upward Directory Search**: Module mode finds `.build/` by searching parent directories (like git)
+- **Parameter Sets**: PowerShell parameter sets provide validated operation modes (Help, TaskExecution, ListTasks, CreateTask, InstallModule)
 
 ### 2. Build Tasks
 

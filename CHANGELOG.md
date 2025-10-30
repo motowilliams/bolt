@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Parameter Sets**: PowerShell parameter sets for improved validation and user experience
+  - `Help` (default): Shows usage and available tasks when no parameters provided
+  - `TaskExecution`: For running tasks with `-Task`, `-Only`, `-Outline`, `-TaskDirectory`, `-Arguments`
+  - `ListTasks`: For listing tasks with `-ListTasks` (alias: `-Help`), `-TaskDirectory`
+  - `CreateTask`: For creating new tasks with `-NewTask`, `-TaskDirectory`
+  - `InstallModule`: For installing as module with `-AsModule`
+  - Prevents invalid parameter combinations (e.g., `-ListTasks -NewTask`)
+  - No more terminal hanging when no parameters provided
+  - Better IntelliSense and tab completion support
+  - Improved help system showing all parameter sets clearly
 - **Module Installation**: `-AsModule` parameter to install Gosh as a PowerShell module
   - Enables global `gosh` command accessible from any directory
   - Cross-platform support (Windows, Linux, macOS)
@@ -87,7 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core tasks: `check-index` (git status validation)
 - Example Azure Bicep tasks: `format`, `lint`, `build`
 - Example Azure infrastructure (App Service + SQL Database)
-- Comprehensive test suite with Pester (261 tests)
+- Comprehensive test suite with Pester (267 tests)
   - Core orchestration tests (28 tests, fast)
   - Security validation tests (205 tests)
   - Bicep task tests (16 tests)

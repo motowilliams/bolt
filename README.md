@@ -23,7 +23,8 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
 - **📦 Module Installation**: Install as PowerShell module with `-AsModule` for global access
 - **🔼 Upward Directory Search**: Module mode finds `.build/` by searching parent directories
-- **🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
+- **� Parameter Sets**: PowerShell parameter sets prevent invalid combinations and improve UX
+- **�🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
 
 ## 🚀 Quick Start
 
@@ -134,6 +135,51 @@ gosh build  # Automatically finds .build/ in parent directories
 cd ~/projects/gosh
 .\gosh.ps1 -AsModule  # Overwrites existing installation
 ```
+
+## ⚙️ Parameter Sets
+
+Gosh uses PowerShell parameter sets to provide a clean, validated interface with better user experience:
+
+### Available Parameter Sets
+
+1. **Help** (default) - Shows usage when no parameters provided:
+   ```powershell
+   .\gosh.ps1  # Shows help automatically (no hanging!)
+   ```
+
+2. **TaskExecution** - For running tasks:
+   ```powershell
+   .\gosh.ps1 build                    # Run task with dependencies
+   .\gosh.ps1 build -Only              # Skip dependencies
+   .\gosh.ps1 build -Outline           # Preview execution plan
+   .\gosh.ps1 format lint build        # Multiple tasks
+   .\gosh.ps1 build -TaskDirectory "custom"  # Custom task directory
+   ```
+
+3. **ListTasks** - For listing available tasks:
+   ```powershell
+   .\gosh.ps1 -ListTasks               # List all tasks
+   .\gosh.ps1 -Help                    # Alias for -ListTasks
+   .\gosh.ps1 -ListTasks -TaskDirectory "custom"  # Custom directory
+   ```
+
+4. **CreateTask** - For creating new tasks:
+   ```powershell
+   .\gosh.ps1 -NewTask deploy          # Create new task
+   .\gosh.ps1 -NewTask validate -TaskDirectory "custom"  # Custom directory
+   ```
+
+5. **InstallModule** - For module installation:
+   ```powershell
+   .\gosh.ps1 -AsModule                # Install as PowerShell module
+   ```
+
+### Benefits
+
+- **No Invalid Combinations**: PowerShell prevents mixing incompatible parameters like `-ListTasks -NewTask`
+- **Better IntelliSense**: IDEs show only relevant parameters for each mode
+- **Clear Help**: `Get-Help .\gosh.ps1` shows all parameter sets distinctly
+- **No Hanging**: Running with no parameters automatically shows help instead of prompting
 
 ## 📁 Project Structure
 
@@ -456,7 +502,7 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 
 ```powershell
 # Run all tests (auto-discovers test files)
-Invoke-Pester                         # 261 tests total
+Invoke-Pester                         # 267 tests total
 
 # Run with detailed output
 Invoke-Pester -Output Detailed
@@ -634,7 +680,7 @@ Use Pester directly in CI pipelines:
 ### Test Results
 
 ```
-Tests Passed: 261
+Tests Passed: 267
 Tests Failed: 0
 Skipped: 0
 Total Time: ~15 seconds

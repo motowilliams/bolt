@@ -57,7 +57,7 @@ This is **Gosh**, a self-contained PowerShell build system (`gosh.ps1`) designed
 The project is a **working example** that includes:
 - ✅ Complete build orchestration system (`gosh.ps1`)
 - ✅ Three project tasks: `format`, `lint`, `build`
-- ✅ Pester test suite with comprehensive coverage (261 tests)
+- ✅ Pester test suite with comprehensive coverage (267 tests)
 - ✅ Example Azure infrastructure (App Service + SQL)
 - ✅ Multi-task execution with dependency resolution
 - ✅ Tab completion and help system (script and module mode)
@@ -623,7 +623,7 @@ $result = Invoke-Gosh -Arguments @('mock-simple') `
 
 **Test Results**:
 ```
-Tests Passed: 261
+Tests Passed: 267
 Tests Failed: 0
 Skipped: 0
 Total Time: ~15 seconds
@@ -929,7 +929,7 @@ Add a **`### Technical Notes`** subsection within relevant changelog entries to 
 .\gosh.ps1 format lint build -Only # Multiple tasks without deps
 
 # Testing with Pester
-Invoke-Pester                      # Run all tests (261 tests, ~15s)
+Invoke-Pester                      # Run all tests (267 tests, ~15s)
 Invoke-Pester -Tag Core            # Only orchestration tests (28 tests, ~1s)
 Invoke-Pester -Tag Security        # Only security tests (205 tests, ~10s)
 Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (16 tests, ~22s)

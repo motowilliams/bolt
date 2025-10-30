@@ -52,9 +52,10 @@ using namespace System.Management.Automation
     .\gosh.ps1 -AsModule
     Installs Gosh as a PowerShell module for the current user, enabling the 'gosh' command.
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Help')]
 param(
-    [Parameter(Mandatory = $false, Position = 0)]
+    # TaskExecution parameter set (for running tasks)
+    [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'TaskExecution')]
     [ValidateScript({
         foreach ($taskArg in $_) {
             # SECURITY: Validate task name format (P0 - Task Name Validation)
@@ -73,17 +74,22 @@ param(
     })]
     [string[]]$Task,
 
-    [Parameter()]
+    # ListTasks parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'ListTasks')]
     [Alias('Help')]
     [switch]$ListTasks,
 
-    [Parameter()]
+    # TaskExecution parameter set options
+    [Parameter(ParameterSetName = 'TaskExecution')]
     [switch]$Only,
 
-    [Parameter()]
+    [Parameter(ParameterSetName = 'TaskExecution')]
     [switch]$Outline,
 
-    [Parameter()]
+    # Available in multiple parameter sets
+    [Parameter(ParameterSetName = 'TaskExecution')]
+    [Parameter(ParameterSetName = 'ListTasks')]
+    [Parameter(ParameterSetName = 'CreateTask')]
     [ValidatePattern('^[a-zA-Z0-9_\-\./\\]+$')]
     [ValidateScript({
         if ($_ -match '\.\.' -or [System.IO.Path]::IsPathRooted($_)) {
@@ -93,7 +99,8 @@ param(
     })]
     [string]$TaskDirectory = ".build",
 
-    [Parameter()]
+    # CreateTask parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'CreateTask')]
     [ValidateScript({
         # SECURITY: Validate task name format (P0 - Task Name Validation)
         if ($_ -cnotmatch '^[a-z0-9][a-z0-9\-]*$') {
@@ -106,10 +113,12 @@ param(
     })]
     [string]$NewTask,
 
-    [Parameter()]
+    # InstallModule parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'InstallModule')]
     [switch]$AsModule,
 
-    [Parameter(ValueFromRemainingArguments)]
+    # TaskExecution parameter set - additional arguments
+    [Parameter(ParameterSetName = 'TaskExecution', ValueFromRemainingArguments)]
     [string[]]$Arguments
 )
 
@@ -1299,10 +1308,28 @@ try {
     }
 }
 
-# Handle -AsModule flag (before task discovery)
-if ($AsModule) {
-    $installResult = Install-GoshModule
-    exit $(if ($installResult) { 0 } else { 1 })
+# Handle parameter sets
+switch ($PSCmdlet.ParameterSetName) {
+    'InstallModule' {
+        $installResult = Install-GoshModule
+        exit $(if ($installResult) { 0 } else { 1 })
+    }
+    'Help' {
+        # Default behavior when no parameters - show available tasks
+        Write-Host "Gosh! Build orchestration for PowerShell" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "Usage:" -ForegroundColor Yellow
+        Write-Host "  .\gosh.ps1 <task> [task2 task3...] [arguments]" -ForegroundColor Gray
+        Write-Host "  .\gosh.ps1 <task>,<task2>,<task3> [arguments]  (comma-separated)" -ForegroundColor Gray
+        Write-Host "  .\gosh.ps1 <task> -Only [arguments]  (skip dependencies)" -ForegroundColor Gray
+        Write-Host "  .\gosh.ps1 -ListTasks  (or -Help)" -ForegroundColor Gray
+        Write-Host "  .\gosh.ps1 -NewTask <name>" -ForegroundColor Gray
+        Write-Host "  .\gosh.ps1 -AsModule" -ForegroundColor Gray
+        Write-Host ""
+
+        # Show available tasks
+        $ListTasks = $true
+    }
 }
 
 # Determine the effective script root
@@ -1324,8 +1351,8 @@ if ($TaskDirectory -ne ".build") {
     Write-SecurityLog -Event "TaskDirectoryUsage" -Details "TaskDirectory: $TaskDirectory" -Severity "Info"
 }
 
-# Handle -NewTask flag
-if (-not [string]::IsNullOrWhiteSpace($NewTask)) {
+# Handle CreateTask parameter set
+if ($PSCmdlet.ParameterSetName -eq 'CreateTask') {
     Write-Host "Creating new task: $NewTask" -ForegroundColor Cyan
 
     # Ensure task directory exists
@@ -1384,8 +1411,8 @@ exit 0
     exit 0
 }
 
-# Handle -ListTasks flag
-if ($ListTasks) {
+# Handle ListTasks parameter set
+if ($PSCmdlet.ParameterSetName -eq 'ListTasks' -or $ListTasks) {
     Write-Host "Available tasks:" -ForegroundColor Cyan
     Write-Host ""
 
@@ -1439,26 +1466,15 @@ if ($ListTasks) {
     exit 0
 }
 
-# Check if task was provided
-if ($null -eq $Task -or $Task.Count -eq 0 -or [string]::IsNullOrWhiteSpace($Task[0])) {
-    Write-Host "Error: No task specified" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Usage: .\gosh.ps1 <task> [task2 task3...] [arguments]" -ForegroundColor Yellow
-    Write-Host "       .\gosh.ps1 <task>,<task2>,<task3> [arguments]  (comma-separated)" -ForegroundColor Yellow
-    Write-Host "       .\gosh.ps1 <task> -Only [arguments]  (skip dependencies)" -ForegroundColor Yellow
-    Write-Host "       .\gosh.ps1 -ListTasks  (or -Help)" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "Available tasks: $($availableTasks.Keys | Sort-Object -Unique | Join-String -Separator ', ')" -ForegroundColor Cyan
-    exit 1
-}
+# Handle TaskExecution parameter set
+if ($PSCmdlet.ParameterSetName -eq 'TaskExecution') {
+    # Parse task list - support comma-separated or space-separated tasks
+    $taskList = @()
+    $remainingArgs = @()
+    $collectingTasks = $true
 
-# Parse task list - support comma-separated or space-separated tasks
-$taskList = @()
-$remainingArgs = @()
-$collectingTasks = $true
-
-# Process Task parameter - could be array or single string with commas
-foreach ($taskArg in $Task) {
+    # Process Task parameter - could be array or single string with commas
+    foreach ($taskArg in $Task) {
     if ($taskArg -match ',') {
         # Comma-separated tasks in a single string
         $taskList += $taskArg -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
@@ -1572,5 +1588,7 @@ if (-not $allSucceeded) {
     Write-Separator -Character "=" -Length 60 -Color Red
     exit 1
 }
+
+} # End TaskExecution parameter set
 
 exit 0
