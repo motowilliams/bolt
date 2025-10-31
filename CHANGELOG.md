@@ -65,8 +65,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Cross-platform compatibility for module installation (Windows/Linux/macOS paths)
+- **Security Logging Directory Creation**: Fixed issue where `.gosh` file could be created instead of directory
+  - Enhanced `Write-SecurityLog` function with more robust directory creation logic
+  - Explicitly handles file-to-directory conversion when `.gosh` exists as a file
+  - Prevents race conditions and ensures audit logging works reliably
+  - Added double-verification to confirm directory creation succeeded
 
 **Technical Notes**:
+- ❌ **Failed**: Original directory creation logic had race condition vulnerability
+  - `Test-Path -PathType Container` + `New-Item -Force` wasn't atomic
+  - If `.gosh` existed as a file, `New-Item` might fail silently
+  - `Add-Content` could then create `.gosh` as a file instead of `audit.log` in directory
+  - Occurred intermittently during parallel test execution
+- ✅ **Solution**: Enhanced directory creation with explicit file-to-directory conversion
+  - Check if `.gosh` exists and remove if it's a file (not directory)
+  - Create directory with error handling and double-verification
+  - Atomic operation prevents race conditions between multiple processes
+  - Throws clear error if directory creation fails, preventing silent failures
 - ❌ **Failed**: Used `$HOME/Documents/PowerShell/Modules` with hardcoded path separator
   - Backslash `\` breaks on Linux/macOS
   - `Documents` folder doesn't exist on Linux/macOS

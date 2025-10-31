@@ -249,9 +249,21 @@ function Write-SecurityLog {
         $logDir = Join-Path $PSScriptRoot '.gosh'
         $logPath = Join-Path $logDir 'audit.log'
 
-        # Create .gosh directory if it doesn't exist
+        # Ensure .gosh directory exists and is actually a directory
+        if (Test-Path $logDir) {
+            # If .gosh exists but is not a directory, remove it first
+            if (-not (Test-Path -PathType Container $logDir)) {
+                Remove-Item $logDir -Force
+            }
+        }
+
+        # Create .gosh directory if it doesn't exist (more robust approach)
         if (-not (Test-Path -PathType Container $logDir)) {
-            New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+            $null = New-Item -Path $logDir -ItemType Directory -Force -ErrorAction SilentlyContinue
+            # Double-check the directory was created successfully
+            if (-not (Test-Path -PathType Container $logDir)) {
+                throw "Failed to create log directory: $logDir"
+            }
         }
 
         # Append log entry
