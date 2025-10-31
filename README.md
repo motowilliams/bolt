@@ -715,7 +715,7 @@ All tasks use consistent color coding:
 - **Yellow**: Warnings (⚠)
 - **Red**: Errors (✗)
 
-## � Module Installation
+## 📦 Module Installation
 
 Gosh can be installed as a PowerShell module for global access, allowing you to use the `gosh` command from anywhere without referencing the script path.
 
