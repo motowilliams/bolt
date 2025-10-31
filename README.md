@@ -809,7 +809,7 @@ Remove-Item -Path "$([Environment]::GetFolderPath('MyDocuments'))\PowerShell\Mod
 Remove-Module Gosh -ErrorAction SilentlyContinue
 ```
 
-## �🐛 Troubleshooting
+## 🐛 Troubleshooting
 
 ### Module: Tab completion not working
 
