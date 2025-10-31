@@ -367,8 +367,19 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
                 $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($testTaskName.ToLower())
                 $testFile = Join-Path $script:BuildPath "Invoke-$taskNameCapitalized.ps1"
                 if (Test-Path $testFile) {
-                    Start-Sleep -Milliseconds 100  # Give file handles time to close
-                    Remove-Item $testFile -Force -ErrorAction SilentlyContinue
+                    # Retry cleanup with exponential backoff for robustness
+                    $maxAttempts = 20
+                    $attempt = 0
+                    while ((Test-Path $testFile) -and ($attempt -lt $maxAttempts)) {
+                        try {
+                            Remove-Item $testFile -Force -ErrorAction SilentlyContinue
+                        } catch {
+                            # Ignore errors, will retry
+                        }
+                        if (-not (Test-Path $testFile)) { break }
+                        Start-Sleep -Milliseconds 50
+                        $attempt++
+                    }
                 }
             }
         }
