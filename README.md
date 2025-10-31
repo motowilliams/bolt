@@ -24,7 +24,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **📦 Module Installation**: Install as PowerShell module with `-AsModule` for global access
 - **🔼 Upward Directory Search**: Module mode finds `.build/` by searching parent directories
 - **� Parameter Sets**: PowerShell parameter sets prevent invalid combinations and improve UX
-- **�🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
+- **🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
 
 ## 🚀 Quick Start
 
