@@ -363,8 +363,9 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
                 $output | Should -Match "Created task file"
             }
             finally {
-                # Clean up test task file
-                $testFile = Join-Path $script:BuildPath "Invoke-$($testTaskName -replace '-', '-' | ForEach-Object { (Get-Culture).TextInfo.ToTitleCase($_) }).ps1"
+                # Clean up test task file - use same logic as gosh.ps1
+                $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($testTaskName.ToLower())
+                $testFile = Join-Path $script:BuildPath "Invoke-$taskNameCapitalized.ps1"
                 if (Test-Path $testFile) {
                     Start-Sleep -Milliseconds 100  # Give file handles time to close
                     Remove-Item $testFile -Force -ErrorAction SilentlyContinue
