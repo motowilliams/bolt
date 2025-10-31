@@ -327,6 +327,63 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
             $result.ExitCode | Should -BeIn @(0, 1)
         }
     }
+
+    Context 'Parameter Sets' {
+        It 'Should use Help parameter set with no parameters' {
+            $output = (& $script:GoshScriptPath *>&1) -join "`n"
+            $output | Should -Match 'Gosh! Build orchestration|Usage|Available tasks'
+        }
+
+        It 'Should reject invalid parameter combinations' {
+            # -ListTasks and -NewTask should be mutually exclusive
+            { & $script:GoshScriptPath -ListTasks -NewTask test 2>&1 } | Should -Throw -ExpectedMessage '*Parameter set cannot be resolved*'
+        }
+
+        It 'Should reject invalid parameter combinations (AsModule + ListTasks)' {
+            # -AsModule and -ListTasks should be mutually exclusive
+            { & $script:GoshScriptPath -AsModule -ListTasks 2>&1 } | Should -Throw -ExpectedMessage '*Parameter set cannot be resolved*'
+        }
+
+        It 'Should accept valid TaskExecution parameter set' {
+            $result = Invoke-Gosh -Arguments @('check-index') -Parameters @{ Only = $true }
+            $result.ExitCode | Should -BeIn @(0, 1)  # May succeed or fail, but should parse correctly
+        }
+
+        It 'Should accept valid ListTasks parameter set' {
+            $output = (& $script:GoshScriptPath -ListTasks *>&1) -join "`n"
+            $LASTEXITCODE | Should -Be 0
+            $output | Should -Match 'Available tasks'
+        }
+
+        It 'Should accept valid CreateTask parameter set' {
+            $testTaskName = "test-param-set-$(Get-Random)"
+            try {
+                $output = (& $script:GoshScriptPath -NewTask $testTaskName *>&1) -join "`n"
+                $LASTEXITCODE | Should -Be 0
+                $output | Should -Match "Created task file"
+            }
+            finally {
+                # Clean up test task file - use same logic as gosh.ps1
+                $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($testTaskName.ToLower())
+                $testFile = Join-Path $script:BuildPath "Invoke-$taskNameCapitalized.ps1"
+                if (Test-Path $testFile) {
+                    # Retry cleanup with exponential backoff for robustness
+                    $maxAttempts = 20
+                    $attempt = 0
+                    while ((Test-Path $testFile) -and ($attempt -lt $maxAttempts)) {
+                        try {
+                            Remove-Item $testFile -Force -ErrorAction SilentlyContinue
+                        } catch {
+                            # Ignore errors, will retry
+                        }
+                        if (-not (Test-Path $testFile)) { break }
+                        Start-Sleep -Milliseconds 50
+                        $attempt++
+                    }
+                }
+            }
+        }
+    }
 }
 
 Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
@@ -746,10 +803,10 @@ exit 0
             }
         }
 
-        It 'Should handle empty task list gracefully' {
-            # When no tasks specified, should show usage or error
-            $output = (& $script:GoshScriptPath -Outline *>&1) -join "`n"
-            $output | Should -Match 'No task specified|Usage'
+        It 'Should handle empty parameter gracefully' {
+            # With parameter sets, calling with no parameters should show help (default Help parameter set)
+            $output = (& $script:GoshScriptPath *>&1) -join "`n"
+            $output | Should -Match 'Gosh! Build orchestration|Usage|Available tasks'
         }
     }
 

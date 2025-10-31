@@ -791,7 +791,7 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
 
             # Should get full path before comparison
             $goshContent | Should -Match 'resolvedPath.*GetFullPath.*buildPath'
-            $goshContent | Should -Match 'projectRoot.*GetFullPath.*PSScriptRoot'
+            $goshContent | Should -Match 'projectRoot.*GetFullPath.*ScriptRoot'
         }
 
         It "Should validate against project root directory" {

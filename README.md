@@ -17,20 +17,47 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **✅ Exit Code Propagation**: Proper CI/CD integration via `$LASTEXITCODE`
 - **📋 Multiple Task Support**: Run tasks in sequence (space or comma-separated)
 - **⏩ Skip Dependencies**: Use `-Only` flag for faster iteration
-- **🎯 Tab Completion**: Task names auto-complete in PowerShell
+- **🎯 Tab Completion**: Task names auto-complete in PowerShell (script and module mode)
 - **🎨 Colorized Output**: Consistent, readable task output
 - **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
+- **📦 Module Installation**: Install as PowerShell module with `-AsModule` for global access
+- **🔼 Upward Directory Search**: Module mode finds `.build/` by searching parent directories
+- **� Parameter Sets**: PowerShell parameter sets prevent invalid combinations and improve UX
 - **🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
 
 ## 🚀 Quick Start
 
 ### Installation
 
+**Option 1: Script Mode (Standalone)**
+
 1. Clone or download this repository
 2. Ensure PowerShell 7.0+ is installed
 3. Install Azure Bicep CLI: `winget install Microsoft.Bicep`
-4. Navigate to the project directory
+4. Navigate to the project directory and run `.\gosh.ps1`
+
+**Option 2: Module Mode (Global Command)**
+
+Install Gosh as a PowerShell module for global access:
+
+```powershell
+# From the Gosh repository directory
+.\gosh.ps1 -AsModule
+
+# Restart PowerShell or force import
+Import-Module Gosh -Force
+
+# Now use 'gosh' from anywhere
+cd ~/projects/myproject
+gosh build
+```
+
+**Module Benefits:**
+- 🌍 Run `gosh` from any directory (no need for `.\gosh.ps1`)
+- 🔍 Automatic upward search for `.build/` folders (like git)
+- ⚡ Use from subdirectories within your projects
+- 🔄 Easy updates: re-run `.\gosh.ps1 -AsModule` to update
 
 ### First Run
 
@@ -56,6 +83,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 
 ### Common Commands
 
+**Script Mode:**
 ```powershell
 # List available tasks
 .\gosh.ps1 -Help
@@ -83,7 +111,75 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 
 # Use a custom task directory
 .\gosh.ps1 -TaskDirectory "infra-tasks" -ListTasks
+
+# Install as a module
+.\gosh.ps1 -AsModule
 ```
+
+**Module Mode** (after running `.\gosh.ps1 -AsModule`):
+```powershell
+# All the same commands work, but simpler syntax
+gosh -Help
+gosh build
+gosh build -Outline
+gosh format lint build
+gosh build -Only
+gosh -NewTask deploy
+gosh -TaskDirectory "infra-tasks" -ListTasks
+
+# Works from any subdirectory in your project
+cd ~/projects/myproject/src/components
+gosh build  # Automatically finds .build/ in parent directories
+
+# Update the module after modifying gosh.ps1
+cd ~/projects/gosh
+.\gosh.ps1 -AsModule  # Overwrites existing installation
+```
+
+## ⚙️ Parameter Sets
+
+Gosh uses PowerShell parameter sets to provide a clean, validated interface with better user experience:
+
+### Available Parameter Sets
+
+1. **Help** (default) - Shows usage when no parameters provided:
+   ```powershell
+   .\gosh.ps1  # Shows help automatically (no hanging!)
+   ```
+
+2. **TaskExecution** - For running tasks:
+   ```powershell
+   .\gosh.ps1 build                    # Run task with dependencies
+   .\gosh.ps1 build -Only              # Skip dependencies
+   .\gosh.ps1 build -Outline           # Preview execution plan
+   .\gosh.ps1 format lint build        # Multiple tasks
+   .\gosh.ps1 build -TaskDirectory "custom"  # Custom task directory
+   ```
+
+3. **ListTasks** - For listing available tasks:
+   ```powershell
+   .\gosh.ps1 -ListTasks               # List all tasks
+   .\gosh.ps1 -Help                    # Alias for -ListTasks
+   .\gosh.ps1 -ListTasks -TaskDirectory "custom"  # Custom directory
+   ```
+
+4. **CreateTask** - For creating new tasks:
+   ```powershell
+   .\gosh.ps1 -NewTask deploy          # Create new task
+   .\gosh.ps1 -NewTask validate -TaskDirectory "custom"  # Custom directory
+   ```
+
+5. **InstallModule** - For module installation:
+   ```powershell
+   .\gosh.ps1 -AsModule                # Install as PowerShell module
+   ```
+
+### Benefits
+
+- **No Invalid Combinations**: PowerShell prevents mixing incompatible parameters like `-ListTasks -NewTask`
+- **Better IntelliSense**: IDEs show only relevant parameters for each mode
+- **Clear Help**: `Get-Help .\gosh.ps1` shows all parameter sets distinctly
+- **No Hanging**: Running with no parameters automatically shows help instead of prompting
 
 ## 📁 Project Structure
 
@@ -406,7 +502,7 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 
 ```powershell
 # Run all tests (auto-discovers test files)
-Invoke-Pester                         # 261 tests total
+Invoke-Pester                         # 267 tests total
 
 # Run with detailed output
 Invoke-Pester -Output Detailed
@@ -584,7 +680,7 @@ Use Pester directly in CI pipelines:
 ### Test Results
 
 ```
-Tests Passed: 261
+Tests Passed: 267
 Tests Failed: 0
 Skipped: 0
 Total Time: ~15 seconds
@@ -619,7 +715,123 @@ All tasks use consistent color coding:
 - **Yellow**: Warnings (⚠)
 - **Red**: Errors (✗)
 
+## 📦 Module Installation
+
+Gosh can be installed as a PowerShell module for global access, allowing you to use the `gosh` command from anywhere without referencing the script path.
+
+### Installing the Module
+
+```powershell
+# From the Gosh repository directory
+.\gosh.ps1 -AsModule
+```
+
+This creates a module in the user module path:
+- **Windows**: `~/Documents/PowerShell/Modules/Gosh/`
+- **Linux/macOS**: `~/.local/share/powershell/Modules/Gosh/`
+
+The module includes:
+- **Module manifest** (`Gosh.psd1`) - Metadata and exports
+- **Module script** (`Gosh.psm1`) - Wrapper with upward directory search
+- **Core script** (`gosh-core.ps1`) - Copy of gosh.ps1
+
+### Using the Module
+
+After installation, restart PowerShell or run:
+```powershell
+Import-Module Gosh -Force
+```
+
+Now use `gosh` from anywhere:
+```powershell
+# Navigate to any project with a .build/ folder
+cd ~/projects/myproject/src/components
+
+# Run tasks - automatically finds .build/ in parent directories
+gosh build
+gosh -ListTasks
+gosh format lint build
+gosh build -Only
+```
+
+### Updating the Module
+
+The installation is **idempotent** - you can re-run it to update:
+
+```powershell
+# After modifying gosh.ps1 locally
+cd ~/projects/gosh
+.\gosh.ps1 -AsModule  # Overwrites existing module
+
+# Reload in current session
+Import-Module Gosh -Force
+```
+
+### How It Works
+
+**Upward Directory Search** (like git):
+1. Module searches current directory for `.build/`
+2. If not found, checks parent directory
+3. Continues upward until `.build/` is found or root is reached
+4. Sets project root context for task execution
+
+This allows you to run `gosh` from any subdirectory within your project.
+
+**Example directory structure:**
+```
+~/projects/myproject/
+├── .build/              # Found by upward search
+│   ├── Invoke-Build.ps1
+│   └── Invoke-Deploy.ps1
+└── src/
+    └── components/      # You can run 'gosh' here
+        └── app.bicep
+```
+
+### Module vs Script Mode
+
+| Feature | Script Mode | Module Mode |
+|---------|-------------|-------------|
+| **Command** | `.\gosh.ps1` | `gosh` |
+| **Location** | Must be in project root | Run from any project subdirectory |
+| **Discovery** | Uses `$PSScriptRoot` | Searches upward for `.build/` |
+| **Tab Completion** | ✅ Yes | ✅ Yes |
+| **Updates** | Edit file | Re-run `.\gosh.ps1 -AsModule` |
+| **Portability** | Single file | Module in user profile |
+
+Both modes support all features: `-Only`, `-Outline`, `-TaskDirectory`, `-NewTask`, etc.
+
+### Uninstalling
+
+To remove the module:
+```powershell
+Remove-Item -Path "$([Environment]::GetFolderPath('MyDocuments'))\PowerShell\Modules\Gosh" -Recurse -Force
+Remove-Module Gosh -ErrorAction SilentlyContinue
+```
+
 ## 🐛 Troubleshooting
+
+### Module: Tab completion not working
+
+```powershell
+# Restart PowerShell to activate tab completion
+exit
+# Then reopen PowerShell
+
+# Or force reload the module
+Import-Module Gosh -Force
+```
+
+### Module: Can't find .build directory
+
+```powershell
+# Ensure you're in a project directory or subdirectory with .build/
+Get-ChildItem -Path . -Filter .build -Directory -Force -Recurse
+
+# Use -Verbose to see the search path
+gosh -ListTasks -Verbose
+# Output shows: "Searching for '.build' in: C:\projects\myproject"
+```
 
 ### Task not found
 
