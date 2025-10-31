@@ -25,6 +25,10 @@ using namespace System.Management.Automation
 .PARAMETER NewTask
     Create a new task file with the specified name. Creates a stubbed file in
     the task directory with proper metadata structure.
+.PARAMETER AsModule
+    Install Gosh as a PowerShell module for the current user. This enables the
+    'gosh' command to be used globally from any directory. The module will search
+    upward from the current directory to find the .build folder.
 .PARAMETER Arguments
     Additional arguments to pass to the task scripts.
 .EXAMPLE
