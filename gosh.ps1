@@ -582,42 +582,6 @@ function Install-GoshModule {
     New-Item -Path $userModulePath -ItemType Directory -Force | Out-Null
     Write-Host "Created module directory: $userModulePath" -ForegroundColor Gray
 
-    # Generate module manifest (.psd1)
-    $manifestPath = Join-Path $userModulePath "$moduleName.psd1"
-    $manifestContent = @"
-@{
-    # Module metadata
-    RootModule = '$moduleName.psm1'
-    ModuleVersion = '1.0.0'
-    GUID = '$(New-Guid)'
-    Author = 'Gosh Contributors'
-    CompanyName = 'Unknown'
-    Copyright = '(c) Gosh Contributors. All rights reserved.'
-    Description = 'Gosh! Build orchestration for PowerShell - A self-contained build system with extensible task orchestration.'
-
-    # Minimum PowerShell version
-    PowerShellVersion = '7.0'
-
-    # Functions and aliases to export
-    FunctionsToExport = @('Invoke-Gosh')
-    AliasesToExport = @('gosh')
-    CmdletsToExport = @()
-    VariablesToExport = @()
-
-    # Private data
-    PrivateData = @{
-        PSData = @{
-            Tags = @('Build', 'Task', 'Orchestration', 'PowerShell', 'Bicep', 'Azure')
-            LicenseUri = 'https://github.com/motowilliams/gosh/blob/main/LICENSE'
-            ProjectUri = 'https://github.com/motowilliams/gosh'
-        }
-    }
-}
-"@
-
-    $manifestContent | Out-File -FilePath $manifestPath -Encoding UTF8 -Force
-    Write-Host "Created module manifest: $moduleName.psd1" -ForegroundColor Gray
-
     # Copy gosh.ps1 to the module directory (so it can be invoked as a script)
     $goshCorePath = Join-Path $userModulePath "gosh-core.ps1"
     Copy-Item -Path $PSCommandPath -Destination $goshCorePath -Force
