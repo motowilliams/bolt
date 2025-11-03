@@ -7,7 +7,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ModuleVersion,
     [Parameter(Mandatory = $true)]
-    [string[]]$Tags,
+    [string]$Tags,
     [string]$ProjectUri = "",
     [string]$LicenseUri = "",
     [string]$ReleaseNotes = ""
@@ -32,6 +32,9 @@ if (-not (Test-Path $generateScriptPath)) {
 # Prepare arguments for the container script
 $containerArgs = @()
 
+$containerArgs += "-WorkspacePath"
+$containerArgs += "/workspace"
+
 $containerArgs += "-ModulePath"
 $containerArgs += $ModulePath
 
@@ -39,9 +42,8 @@ $containerArgs += "-ModuleVersion"
 $containerArgs += $ModuleVersion
 
 $containerArgs += "-Tags"
-# Convert array to comma-separated string for PowerShell
-$tagsString = $Tags -join ','
-$containerArgs += $tagsString
+# Tags is already a string, so pass it directly
+$containerArgs += $Tags
 
 if (-not [string]::IsNullOrWhiteSpace($ProjectUri)) {
     $containerArgs += "-ProjectUri"
@@ -85,9 +87,17 @@ try {
         Write-Host "`n✅ Manifest generation completed successfully!" -ForegroundColor Green
 
         # Check if the manifest was created
-        # Extract module name for manifest file detection
-        $moduleName = [System.IO.Path]::GetFileNameWithoutExtension($ModulePath)
-        $manifestPath = Join-Path $PWD "$moduleName.psd1"
+        # Extract module name and determine expected manifest location
+        if ($ModulePath.EndsWith('.psm1')) {
+            $moduleDirectory = Split-Path $ModulePath -Parent
+            $moduleName = [System.IO.Path]::GetFileNameWithoutExtension($ModulePath)
+        }
+        else {
+            $moduleDirectory = $ModulePath
+            $moduleName = Split-Path $ModulePath -Leaf
+        }
+
+        $manifestPath = Join-Path $PWD $moduleDirectory "$moduleName.psd1"
         if (Test-Path $manifestPath) {
             Write-Host "📄 Generated manifest: $manifestPath" -ForegroundColor Cyan
 
@@ -98,6 +108,11 @@ try {
         }
         else {
             Write-Host "⚠️  Warning: Expected manifest file not found at $manifestPath" -ForegroundColor Yellow
+            # Also check the old location (workspace root) as fallback
+            $fallbackPath = Join-Path $PWD "$moduleName.psd1"
+            if (Test-Path $fallbackPath) {
+                Write-Host "📄 Found manifest at: $fallbackPath" -ForegroundColor Cyan
+            }
         }
     }
     else {
