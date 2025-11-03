@@ -22,8 +22,10 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
 - **📦 Module Installation**: Install as PowerShell module with `-AsModule` for global access
-- **🔼 Upward Directory Search**: Module mode finds `.build/` by searching parent directories
-- **� Parameter Sets**: PowerShell parameter sets prevent invalid combinations and improve UX
+- **📝 Manifest Generation**: Dedicated tooling for creating PowerShell module manifests (`.psd1`)
+- **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
+- **⬆️ Upward Directory Search**: Module mode finds `.build/` by searching parent directories
+- **🔧 Parameter Sets**: PowerShell parameter sets prevent invalid combinations and improve UX
 - **🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
 
 ## 🚀 Quick Start
@@ -807,6 +809,110 @@ To remove the module:
 ```powershell
 Remove-Item -Path "$([Environment]::GetFolderPath('MyDocuments'))\PowerShell\Modules\Gosh" -Recurse -Force
 Remove-Module Gosh -ErrorAction SilentlyContinue
+```
+
+## 📦 Module Manifest Generation
+
+Gosh includes dedicated tooling for generating PowerShell module manifests (`.psd1` files) from existing modules. This is useful for publishing modules to PowerShell Gallery or creating distribution packages.
+
+### Generate Manifest Script
+
+The `generate-manifest.ps1` script analyzes existing PowerShell modules and creates properly formatted manifest files:
+
+```powershell
+# Generate manifest for a module file
+.\generate-manifest.ps1 -ModulePath "MyModule.psm1" -ModuleVersion "1.0.0" -Tags "Build,DevOps"
+
+# Generate manifest for a module directory
+.\generate-manifest.ps1 -ModulePath "MyModule/" -ModuleVersion "2.1.0" -Tags "Infrastructure,Azure"
+
+# With additional metadata
+.\generate-manifest.ps1 -ModulePath "Gosh/Gosh.psm1" -ModuleVersion "3.0.0" -Tags "Build,Task,Orchestration" -ProjectUri "https://github.com/owner/repo" -LicenseUri "https://github.com/owner/repo/blob/main/LICENSE"
+```
+
+**Features:**
+- **Automatic Analysis**: Imports module to discover exported functions, cmdlets, and aliases
+- **Git Integration**: Automatically infers ProjectUri from git remote origin URL
+- **Cross-Platform**: Works on Windows, Linux, and macOS
+- **Validation**: Tests generated manifests for correctness
+- **Flexible Input**: Accepts both `.psm1` files and module directories
+
+### Docker-Based Generation
+
+For isolated execution, use the Docker wrapper:
+
+```powershell
+# Generate manifest in PowerShell container (no host pollution)
+.\generate-manifest-docker.ps1 -ModulePath "Gosh/Gosh.psm1" -ModuleVersion "3.0.0" -Tags "Build,DevOps,Docker"
+```
+
+**Docker Benefits:**
+- **Clean Environment**: No module pollution on host system
+- **Consistent Results**: Same PowerShell version and environment every time
+- **CI/CD Integration**: Perfect for automated build pipelines
+- **Cross-Platform**: Works wherever Docker is available
+
+### Usage Examples
+
+**Local Development:**
+```powershell
+# Quick manifest generation for testing
+.\generate-manifest.ps1 -ModulePath ".\MyModule.psm1" -ModuleVersion "1.0.0" -Tags "Development"
+```
+
+**Build Pipeline:**
+```powershell
+# Generate module in custom location (CI/CD)
+.\gosh.ps1 -AsModule -ModuleOutputPath "C:\BuildOutput" -NoImport
+
+# Generate manifest for distribution
+.\generate-manifest.ps1 -ModulePath "C:\BuildOutput\Gosh\Gosh.psm1" -ModuleVersion "1.5.0" -Tags "Build,Release"
+```
+
+**Publishing Workflow:**
+```powershell
+# 1. Install module to temporary location
+.\gosh.ps1 -AsModule -ModuleOutputPath ".\dist" -NoImport
+
+# 2. Generate manifest
+.\generate-manifest.ps1 -ModulePath ".\dist\Gosh\Gosh.psm1" -ModuleVersion "2.0.0" -Tags "Build,PowerShell,Bicep"
+
+# 3. Publish to PowerShell Gallery
+Publish-Module -Path ".\dist\Gosh" -NuGetApiKey $apiKey
+```
+
+### Parameters
+
+**Required:**
+- `-ModulePath`: Path to `.psm1` file or module directory
+- `-ModuleVersion`: Semantic version (e.g., "1.0.0", "2.1.3-beta")
+- `-Tags`: Comma-separated tags for PowerShell Gallery
+
+**Optional:**
+- `-ProjectUri`: Project homepage URL (auto-detected from git)
+- `-LicenseUri`: License URL (auto-inferred from ProjectUri)
+- `-ReleaseNotes`: Release notes for this version
+- `-WorkspacePath`: Base path for module resolution (Docker: "/workspace", Local: ".")
+
+### Output
+
+The scripts generate:
+- **Manifest file** (`.psd1`) in the same directory as the module
+- **Validation results** confirming manifest correctness
+- **Module metadata** summary (functions, aliases, version, GUID)
+
+**Example output:**
+```
+✅ Found module file: ./Gosh/Gosh.psm1
+✅ Successfully imported module: Gosh
+Exported Functions (1): Invoke-Gosh
+Exported Aliases (1): gosh
+✅ Inferred ProjectUri from git: https://github.com/motowilliams/gosh
+✅ Module manifest created: ./Gosh/Gosh.psd1
+✅ Manifest is valid!
+  Module Name: Gosh
+  Version: 3.0.0
+  GUID: 5ed0dd69-db75-4ee7-b0d3-e93922605317
 ```
 
 ## 🐛 Troubleshooting

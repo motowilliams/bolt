@@ -29,6 +29,13 @@ using namespace System.Management.Automation
     Install Gosh as a PowerShell module for the current user. This enables the
     'gosh' command to be used globally from any directory. The module will search
     upward from the current directory to find the .build folder.
+.PARAMETER ModuleOutputPath
+    Specify a custom path where the module should be installed. If not provided,
+    uses the default user module path. Used with -AsModule parameter.
+.PARAMETER NoImport
+    Do not automatically import the module after installation. Used with -AsModule
+    parameter for build and release scenarios where you only want to generate the
+    module files without importing them into the current session.
 .PARAMETER Arguments
     Additional arguments to pass to the task scripts.
 .EXAMPLE
@@ -120,6 +127,12 @@ param(
     # InstallModule parameter set
     [Parameter(Mandatory = $true, ParameterSetName = 'InstallModule')]
     [switch]$AsModule,
+
+    [Parameter(ParameterSetName = 'InstallModule')]
+    [string]$ModuleOutputPath,
+
+    [Parameter(ParameterSetName = 'InstallModule')]
+    [switch]$NoImport,
 
     # TaskExecution parameter set - additional arguments
     [Parameter(ParameterSetName = 'TaskExecution', ValueFromRemainingArguments)]
@@ -521,9 +534,18 @@ function Install-GoshModule {
 
         The module allows running 'gosh' commands from any directory and
         searches upward from the current directory for .build/ folders.
+    .PARAMETER ModuleOutputPath
+        Custom path where the module should be installed. If not provided,
+        uses the default user module path.
+    .PARAMETER NoImport
+        Do not automatically import the module after installation. Used for
+        build and release scenarios.
     #>
     [CmdletBinding()]
-    param()
+    param(
+        [string]$ModuleOutputPath,
+        [switch]$NoImport
+    )
 
     Write-Host "Installing Gosh as a PowerShell module..." -ForegroundColor Cyan
     Write-Host ""
@@ -531,16 +553,24 @@ function Install-GoshModule {
     # Determine module installation path (cross-platform)
     $moduleName = "Gosh"
 
-    # Use the first user-writable path from $env:PSModulePath
-    # Windows: ~/Documents/PowerShell/Modules (via MyDocuments)
-    # Linux/macOS: ~/.local/share/powershell/Modules (via LocalApplicationData)
-    if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
-        # Windows
-        $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
+    if ($ModuleOutputPath) {
+        # Use custom path
+        $userModulePath = Join-Path $ModuleOutputPath $moduleName
+        Write-Host "Using custom module path: $userModulePath" -ForegroundColor Gray
     }
     else {
-        # Linux/macOS
-        $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "powershell" "Modules" $moduleName
+        # Use the first user-writable path from $env:PSModulePath
+        # Windows: ~/Documents/PowerShell/Modules (via MyDocuments)
+        # Linux/macOS: ~/.local/share/powershell/Modules (via LocalApplicationData)
+        if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
+            # Windows
+            $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
+        }
+        else {
+            # Linux/macOS
+            $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "powershell" "Modules" $moduleName
+        }
+        Write-Host "Using default module path: $userModulePath" -ForegroundColor Gray
     }
 
     # Create module directory (overwrites if exists for idempotency)
@@ -551,42 +581,6 @@ function Install-GoshModule {
 
     New-Item -Path $userModulePath -ItemType Directory -Force | Out-Null
     Write-Host "Created module directory: $userModulePath" -ForegroundColor Gray
-
-    # Generate module manifest (.psd1)
-    $manifestPath = Join-Path $userModulePath "$moduleName.psd1"
-    $manifestContent = @"
-@{
-    # Module metadata
-    RootModule = '$moduleName.psm1'
-    ModuleVersion = '1.0.0'
-    GUID = '$(New-Guid)'
-    Author = 'Gosh Contributors'
-    CompanyName = 'Unknown'
-    Copyright = '(c) Gosh Contributors. All rights reserved.'
-    Description = 'Gosh! Build orchestration for PowerShell - A self-contained build system with extensible task orchestration.'
-
-    # Minimum PowerShell version
-    PowerShellVersion = '7.0'
-
-    # Functions and aliases to export
-    FunctionsToExport = @('Invoke-Gosh')
-    AliasesToExport = @('gosh')
-    CmdletsToExport = @()
-    VariablesToExport = @()
-
-    # Private data
-    PrivateData = @{
-        PSData = @{
-            Tags = @('Build', 'Task', 'Orchestration', 'PowerShell', 'Bicep', 'Azure')
-            LicenseUri = 'https://github.com/motowilliams/gosh/blob/main/LICENSE'
-            ProjectUri = 'https://github.com/motowilliams/gosh'
-        }
-    }
-}
-"@
-
-    $manifestContent | Out-File -FilePath $manifestPath -Encoding UTF8 -Force
-    Write-Host "Created module manifest: $moduleName.psd1" -ForegroundColor Gray
 
     # Copy gosh.ps1 to the module directory (so it can be invoked as a script)
     $goshCorePath = Join-Path $userModulePath "gosh-core.ps1"
@@ -818,11 +812,35 @@ Register-ArgumentCompleter -CommandName 'gosh' -ParameterName 'Task' -ScriptBloc
     Write-Host ""
     Write-Host "✓ Gosh module installed successfully!" -ForegroundColor Green
     Write-Host ""
-    Write-Host "Next steps:" -ForegroundColor Cyan
-    Write-Host "  1. Restart your PowerShell session (or run: Import-Module Gosh -Force)" -ForegroundColor Gray
-    Write-Host "  2. Navigate to any project directory with a .build/ folder" -ForegroundColor Gray
-    Write-Host "  3. Run: gosh build" -ForegroundColor Gray
-    Write-Host "  4. Use: gosh -ListTasks to see available tasks" -ForegroundColor Gray
+
+    if (-not $NoImport) {
+        # Import the module automatically
+        Write-Host "Importing module..." -ForegroundColor Gray
+        try {
+            Import-Module $userModulePath -Force
+            Write-Host "✓ Module imported successfully!" -ForegroundColor Green
+            Write-Host ""
+            Write-Host "You can now use 'gosh' command from any directory." -ForegroundColor Yellow
+            Write-Host "Examples:" -ForegroundColor Gray
+            Write-Host "  gosh build" -ForegroundColor Gray
+            Write-Host "  gosh -ListTasks" -ForegroundColor Gray
+            Write-Host "  gosh format lint build -Only" -ForegroundColor Gray
+        }
+        catch {
+            Write-Host "⚠ Module installed but import failed. You may need to restart PowerShell." -ForegroundColor Yellow
+            Write-Host "To import manually: Import-Module '$userModulePath' -Force" -ForegroundColor Gray
+        }
+    }
+    else {
+        Write-Host "Module installation complete (not imported due to -NoImport flag)." -ForegroundColor Yellow
+        Write-Host "To use the module, run: Import-Module '$userModulePath' -Force" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "Examples (after importing):" -ForegroundColor Gray
+        Write-Host "  gosh build" -ForegroundColor Gray
+        Write-Host "  gosh -ListTasks" -ForegroundColor Gray
+        Write-Host "  gosh format lint build -Only" -ForegroundColor Gray
+    }
+
     Write-Host ""
     Write-Host "The module searches upward from your current directory to find .build/ folders," -ForegroundColor Yellow
     Write-Host "so you can run gosh from any subdirectory within your project!" -ForegroundColor Yellow
@@ -1327,7 +1345,7 @@ try {
 # Handle parameter sets
 switch ($PSCmdlet.ParameterSetName) {
     'InstallModule' {
-        $installResult = Install-GoshModule
+        $installResult = Install-GoshModule -ModuleOutputPath $ModuleOutputPath -NoImport:$NoImport
         exit $(if ($installResult) { 0 } else { 1 })
     }
     'Help' {

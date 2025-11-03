@@ -945,8 +945,15 @@ Select-String "# TASK:" .build/*.ps1  # See task names
 
 # Module installation
 .\gosh.ps1 -AsModule               # Install as PowerShell module for current user
+.\gosh.ps1 -AsModule -ModuleOutputPath "C:\Custom" # Install to custom path
+.\gosh.ps1 -AsModule -NoImport     # Install without importing (build/release)
+.\gosh.ps1 -AsModule -ModuleOutputPath ".\dist" -NoImport # Full control
 gosh build                         # Use globally after installation
 gosh -ListTasks                    # Works from any subdirectory (upward search)
+
+# Manifest generation
+.\generate-manifest.ps1 -ModulePath "MyModule.psm1" -ModuleVersion "1.0.0" -Tags "Build,DevOps"
+.\generate-manifest-docker.ps1 -ModulePath "MyModule.psm1" -ModuleVersion "1.0.0" -Tags "Build,DevOps"
 
 # VS Code shortcuts
 Ctrl+Shift+B                       # Run default build task
@@ -964,6 +971,8 @@ Ctrl+Shift+P > Tasks: Run Test Task # Select test task
 
 ### Source Code
 - `gosh.ps1` - Main orchestrator (task discovery, dependency resolution, execution)
+- `generate-manifest.ps1` - PowerShell module manifest generator (analyzes modules, creates .psd1 files)
+- `generate-manifest-docker.ps1` - Docker wrapper for containerized manifest generation
 - `.build/Invoke-*.ps1` - User-customizable task templates (placeholders)
 - `packages/.build-bicep/Invoke-*.ps1` - Bicep task implementations (format, lint, build)
 

@@ -1,22 +1,90 @@
-# Bicep build outputs
+# =============================================================================
+# Gosh! Build System - Git Ignore Rules
+# =============================================================================
+# This file specifies intentionally untracked files that Git should ignore.
+# See: https://git-scm.com/docs/gitignore
+
+# =============================================================================
+# Bicep Infrastructure Files
+# =============================================================================
+# Ignore compiled ARM JSON templates (generated from .bicep files)
 tests/iac/*.json
+packages/.build-bicep/tests/iac/*.json
 
-# Don't ignore parameter files
-!tests/iac/*.parameters.json
+# Preserve important configuration files
+!tests/iac/*.parameters.json        # Parameter files for deployments
+!tests/iac/bicepconfig.json         # Bicep configuration
+!packages/.build-bicep/tests/iac/*.parameters.json
+!packages/.build-bicep/tests/iac/bicepconfig.json
 
-# Don't ignore bicepconfig
-!tests/iac/bicepconfig.json
-
-# Pester test results
+# =============================================================================
+# Test Results and Coverage
+# =============================================================================
+# Pester test output files
 TestResults.xml
 coverage.xml
 testResults.xml
+*.trx                               # Visual Studio test results
 
-# Test temporary directories
-.build-test/
-tests/security/temp-*/
+# Test artifacts and temporary directories
+.build-test/                        # Temporary build directories
+tests/security/temp-*/              # Security test temporary folders
 tests/security/temp-*/**
-tests/*temp*/**
+tests/*temp*/**                     # Any test temporary files
 
-# Security audit logs (opt-in logging)
-.gosh/
+# =============================================================================
+# PowerShell Module Artifacts
+# =============================================================================
+# Generated module manifests (created by generate-manifest.ps1)
+*.psd1
+
+# Security logging directories
+.gosh/**/*                          # Security audit logs (opt-in logging)
+.Gosh/**/*
+
+# Module installation directories (created by -AsModule)
+gosh/**/*                           # Module directories (various cases)
+Gosh/**/*
+
+# =============================================================================
+# Development and IDE Files
+# =============================================================================
+# Visual Studio Code
+.vscode/settings.json.bak           # Backup settings files
+
+# PowerShell
+*.ps1xml                            # PowerShell formatting files (if auto-generated)
+
+# =============================================================================
+# OS and Editor Files
+# =============================================================================
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.nfs*
+
+# =============================================================================
+# Build and Distribution
+# =============================================================================
+# NuGet packages and build outputs
+*.nupkg
+dist/
+build-output/
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/

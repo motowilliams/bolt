@@ -176,3 +176,32 @@ jobs:
           }
           Write-Host "Found $($jsonFiles.Count) compiled template(s):" -ForegroundColor Green
           $jsonFiles | ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Gray }
+
+      - name: Test Manifest Generation
+        shell: pwsh
+        run: |
+          Write-Host "Testing manifest generation scripts..." -ForegroundColor Cyan
+
+          # Test local manifest generation (requires Gosh module)
+          Write-Host "Creating test module for manifest generation..." -ForegroundColor Gray
+          pwsh -File gosh.ps1 -AsModule -NoImport -ModuleOutputPath ".\test-module"
+
+          # Test manifest generation
+          Write-Host "Testing generate-manifest.ps1..." -ForegroundColor Gray
+          pwsh -File generate-manifest.ps1 -ModulePath "test-module/Gosh/Gosh.psm1" -ModuleVersion "0.0.1" -Tags "Test,CI"
+
+          # Verify manifest was created
+          $manifestPath = "test-module/Gosh/Gosh.psd1"
+          if (-not (Test-Path $manifestPath)) {
+            Write-Error "Manifest file not created at $manifestPath"
+            exit 1
+          }
+
+          # Test manifest is valid
+          Write-Host "Validating generated manifest..." -ForegroundColor Gray
+          $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
+          Write-Host "✓ Manifest validation passed: $($manifest.Name) v$($manifest.Version)" -ForegroundColor Green
+
+          # Clean up
+          Remove-Item -Path "test-module" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "✓ Manifest generation tests completed" -ForegroundColor Green

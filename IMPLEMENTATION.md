@@ -14,6 +14,8 @@
 - **Parameterized Task Directory**: Use `-TaskDirectory` to specify custom task locations
 - **Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
 - **Module Installation**: Install as PowerShell module with `-AsModule` for global `gosh` command
+  - `-ModuleOutputPath`: Custom installation path for build/release scenarios
+  - `-NoImport`: Skip automatic importing for CI/CD pipelines
 - **Upward Directory Search**: Module mode finds `.build/` by searching parent directories (like git)
 - **Parameter Sets**: PowerShell parameter sets provide validated operation modes (Help, TaskExecution, ListTasks, CreateTask, InstallModule)
 
@@ -148,6 +150,50 @@ The system properly detects and reports errors:
 ✅ **Format Issues**: Unformatted files detected in check mode  
 ✅ **Compilation Errors**: Failed builds return non-zero exit codes
 ✅ **Dependency Failures**: Build stops if lint/format fails
+
+### 5. Module Manifest Generation
+
+Dedicated tooling for creating PowerShell module manifests from existing modules:
+
+#### **Generate Manifest Script** (`generate-manifest.ps1`)
+- Analyzes existing PowerShell modules (`.psm1` files or directories)
+- Automatically discovers exported functions, cmdlets, and aliases
+- Generates properly formatted `.psd1` manifest files
+- Includes Git repository integration for automatic URI inference
+- Cross-platform support (Windows, Linux, macOS)
+- Robust validation with fallback error handling
+
+**Features:**
+- **Input Flexibility**: Accepts both `.psm1` files and module directories
+- **Automatic Discovery**: Imports module to analyze exports
+- **Git Integration**: Infers ProjectUri from `git config --get remote.origin.url`
+- **Validation**: Tests generated manifests using `Test-ModuleManifest`
+- **Metadata Creation**: Generates GUID, copyright, description, and tags
+
+#### **Docker Wrapper** (`generate-manifest-docker.ps1`)
+- Containerized manifest generation using `mcr.microsoft.com/powershell:latest`
+- Isolated execution prevents host system pollution
+- Perfect for CI/CD pipelines and automated builds
+- Consistent cross-platform results
+- Volume mounting for workspace access
+
+**Usage Examples:**
+```powershell
+# Local manifest generation
+.\generate-manifest.ps1 -ModulePath "MyModule.psm1" -ModuleVersion "1.0.0" -Tags "Build,DevOps"
+
+# Docker-based generation
+.\generate-manifest-docker.ps1 -ModulePath "MyModule.psm1" -ModuleVersion "1.0.0" -Tags "Build,DevOps"
+
+# With additional metadata
+.\generate-manifest.ps1 -ModulePath "Gosh/Gosh.psm1" -ModuleVersion "3.0.0" -Tags "Build,Task" -ProjectUri "https://github.com/owner/repo"
+```
+
+**Architecture:**
+- **Separation of Concerns**: Manifest generation is separate from core module installation
+- **Build Integration**: Works with enhanced `-AsModule -NoImport -ModuleOutputPath` options
+- **CI/CD Ready**: Docker wrapper provides consistent containerized execution
+- **Validation**: Multiple validation layers ensure manifest correctness
 
 ## Usage Examples
 
