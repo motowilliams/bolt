@@ -20,3 +20,4 @@ tests/*temp*/**
 
 # Security audit logs (opt-in logging)
 .gosh/
+*.psd1
