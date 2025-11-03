@@ -8,12 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Manifest Generation Tooling**: New standalone scripts for PowerShell module manifest creation
+  - `generate-manifest.ps1`: Analyzes existing PowerShell modules and generates `.psd1` manifest files
+  - `generate-manifest-docker.ps1`: Docker wrapper for containerized manifest generation using `mcr.microsoft.com/powershell:latest`
+  - Supports both `.psm1` files and module directories as input
+  - Automatic Git repository URI inference (GitHub, GitLab, Bitbucket)
+  - Cross-platform compatibility (Windows, Linux, macOS)
+  - Robust validation with fallback error handling
+- **Enhanced Module Installation**: Extended `-AsModule` parameter set with new options
+  - `-ModuleOutputPath`: Specify custom installation path for build/release scenarios
+  - `-NoImport`: Skip automatic module importing after installation
+  - Build pipeline integration support for CI/CD scenarios
+  - Improved error handling with graceful fallbacks
 - **Parameter Sets**: PowerShell parameter sets for improved validation and user experience
   - `Help` (default): Shows usage and available tasks when no parameters provided
   - `TaskExecution`: For running tasks with `-Task`, `-Only`, `-Outline`, `-TaskDirectory`, `-Arguments`
   - `ListTasks`: For listing tasks with `-ListTasks` (alias: `-Help`), `-TaskDirectory`
   - `CreateTask`: For creating new tasks with `-NewTask`, `-TaskDirectory`
-  - `InstallModule`: For installing as module with `-AsModule`
+  - `InstallModule`: For installing as module with `-AsModule`, `-ModuleOutputPath`, `-NoImport`
   - Prevents invalid parameter combinations (e.g., `-ListTasks -NewTask`)
   - No more terminal hanging when no parameters provided
   - Better IntelliSense and tab completion support
@@ -29,6 +41,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Linux/macOS: `~/.local/share/powershell/Modules/Gosh/`
 - `Find-BuildDirectory` function for upward directory traversal
 - Cross-platform path detection using `$IsWindows`, `$IsLinux`, `$IsMacOS`
+- **Improved .gitignore**: Comprehensive reorganization with clear sections and comments
+  - Bicep Infrastructure: ARM templates, parameter files, configuration
+  - Test Results: Pester outputs, temporary directories
+  - PowerShell Modules: Generated manifests, module installations
+  - Development/IDE: Editor-specific files
+  - OS Files: Cross-platform system files (Windows, macOS, Linux)
+  - Build/Distribution: NuGet packages, build outputs, logs
+
+### Changed
+- **Manifest Generation Removed from Core**: Separated module manifest generation from `gosh.ps1`
+  - Removed hardcoded manifest creation from `Install-GoshModule` function
+  - Use dedicated `generate-manifest.ps1` script for publishing/distribution scenarios
+  - Cleaner separation of concerns: module installation vs. manifest generation
+  - Faster module installation without manifest overhead
+- Updated documentation to reflect manifest generation tooling:
+  - README.md: Added manifest generation section
+  - IMPLEMENTATION.md: Updated module features documentation
+  - .github/copilot-instructions.md: Added new script usage patterns
+- Task discovery now supports both script mode (`$PSScriptRoot`) and module mode (`$env:GOSH_PROJECT_ROOT`)
+- All functions now use `$script:EffectiveScriptRoot` for path resolution
 
 **Technical Notes**:
 - ❌ **Failed**: Attempted to fake `$PSScriptRoot` in module mode using `Set-Variable -Scope Script`
