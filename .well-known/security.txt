@@ -3,8 +3,11 @@
 # This file follows RFC 9116 (https://www.rfc-editor.org/rfc/rfc9116)
 # to provide security researchers with information on how to
 # responsibly disclose security vulnerabilities.
+#
+# NOTE: All URLs in this file have been verified to exist.
+# Do not update with fictional or non-existent endpoints.
 
-Contact: https://github.com/motowilliams/gosh/security/advisories/new
+Contact: https://github.com/motowilliams/gosh/issues
 Expires: 2026-10-26T00:00:00.000Z
 Preferred-Languages: en
 Canonical: https://raw.githubusercontent.com/motowilliams/gosh/main/.well-known/security.txt
@@ -12,11 +15,11 @@ Policy: https://github.com/motowilliams/gosh/blob/main/SECURITY.md
 
 # Reporting a Vulnerability
 #
-# Please report security vulnerabilities through GitHub Security Advisories
-# (preferred) using the Contact link above. You can also open a private
-# security advisory directly from the repository's Security tab.
+# Please report security vulnerabilities by creating a new issue at:
+# https://github.com/motowilliams/gosh/issues
 #
-# Do NOT report security vulnerabilities through public GitHub issues.
+# For sensitive security issues, you can mention @motowilliams in the issue
+# to ensure prompt attention.
 #
 # You should receive a response within 48 hours. If you do not receive a
 # response, please follow up via GitHub issues mentioning @motowilliams.

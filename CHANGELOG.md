@@ -48,6 +48,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Development/IDE: Editor-specific files
   - OS Files: Cross-platform system files (Windows, macOS, Linux)
   - Build/Distribution: NuGet packages, build outputs, logs
+- **Anti-Hallucination Policy**: Comprehensive documentation accuracy standards
+  - New policy document: `.github/NO-HALLUCINATIONS-POLICY.md`
+  - Zero tolerance for fictional URLs, endpoints, or features in documentation
+  - Enhanced prompt file with explicit verification requirements
+  - Updated copilot-instructions.md with prominent hallucination prevention guidelines
+  - Added policy references to README.md and CONTRIBUTING.md
+  - Verification requirements for all URLs, file paths, and feature references
+  - Examples of past violations documented to prevent repetition
 
 ### Changed
 - **Manifest Generation Removed from Core**: Separated module manifest generation from `gosh.ps1`

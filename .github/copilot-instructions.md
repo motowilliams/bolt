@@ -2,6 +2,34 @@
 
 > **Go** + **powerShell** = **Gosh!** 🎉
 
+## ⚠️ CRITICAL: NO HALLUCINATIONS POLICY
+
+**ZERO TOLERANCE for made-up information. This policy is strictly enforced.**
+
+### Prohibited Actions
+- **NEVER create fictional URLs, file paths, or endpoints**
+- **NEVER reference non-existent GitHub features or API endpoints**  
+- **NEVER make up function names, parameters, or features not in the codebase**
+- **NEVER invent configuration options or settings that don't exist**
+- **NEVER create imaginary CI/CD pipelines, workflows, or deployment targets**
+
+### Required Actions
+- **ALWAYS verify URLs exist before including them in any content**
+- **ALWAYS check the actual codebase for feature existence before documenting**
+- **ALWAYS use file_search, grep_search, or read_file tools to verify information**
+- **ALWAYS ask the user if unsure about URL validity or feature existence**
+- **ALWAYS use real, working contact methods (like GitHub issues) instead of fictional ones**
+
+### Verification Process
+1. **Before mentioning any URL**: Use tools to verify it exists or is a standard pattern
+2. **Before documenting features**: Use grep_search or semantic_search to confirm implementation
+3. **Before creating contact info**: Verify the target actually accepts the intended type of communication
+4. **When in doubt**: Ask the user or state uncertainty explicitly
+
+**Remember**: It's better to say "I need to verify this" than to provide incorrect information.
+
+---
+
 ## How to Use These Instructions
 
 **⚠️ CRITICAL: Always Think Deeply and Ask Questions**

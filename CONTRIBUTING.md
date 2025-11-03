@@ -2,6 +2,12 @@
 
 Thank you for considering contributing to Gosh! 🎉
 
+## ⚠️ Important: No Hallucinations Policy
+
+**Before contributing any documentation or code**: Please read our [No Hallucinations Policy](.github/NO-HALLUCINATIONS-POLICY.md). 
+
+**Key requirement**: Never create fictional URLs, endpoints, or features. Always verify information exists before documenting it.
+
 ## Project Philosophy
 
 **Keep it simple, keep it self-contained.** Gosh is designed to have zero external dependencies beyond PowerShell 7.0+ and the tools your tasks use (Bicep, Git, etc.).
