@@ -22,9 +22,9 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
 - **📦 Module Installation**: Install as PowerShell module with `-AsModule` for global access
-- **� Manifest Generation**: Dedicated tooling for creating PowerShell module manifests (`.psd1`)
+- **📝 Manifest Generation**: Dedicated tooling for creating PowerShell module manifests (`.psd1`)
 - **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
-- **�🔼 Upward Directory Search**: Module mode finds `.build/` by searching parent directories
+- **⬆️ Upward Directory Search**: Module mode finds `.build/` by searching parent directories
 - **🔧 Parameter Sets**: PowerShell parameter sets prevent invalid combinations and improve UX
 - **🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
 
@@ -811,7 +811,7 @@ Remove-Item -Path "$([Environment]::GetFolderPath('MyDocuments'))\PowerShell\Mod
 Remove-Module Gosh -ErrorAction SilentlyContinue
 ```
 
-## � Module Manifest Generation
+## 📦 Module Manifest Generation
 
 Gosh includes dedicated tooling for generating PowerShell module manifests (`.psd1` files) from existing modules. This is useful for publishing modules to PowerShell Gallery or creating distribution packages.
 
@@ -915,7 +915,7 @@ Exported Aliases (1): gosh
   GUID: 5ed0dd69-db75-4ee7-b0d3-e93922605317
 ```
 
-## �🐛 Troubleshooting
+## 🐛 Troubleshooting
 
 ### Module: Tab completion not working
 

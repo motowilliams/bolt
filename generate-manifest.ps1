@@ -175,7 +175,9 @@ if ([string]::IsNullOrWhiteSpace($ProjectUri)) {
         Write-Host "  ProjectUri will be omitted" -ForegroundColor Yellow
         $ProjectUri = ""
     }
-}# Set default LicenseUri if not provided
+}
+
+# Set default LicenseUri if not provided
 if ([string]::IsNullOrWhiteSpace($LicenseUri)) {
     # Try to infer from ProjectUri if available
     if (-not [string]::IsNullOrWhiteSpace($ProjectUri)) {
@@ -295,5 +297,7 @@ catch {
             Write-Host "   ✗ Manifest file is not readable: $_" -ForegroundColor Red
         }
     }
-}Write-Host "`n🎉 Manifest generation completed successfully!" -ForegroundColor Green
+}
+
+Write-Host "`n🎉 Manifest generation completed successfully!" -ForegroundColor Green
 Write-Host "Generated manifest file: $manifestPath" -ForegroundColor Cyan
