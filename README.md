@@ -977,6 +977,8 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 Contributions welcome! This is a self-contained build system—keep it simple and dependency-free.
 
+**Before contributing**: Please read our [No Hallucinations Policy](.github/NO-HALLUCINATIONS-POLICY.md) to ensure all documentation and references are accurate and verified.
+
 ### Customizing for Your Project
 
 1. **Keep `gosh.ps1`**: The orchestrator rarely needs modification

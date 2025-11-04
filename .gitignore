@@ -38,8 +38,10 @@ tests/*temp*/**                     # Any test temporary files
 # Generated module manifests (created by generate-manifest.ps1)
 *.psd1
 
-# Security logging directories
-.gosh/**/*                          # Security audit logs (opt-in logging)
+# Security logging directories (should only be directories, never files)
+.gosh/                              # Security audit log directory (opt-in logging)
+.gosh/**/*                          # All contents of .gosh directory
+.Gosh/                              # Case variations for cross-platform
 .Gosh/**/*
 
 # Module installation directories (created by -AsModule)

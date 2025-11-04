@@ -94,8 +94,8 @@ Describe "Security.txt File Compliance" -Tag "SecurityTxt", "Operational" {
             $content = Get-Content $SecurityTxtPath -Raw
         }
 
-        It "Should use GitHub Security Advisories for contact" {
-            $content | Should -Match 'Contact:.*github\.com.*security/advisories'
+        It "Should use GitHub Issues for contact" {
+            $content | Should -Match 'Contact:.*github\.com.*issues'
         }
 
         It "Should use https:// for contact URL" {
@@ -156,8 +156,8 @@ Describe "Security.txt File Compliance" -Tag "SecurityTxt", "Operational" {
             $content | Should -Match '(?i)report.*vulnerabilit'
         }
 
-        It "Should mention not to use public issues" {
-            $content | Should -Match '(?i)do not.*public.*issue'
+        It "Should direct users to GitHub issues for reporting" {
+            $content | Should -Match '(?i)(create.*issue|creating.*issue)'
         }
 
         It "Should include response timeline information" {
