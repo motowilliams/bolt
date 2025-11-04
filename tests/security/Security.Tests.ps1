@@ -497,8 +497,8 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
             } finally {
                 # Clean up - remove temp directory and unstage any files
                 if (Test-Path $tempDir) {
-                    Get-ChildItem -Path $tempDir -Force | Remove-Item -Force -ErrorAction SilentlyContinue
-                    Remove-Item -Path $tempDir -Force -ErrorAction SilentlyContinue
+                    Get-ChildItem -Recurse -Path $tempDir -Force | Remove-Item -Force -ErrorAction SilentlyContinue
+                    Remove-Item -Recurse -Path $tempDir -Force -ErrorAction SilentlyContinue
                 }
             }
         }

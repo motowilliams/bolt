@@ -252,11 +252,11 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should include task name in file creation log" {
-            $taskName = "test-log-$(Get-Random)"
-            & $GoshScript -NewTask $taskName | Out-Null
+            $testTaskName = "test-logging-$(Get-Random)"
+            & $GoshScript -NewTask $testTaskName | Out-Null
 
             $content = Get-Content $LogFile -Raw
-            $content | Should -Match $taskName.ToLower()
+            $content | Should -Match $testTaskName.ToLower()
         }
     }
 
