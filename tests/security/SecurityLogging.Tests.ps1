@@ -23,8 +23,9 @@ BeforeAll {
     # Safe cleanup function to handle race conditions
     function Remove-Directory {
         param($Path)
-        if (Test-Path -PathType Container $Path) {
+        if (Test-Path $Path) {
             # Retry removal with exponential backoff to handle race conditions
+            # Handles both directories and files (in case file was created where directory should be)
             $maxRetries = 3
             $retryCount = 0
             $baseDelay = 100  # milliseconds
