@@ -19,22 +19,46 @@ BeforeAll {
     $GoshScript = Join-Path $ProjectRoot "gosh.ps1"
     $LogDir = Join-Path $ProjectRoot ".gosh"
     $LogFile = Join-Path $LogDir "audit.log"
+
+    # Safe cleanup function to handle race conditions
+    function Remove-Directory {
+        param($Path)
+        if (Test-Path -PathType Container $Path) {
+            # Retry removal with exponential backoff to handle race conditions
+            $maxRetries = 3
+            $retryCount = 0
+            $baseDelay = 100  # milliseconds
+
+            while ($retryCount -lt $maxRetries) {
+                try {
+                    Remove-Item $Path -Recurse -Force -ErrorAction Stop
+                    break  # Success, exit retry loop
+                }
+                catch {
+                    $retryCount++
+                    if ($retryCount -eq $maxRetries) {
+                        # On final retry, use SilentlyContinue to prevent test failures
+                        Remove-Item $Path -Recurse -Force -ErrorAction SilentlyContinue
+                        break
+                    }
+                    # Wait before retrying (exponential backoff)
+                    Start-Sleep -Milliseconds ($baseDelay * [Math]::Pow(2, $retryCount - 1))
+                }
+            }
+        }
+    }
 }
 
 Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
     BeforeEach {
-        # Clean up any existing log file
-        if (Test-Path -PathType Container $LogDir) {
-            Remove-Item $LogDir -Recurse -Force
-        }
+        # Clean up any existing log file safely
+        Remove-Directory $LogDir
     }
 
     AfterEach {
-        # Clean up after each test
-        if (Test-Path -PathType Container $LogDir) {
-            Remove-Item $LogDir -Recurse -Force
-        }
+        # Clean up after each test safely
+        Remove-Directory $LogDir
     }
 
     Context "Logging Disabled by Default" {
@@ -410,7 +434,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
             # Should not throw, just skip logging
             { & $GoshScript -ListTasks 2>$null | Out-Null } | Should -Not -Throw
 
-            Remove-Item $LogDir -Force
+            Remove-Directory $LogDir
         }
     }
 }
