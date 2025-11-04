@@ -15,14 +15,15 @@ Policy: https://github.com/motowilliams/gosh/blob/main/SECURITY.md
 
 # Reporting a Vulnerability
 #
-# Please report security vulnerabilities by creating a new issue at:
+# For non-sensitive security issues, please create an issue at:
 # https://github.com/motowilliams/gosh/issues
 #
-# For sensitive security issues, you can mention @motowilliams in the issue
-# to ensure prompt attention.
+# For sensitive security vulnerabilities that should not be disclosed publicly,
+# please use GitHub's private security advisory reporting if available, or
+# contact @motowilliams directly through GitHub to arrange private disclosure.
 #
 # You should receive a response within 48 hours. If you do not receive a
-# response, please follow up via GitHub issues mentioning @motowilliams.
+# response, please follow up via GitHub mentioning @motowilliams.
 #
 # Please include in your report:
 # - Description of the vulnerability

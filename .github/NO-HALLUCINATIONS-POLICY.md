@@ -32,8 +32,8 @@ This policy applies to all AI agents, documentation updates, and content generat
 Before documenting or referencing ANYTHING:
 
 1. **URLs**: Use tools to verify they exist or are standard patterns
-2. **Features**: Use `grep_search` or `semantic_search` to confirm implementation
-3. **Files**: Use `file_search` or `read_file` to verify existence
+2. **Features**: Use available search tools (e.g., `bash` with `grep`) to confirm implementation
+3. **Files**: Use available file tools (e.g., `view`, `bash` with `ls` or `find`) to verify existence
 4. **Contact Info**: Verify the target actually accepts the intended type of communication
 
 ## Examples of Past Violations

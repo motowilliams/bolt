@@ -157,7 +157,7 @@ Describe "Security.txt File Compliance" -Tag "SecurityTxt", "Operational" {
         }
 
         It "Should direct users to GitHub issues for reporting" {
-            $content | Should -Match '(?i)report.*security.*vulnerabilities.*by.*creating.*new.*issue'
+            $content | Should -Match '(?i)(create.*issue|creating.*issue)'
         }
 
         It "Should include response timeline information" {
