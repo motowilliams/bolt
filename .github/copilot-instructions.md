@@ -16,13 +16,13 @@
 ### Required Actions
 - **ALWAYS verify URLs exist before including them in any content**
 - **ALWAYS check the actual codebase for feature existence before documenting**
-- **ALWAYS use file_search, grep_search, or read_file tools to verify information**
+- **ALWAYS use available tools (e.g., view, bash with grep/find) to verify information**
 - **ALWAYS ask the user if unsure about URL validity or feature existence**
 - **ALWAYS use real, working contact methods (like GitHub issues) instead of fictional ones**
 
 ### Verification Process
 1. **Before mentioning any URL**: Use tools to verify it exists or is a standard pattern
-2. **Before documenting features**: Use grep_search or semantic_search to confirm implementation
+2. **Before documenting features**: Use available search tools (e.g., bash with grep) to confirm implementation
 3. **Before creating contact info**: Verify the target actually accepts the intended type of communication
 4. **When in doubt**: Ask the user or state uncertainty explicitly
 
