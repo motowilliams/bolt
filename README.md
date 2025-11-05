@@ -5,7 +5,7 @@
 > **Go** + **powerShell** = **Gosh!**  
 > Build orchestration for PowerShell
 
-A self-contained, cross-platform PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by Make and Rake, but pure PowerShell with no external dependencies—just PowerShell 7.0+.
+A self-contained, cross-platform PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by Make and Rake, but pure PowerShell with no external dependencies - just PowerShell 7.0+.
 
 **Perfect for Azure Bicep infrastructure projects**, but flexible enough for any PowerShell workflow. Runs on Windows, Linux, and macOS.
 
@@ -22,7 +22,8 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
 - **📦 Module Installation**: Install as PowerShell module with `-AsModule` for global access
-- **📝 Manifest Generation**: Dedicated tooling for creating PowerShell module manifests (`.psd1`)
+- **�️ Module Uninstallation**: Remove Gosh from all installations with `-UninstallModule`
+- **�📝 Manifest Generation**: Dedicated tooling for creating PowerShell module manifests (`.psd1`)
 - **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
 - **⬆️ Upward Directory Search**: Module mode finds `.build/` by searching parent directories
 - **🔧 Parameter Sets**: PowerShell parameter sets prevent invalid combinations and improve UX
@@ -116,6 +117,9 @@ gosh build
 
 # Install as a module
 .\gosh.ps1 -AsModule
+
+# Uninstall module from all locations
+.\gosh.ps1 -UninstallModule
 ```
 
 **Module Mode** (after running `.\gosh.ps1 -AsModule`):
@@ -136,6 +140,9 @@ gosh build  # Automatically finds .build/ in parent directories
 # Update the module after modifying gosh.ps1
 cd ~/projects/gosh
 .\gosh.ps1 -AsModule  # Overwrites existing installation
+
+# Uninstall the module
+gosh -UninstallModule
 ```
 
 ## ⚙️ Parameter Sets
@@ -174,10 +181,17 @@ Gosh uses PowerShell parameter sets to provide a clean, validated interface with
 5. **InstallModule** - For module installation:
    ```powershell
    .\gosh.ps1 -AsModule                # Install as PowerShell module
+   .\gosh.ps1 -AsModule -NoImport      # Install without auto-importing
+   .\gosh.ps1 -AsModule -ModuleOutputPath "C:\Custom\Path"  # Custom path
+   ```
+
+6. **UninstallModule** - For module removal:
+   ```powershell
+   .\gosh.ps1 -UninstallModule         # Remove all installations
+   gosh -UninstallModule               # From module mode
    ```
 
 ### Benefits
-
 - **No Invalid Combinations**: PowerShell prevents mixing incompatible parameters like `-ListTasks -NewTask`
 - **Better IntelliSense**: IDEs show only relevant parameters for each mode
 - **Clear Help**: `Get-Help .\gosh.ps1` shows all parameter sets distinctly
@@ -282,7 +296,7 @@ Write-Host "Deploying..." -ForegroundColor Cyan
 exit 0  # Explicit exit code required
 ```
 
-**Task discovery is automatic**—no registration needed!
+**Task discovery is automatic** - no registration needed!
 
 ### Task Metadata
 
@@ -805,11 +819,41 @@ Both modes support all features: `-Only`, `-Outline`, `-TaskDirectory`, `-NewTas
 
 ### Uninstalling
 
-To remove the module:
+Remove Gosh from all module installation locations:
+
+**From script mode:**
 ```powershell
-Remove-Item -Path "$([Environment]::GetFolderPath('MyDocuments'))\PowerShell\Modules\Gosh" -Recurse -Force
-Remove-Module Gosh -ErrorAction SilentlyContinue
+cd ~/projects/gosh
+.\gosh.ps1 -UninstallModule
+
+# Output:
+# Gosh Module Uninstallation
+#
+# Found 1 Gosh installation(s):
+#
+#   - C:\Users\username\Documents\PowerShell\Modules\Gosh
+#
+# Uninstall Gosh from all locations? (y/n): y
+#
+# Uninstalling Gosh...
+# Removing: C:\Users\username\Documents\PowerShell\Modules\Gosh
+#   ✓ Successfully removed
+#
+# ✓ Gosh module uninstalled successfully!
 ```
+
+**From module mode (after installation):**
+```powershell
+gosh -UninstallModule
+```
+
+**Features:**
+- ✅ Auto-detects all Gosh installations (default + custom paths)
+- ✅ Prompts for confirmation (safe by default)
+- ✅ Removes module from current session and disk
+- ✅ Creates recovery instructions if manual cleanup needed
+- ✅ Works across Windows, Linux, and macOS
+- ✅ Proper exit codes for CI/CD integration (0=success, 1=failure)
 
 ## 📦 Module Manifest Generation
 
@@ -975,7 +1019,7 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## 🤝 Contributing
 
-Contributions welcome! This is a self-contained build system—keep it simple and dependency-free.
+Contributions welcome! This is a self-contained build system - keep it simple and dependency-free.
 
 **Before contributing**: Please read our [No Hallucinations Policy](.github/NO-HALLUCINATIONS-POLICY.md) to ensure all documentation and references are accurate and verified.
 
@@ -1014,7 +1058,7 @@ if ($LASTEXITCODE -eq 0) {
 }
 ```
 
-Task is automatically discovered—no registration needed! Restart your shell to get tab completion.
+Task is automatically discovered - no registration needed! Restart your shell to get tab completion.
 
 ### Guidelines
 

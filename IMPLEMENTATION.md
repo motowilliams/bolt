@@ -214,6 +214,23 @@ Dedicated tooling for creating PowerShell module manifests from existing modules
 # Full build (format → lint → compile)
 .\gosh.ps1 build
 
+# Install Gosh as a PowerShell module (enables 'gosh' command globally)
+.\gosh.ps1 -AsModule
+
+# Install to custom location (for build/release)
+.\gosh.ps1 -AsModule -ModuleOutputPath "C:\Custom\Path" -NoImport
+
+# Use global 'gosh' command (after module installation)
+gosh build
+gosh -ListTasks
+gosh format lint build -Only
+
+# Uninstall Gosh module from all locations
+.\gosh.ps1 -UninstallModule
+
+# Uninstall via global command (after module installation)
+gosh -UninstallModule
+
 # Run test suite directly with Pester
 Invoke-Pester
 
@@ -312,6 +329,105 @@ When you run `.\gosh.ps1 build`, it automatically:
 3. Compiles main Bicep files to JSON
 
 If any step fails, the build stops and returns an error code.
+
+## Module Management
+
+### Installation
+
+Gosh can be installed as a PowerShell module for global command-line usage:
+
+**Basic Installation:**
+```powershell
+# Install to default user module location
+.\gosh.ps1 -AsModule
+
+# Output:
+# Installing Gosh as a PowerShell module...
+# Using default module path: C:\Users\username\Documents\PowerShell\Modules\Gosh
+# ✓ Gosh module installed successfully!
+# You can now use 'gosh' command from any directory.
+```
+
+**Advanced Installation Options:**
+```powershell
+# Install to custom location
+.\gosh.ps1 -AsModule -ModuleOutputPath "C:\Custom\Modules\Path"
+
+# Install without auto-importing (for CI/CD pipelines)
+.\gosh.ps1 -AsModule -NoImport
+
+# Both options combined
+.\gosh.ps1 -AsModule -ModuleOutputPath ".\dist" -NoImport
+```
+
+**After Installation:**
+```powershell
+# Use global 'gosh' command from any directory
+gosh build
+gosh -ListTasks
+gosh format lint build -Only
+
+# The module automatically searches upward for .build/ directories
+# Just like 'git' searches for '.git/' when using git commands
+```
+
+**Cross-Platform Support:**
+- Windows: `~\Documents\PowerShell\Modules\Gosh\`
+- Linux/macOS: `~/.local/share/powershell/Modules/Gosh/`
+
+### Uninstallation
+
+Remove Gosh from all module installation locations:
+
+**From Script Mode:**
+```powershell
+# Uninstall from all known locations
+.\gosh.ps1 -UninstallModule
+
+# Output:
+# Gosh Module Uninstallation
+#
+# Found 1 Gosh installation(s):
+#
+#   - C:\Users\username\Documents\PowerShell\Modules\Gosh
+#
+# Uninstall Gosh from all locations? (y/n): y
+#
+# Uninstalling Gosh...
+# Removing: C:\Users\username\Documents\PowerShell\Modules\Gosh
+#   ✓ Successfully removed
+#
+# ✓ Gosh module uninstalled successfully!
+```
+
+**From Module Mode (After Installation):**
+```powershell
+# Use the 'gosh' command directly
+gosh -UninstallModule
+```
+
+**Uninstallation Features:**
+- ✅ **Auto-Detection**: Finds all Gosh installations on current platform
+- ✅ **Confirmation**: Prompts before removing (safe by default)
+- ✅ **Clean Removal**: Removes module from memory and disk
+- ✅ **Recovery Instructions**: If automatic removal fails, creates a recovery file with manual cleanup steps
+- ✅ **Exit Codes**: Returns 0 on success, 1 on failure for CI/CD integration
+
+**Behavior:**
+- Detects all installations (default path + custom paths)
+- Removes module from current PowerShell session
+- Deletes module directory recursively
+- Creates recovery file at `$env:TEMP\Gosh-Uninstall-Manual.txt` if manual cleanup needed
+- Works across Windows, Linux, and macOS
+
+**After Uninstallation:**
+```powershell
+# The 'gosh' command will no longer be available
+gosh build
+# PowerShell: The term 'gosh' is not recognized...
+
+# You may need to restart PowerShell for changes to take effect
+```
 
 ## Testing
 

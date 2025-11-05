@@ -36,6 +36,11 @@ using namespace System.Management.Automation
     Do not automatically import the module after installation. Used with -AsModule
     parameter for build and release scenarios where you only want to generate the
     module files without importing them into the current session.
+.PARAMETER UninstallModule
+    Remove Gosh from the PowerShell module installation. Automatically detects all
+    installed versions (default user path and custom paths) and removes them.
+    If automatic removal fails, creates a recovery instruction file with manual
+    removal steps.
 .PARAMETER Arguments
     Additional arguments to pass to the task scripts.
 .EXAMPLE
@@ -62,6 +67,9 @@ using namespace System.Management.Automation
 .EXAMPLE
     .\gosh.ps1 -AsModule
     Installs Gosh as a PowerShell module for the current user, enabling the 'gosh' command.
+.EXAMPLE
+    .\gosh.ps1 -UninstallModule
+    Removes Gosh from all installed locations.
 #>
 [CmdletBinding(DefaultParameterSetName = 'Help')]
 param(
@@ -133,6 +141,10 @@ param(
 
     [Parameter(ParameterSetName = 'InstallModule')]
     [switch]$NoImport,
+
+    # UninstallModule parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'UninstallModule')]
+    [switch]$UninstallModule,
 
     # TaskExecution parameter set - additional arguments
     [Parameter(ParameterSetName = 'TaskExecution', ValueFromRemainingArguments)]
@@ -676,6 +688,8 @@ function Invoke-Gosh {
         Override the default .build directory name
     .PARAMETER NewTask
         Create a new task file
+    .PARAMETER UninstallModule
+        Remove Gosh module from current installation
     .PARAMETER Arguments
         Additional arguments to pass to tasks
     #>
@@ -695,9 +709,19 @@ function Invoke-Gosh {
 
         [string]`$NewTask,
 
+        [switch]`$UninstallModule,
+
         [Parameter(ValueFromRemainingArguments)]
         [string[]]`$Arguments
     )
+
+    # Handle UninstallModule (special case - doesn't need project root)
+    if (`$UninstallModule) {
+        # Pass directly to gosh-core.ps1 without requiring project root
+        `$goshCorePath = Join-Path `$PSScriptRoot "gosh-core.ps1"
+        & `$goshCorePath -UninstallModule
+        exit `$LASTEXITCODE
+    }
 
     # Find the project root with .build directory
     `$buildPath = Find-BuildDirectory -TaskDirectory `$TaskDirectory
@@ -857,6 +881,189 @@ Register-ArgumentCompleter -CommandName 'gosh' -ParameterName 'Task' -ScriptBloc
     Write-Host "To update the module after modifying gosh.ps1, run: .\gosh.ps1 -AsModule" -ForegroundColor DarkGray
 
     return $true
+}
+
+function Invoke-UninstallGoshModule {
+    <#
+    .SYNOPSIS
+        Removes Gosh from all installed module locations
+    .DESCRIPTION
+        Uninstalls Gosh from the PowerShell module installation. Automatically detects
+        and removes all installed versions from default user paths. If removal fails,
+        creates a recovery file with manual removal instructions.
+    .PARAMETER Force
+        Skip confirmation prompt before uninstalling
+    #>
+    [CmdletBinding()]
+    param(
+        [switch]$Force
+    )
+
+    Write-Host "Gosh Module Uninstallation" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Detect all Gosh module installations (current platform only)
+    $moduleName = "Gosh"
+    $installLocations = @()
+
+    # Build list of potential installation paths based on current platform
+    if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
+        # Windows: Check Documents\PowerShell\Modules
+        $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
+        if (Test-Path $userModulePath) {
+            $installLocations += $userModulePath
+        }
+    }
+    else {
+        # Linux/macOS: Check .local/share/powershell/Modules
+        $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "powershell" "Modules" $moduleName
+        if (Test-Path $userModulePath) {
+            $installLocations += $userModulePath
+        }
+    }
+
+    # Check for installed module in PSModulePath
+    $modulePaths = $env:PSModulePath -split [System.IO.Path]::PathSeparator
+    foreach ($modulePath in $modulePaths) {
+        $goshModulePath = Join-Path $modulePath $moduleName
+        if ((Test-Path $goshModulePath) -and $goshModulePath -notin $installLocations) {
+            $installLocations += $goshModulePath
+        }
+    }
+
+    if ($installLocations.Count -eq 0) {
+        Write-Host "⚠ Gosh module is not installed in any known location." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Checked paths:" -ForegroundColor Gray
+        if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
+            $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
+            Write-Host "  - $userModulePath" -ForegroundColor Gray
+        }
+        else {
+            $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "powershell" "Modules" $moduleName
+            Write-Host "  - $userModulePath" -ForegroundColor Gray
+        }
+        Write-Host ""
+        return $false
+    }
+
+    # Display installations found
+    Write-Host "Found $($installLocations.Count) Gosh installation(s):" -ForegroundColor Yellow
+    Write-Host ""
+    foreach ($location in $installLocations) {
+        Write-Host "  - $location" -ForegroundColor Gray
+    }
+    Write-Host ""
+
+    # Confirm uninstallation
+    if (-not $Force) {
+        $response = Read-Host "Uninstall Gosh from all locations? (y/n)"
+        if ($response -ne 'y' -and $response -ne 'Y') {
+            Write-Host "Uninstallation cancelled." -ForegroundColor Yellow
+            return $false
+        }
+    }
+
+    Write-Host ""
+    Write-Host "Uninstalling Gosh..." -ForegroundColor Cyan
+
+    # Track removal status
+    $successCount = 0
+    $failureLocations = @()
+
+    # Remove each installation
+    foreach ($location in $installLocations) {
+        try {
+            # Remove module from memory if currently imported
+            $goshModule = Get-Module -Name $moduleName -ErrorAction SilentlyContinue
+            if ($goshModule) {
+                Write-Host "Removing Gosh module from current session..." -ForegroundColor Gray
+                Remove-Module -Name $moduleName -Force -ErrorAction SilentlyContinue
+            }
+
+            # Remove the directory
+            Write-Host "Removing: $location" -ForegroundColor Gray
+            Remove-Item -Path $location -Recurse -Force -ErrorAction Stop
+            Write-Host "  ✓ Successfully removed" -ForegroundColor Green
+            $successCount++
+        }
+        catch {
+            Write-Host "  ✗ Failed to remove: $($_.Exception.Message)" -ForegroundColor Red
+            $failureLocations += @{
+                Path = $location
+                Error = $_.Exception.Message
+            }
+        }
+    }
+
+    Write-Host ""
+
+    # Handle results
+    if ($failureLocations.Count -eq 0) {
+        # Complete success
+        Write-Host "✓ Gosh module uninstalled successfully from all locations!" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "The 'gosh' command will no longer be available." -ForegroundColor Yellow
+        Write-Host "You may need to restart PowerShell for changes to take effect." -ForegroundColor Yellow
+        Write-Host ""
+        return $true
+    }
+    else {
+        # Partial or complete failure - create recovery file
+        Write-Host "⚠ Partial uninstallation failure - cleaning up what we can" -ForegroundColor Yellow
+        Write-Host ""
+
+        # Create recovery instruction file
+        $recoveryPath = Join-Path $env:TEMP "Gosh-Uninstall-Manual.txt"
+        $recoveryContent = @"
+GOSH UNINSTALLATION - MANUAL CLEANUP REQUIRED
+==============================================
+
+Automatic uninstallation failed for the following locations.
+Please remove them manually:
+
+"@
+
+        foreach ($failure in $failureLocations) {
+            $recoveryContent += "Location: $($failure.Path)`r`n"
+            $recoveryContent += "Error: $($failure.Error)`r`n"
+            $recoveryContent += "`r`n"
+            $recoveryContent += "To remove manually:`r`n"
+            $recoveryContent += "  1. Open File Explorer`r`n"
+            $recoveryContent += "  2. Navigate to: $(Split-Path $failure.Path)`r`n"
+            $recoveryContent += "  3. Right-click 'Gosh' folder and select 'Delete'`r`n"
+            $recoveryContent += "`r`n"
+        }
+
+        $recoveryContent += "Locations successfully removed: $successCount`r`n"
+        $recoveryContent += "`r`n"
+        $recoveryContent += "After removing the above locations manually, you may need to:`r`n"
+        $recoveryContent += "  - Restart PowerShell`r`n"
+        $recoveryContent += "  - Clear the module cache by running:`r`n"
+        $recoveryContent += "    Remove-Item -Path `$env:TEMP\PowerShellModuleCache -Force -Recurse`r`n"
+        $recoveryContent += "`r`n"
+        $recoveryContent += "For more help, visit: https://github.com/motowilliams/gosh`r`n"
+
+        try {
+            $recoveryContent | Out-File -FilePath $recoveryPath -Encoding UTF8 -Force
+            Write-Host "Recovery instructions saved to:" -ForegroundColor Yellow
+            Write-Host "  $recoveryPath" -ForegroundColor Gray
+            Write-Host ""
+            Write-Host "Please follow the manual cleanup instructions in that file." -ForegroundColor Yellow
+        }
+        catch {
+            Write-Host "Could not create recovery file: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host ""
+            Write-Host "Failed locations:" -ForegroundColor Yellow
+            foreach ($failure in $failureLocations) {
+                Write-Host "  - $($failure.Path)" -ForegroundColor Gray
+                Write-Host "    Error: $($failure.Error)" -ForegroundColor Gray
+            }
+        }
+
+        Write-Host ""
+        return $false
+    }
 }
 #endregion
 
@@ -1355,6 +1562,10 @@ switch ($PSCmdlet.ParameterSetName) {
         $installResult = Install-GoshModule -ModuleOutputPath $ModuleOutputPath -NoImport:$NoImport
         exit $(if ($installResult) { 0 } else { 1 })
     }
+    'UninstallModule' {
+        $uninstallResult = Invoke-UninstallGoshModule
+        exit $(if ($uninstallResult) { 0 } else { 1 })
+    }
     'Help' {
         # Default behavior when no parameters - show available tasks
         Write-Host "Gosh! Build orchestration for PowerShell" -ForegroundColor Cyan
@@ -1366,6 +1577,7 @@ switch ($PSCmdlet.ParameterSetName) {
         Write-Host "  .\gosh.ps1 -ListTasks  (or -Help)" -ForegroundColor Gray
         Write-Host "  .\gosh.ps1 -NewTask <name>" -ForegroundColor Gray
         Write-Host "  .\gosh.ps1 -AsModule" -ForegroundColor Gray
+        Write-Host "  .\gosh.ps1 -UninstallModule" -ForegroundColor Gray
         Write-Host ""
 
         # Show available tasks
