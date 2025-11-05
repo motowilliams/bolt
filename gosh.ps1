@@ -1029,9 +1029,8 @@ Please remove them manually:
             $recoveryContent += "Error: $($failure.Error)`r`n"
             $recoveryContent += "`r`n"
             $recoveryContent += "To remove manually:`r`n"
-            $recoveryContent += "  1. Open File Explorer`r`n"
-            $recoveryContent += "  2. Navigate to: $(Split-Path $failure.Path)`r`n"
-            $recoveryContent += "  3. Right-click 'Gosh' folder and select 'Delete'`r`n"
+            $recoveryContent += "  - Use your file manager to navigate to: $(Split-Path $failure.Path)`r`n"
+            $recoveryContent += "  - Delete the 'Gosh' folder at that location.`r`n"
             $recoveryContent += "`r`n"
         }
 
@@ -1040,7 +1039,7 @@ Please remove them manually:
         $recoveryContent += "After removing the above locations manually, you may need to:`r`n"
         $recoveryContent += "  - Restart PowerShell`r`n"
         $recoveryContent += "  - Clear the module cache by running:`r`n"
-        $recoveryContent += "    Remove-Item -Path `$env:TEMP\PowerShellModuleCache -Force -Recurse`r`n"
+        $recoveryContent += "    Remove-Item -Path (Join-Path `$env:TEMP 'PowerShellModuleCache') -Force -Recurse`r`n"
         $recoveryContent += "`r`n"
         $recoveryContent += "For more help, visit: https://github.com/motowilliams/gosh`r`n"
 
