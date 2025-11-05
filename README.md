@@ -22,8 +22,8 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
 - **📦 Module Installation**: Install as PowerShell module with `-AsModule` for global access
-- **�️ Module Uninstallation**: Remove Gosh from all installations with `-UninstallModule`
-- **�📝 Manifest Generation**: Dedicated tooling for creating PowerShell module manifests (`.psd1`)
+- **Module Uninstallation**: Remove Gosh from all installations with `-UninstallModule`
+- **Manifest Generation**: Dedicated tooling for creating PowerShell module manifests (`.psd1`)
 - **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
 - **⬆️ Upward Directory Search**: Module mode finds `.build/` by searching parent directories
 - **🔧 Parameter Sets**: PowerShell parameter sets prevent invalid combinations and improve UX
