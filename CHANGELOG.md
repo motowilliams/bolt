@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic Git repository URI inference (GitHub, GitLab, Bitbucket)
   - Cross-platform compatibility (Windows, Linux, macOS)
   - Robust validation with fallback error handling
+- **Module Uninstallation**: New `-UninstallModule` parameter to remove Gosh from all installations
+  - Auto-detects all Gosh module installations on current platform (Windows, Linux, macOS)
+  - Prompts for confirmation before removal (safe by default)
+  - Removes module from current PowerShell session and disk
+  - Creates recovery instruction file if automatic removal fails
+  - Proper exit codes for CI/CD integration (0=success, 1=failure)
+  - Works from both script mode (`.\gosh.ps1 -UninstallModule`) and module mode (`gosh -UninstallModule`)
+  - Gracefully handles self-removal when called from installed module
 - **Enhanced Module Installation**: Extended `-AsModule` parameter set with new options
   - `-ModuleOutputPath`: Specify custom installation path for build/release scenarios
   - `-NoImport`: Skip automatic module importing after installation

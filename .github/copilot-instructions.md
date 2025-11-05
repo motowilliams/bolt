@@ -30,6 +30,73 @@
 
 ---
 
+## Writing Style: Keep It Simple and Direct
+
+Write like you're explaining something to a coworker - no fluff, no fancy words, just clear thinking. Use only printable ASCII characters in all documentation. No em dash characters allowed.
+
+### Words and Phrases to Avoid
+- **Fancy filler words**: comprehensive, robust, leverage, synergy, ecosystem, innovative, seamless, cutting-edge, paradigm
+- **Marketing speak**: world-class, best-in-class, industry-leading, next-generation, revolutionary
+- **Vague descriptions**: powerful, elegant, sophisticated, amazing, brilliant, state-of-the-art
+- **Overused jargon**: utilize (just say "use"), implement (say "add" or "create"), facilitate, optimize, scalable
+
+### How to Write About Gosh
+
+**❌ Bad:**
+> Gosh leverages a comprehensive, robust architecture to seamlessly orchestrate tasks with innovative dependency resolution capabilities.
+
+**✅ Good:**
+> Gosh runs tasks in order and automatically handles their dependencies - no special setup needed.
+
+**❌ Bad:**
+> This implementation provides a synergistic approach to cross-platform module management.
+
+**✅ Good:**
+> The module works the same way on Windows, Linux, and macOS.
+
+### Style Guidelines
+
+1. **Use simple, active verbs**: "run", "create", "check", "delete", "find" instead of "facilitate", "implement", "leverage"
+
+2. **Be specific**: Say what actually happens, not what it enables
+   - ❌ "This provides flexibility" 
+   - ✅ "You can use custom task directories with `-TaskDirectory`"
+
+3. **Use short sentences**: One idea per sentence, break up long ones
+
+4. **Use basic vocabulary**: If you'd explain it to a new developer, you're on track
+
+5. **Show examples**: A code snippet shows more than 10 words of description
+
+6. **Keep lists concise**: Bullet points, not paragraphs
+
+7. **Avoid needless adjectives**: Don't say "powerful tool" or "flexible system" - just say what it does
+
+8. **Use valid emojis only**: Only use standard, valid Unicode emojis in documentation
+   - ❌ Invalid or corrupted emoji characters (�, �️, etc.)
+   - ✅ Valid standard emojis (🎉, ✅, ❌, etc.)
+   - Test emoji rendering before committing
+   - When in doubt, use ASCII alternatives instead
+
+9. **Avoid specific test counts**: Don't include exact test counts in documentation
+   - ❌ "Pester test suite with comprehensive coverage (221 tests)"
+   - ✅ "Pester test suite with comprehensive coverage"
+   - Test counts change frequently and don't add value
+   - Focus on test coverage quality, not quantity
+
+### Documentation Checklist
+
+Before writing something:
+- [ ] Can I remove any fancy words without losing meaning?
+- [ ] Would I explain it this way to a coworker in Slack?
+- [ ] Does it tell you what to actually do, not just what's possible?
+- [ ] Would a new developer understand this?
+- [ ] Can I add a code example instead of more words?
+
+**Remember**: Clear beats clever. Direct beats impressive. Simple beats everything.
+
+---
+
 ## How to Use These Instructions
 
 **⚠️ CRITICAL: Always Think Deeply and Ask Questions**
@@ -85,7 +152,7 @@ This is **Gosh**, a self-contained PowerShell build system (`gosh.ps1`) designed
 The project is a **working example** that includes:
 - ✅ Complete build orchestration system (`gosh.ps1`)
 - ✅ Three project tasks: `format`, `lint`, `build`
-- ✅ Pester test suite with comprehensive coverage (267 tests)
+- ✅ Pester test suite with comprehensive coverage
 - ✅ Example Azure infrastructure (App Service + SQL)
 - ✅ Multi-task execution with dependency resolution
 - ✅ Tab completion and help system (script and module mode)
@@ -572,13 +639,13 @@ $path = "$PSScriptRoot\subfolder\file.txt"
 This project uses **Pester** for PowerShell testing. The test suite is organized with separate locations for core and module-specific tests:
 
 **Test Structure**:
-- **`tests/gosh.Tests.ps1`** (28 tests) - Core Gosh orchestration using mock fixtures
-- **`tests/security/Security.Tests.ps1`** (87 tests) - Core security validation tests (P0 fixes)
-- **`tests/security/SecurityTxt.Tests.ps1`** (20 tests) - RFC 9116 compliance tests
-- **`tests/security/SecurityLogging.Tests.ps1`** (26 tests) - Security event logging tests
-- **`tests/security/OutputValidation.Tests.ps1`** (44 tests) - Terminal injection protection tests
-- **`packages/.build-bicep/tests/Tasks.Tests.ps1`** (12 tests) - Bicep task validation tests
-- **`packages/.build-bicep/tests/Integration.Tests.ps1`** (4 tests) - End-to-end Bicep integration tests
+- **`tests/gosh.Tests.ps1`** - Core Gosh orchestration using mock fixtures
+- **`tests/security/Security.Tests.ps1`** - Core security validation tests (P0 fixes)
+- **`tests/security/SecurityTxt.Tests.ps1`** - RFC 9116 compliance tests
+- **`tests/security/SecurityLogging.Tests.ps1`** - Security event logging tests
+- **`tests/security/OutputValidation.Tests.ps1`** - Terminal injection protection tests
+- **`packages/.build-bicep/tests/Tasks.Tests.ps1`** - Bicep task validation tests
+- **`packages/.build-bicep/tests/Integration.Tests.ps1`** - End-to-end Bicep integration tests
 - **`tests/fixtures/`** - Mock tasks for testing Gosh orchestration without external dependencies
 
 **Running tests**:
@@ -588,15 +655,15 @@ Invoke-Pester -Output Detailed     # With detailed output
 Invoke-Pester -Path tests/gosh.Tests.ps1  # Run specific test file
 
 # Use tags for targeted testing
-Invoke-Pester -Tag Core            # Only core orchestration tests (28 tests, ~1s)
-Invoke-Pester -Tag Security        # Only security validation tests (29 tests, ~1s)
-Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (16 tests, ~22s)
+Invoke-Pester -Tag Core            # Only core orchestration tests (fast, ~1s)
+Invoke-Pester -Tag Security        # Only security validation tests (fast, ~1s)
+Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (slower, ~22s)
 ```
 
 **Test Tags**:
-- **`Core`** (28 tests) - Tests gosh.ps1 orchestration, fast, no external dependencies
-- **`Security`** (205 tests) - Tests all security features (validation, RFC 9116, logging, output sanitization)
-- **`Bicep-Tasks`** (16 tests) - Tests Bicep task implementation, slower, requires Bicep CLI
+- **`Core`** - Tests gosh.ps1 orchestration, fast, no external dependencies
+- **`Security`** - Tests all security features (security validation + RFC 9116 + logging + output validation)
+- **`Bicep-Tasks`** - Tests Bicep task implementation, slower, requires Bicep CLI
 
 **Test Coverage**:
 
@@ -651,7 +718,7 @@ $result = Invoke-Gosh -Arguments @('mock-simple') `
 
 **Test Results**:
 ```
-Tests Passed: 267
+Tests Passed: 221
 Tests Failed: 0
 Skipped: 0
 Total Time: ~15 seconds

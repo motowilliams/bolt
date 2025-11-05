@@ -146,7 +146,7 @@ Describe "Your New Feature" -Tag 'Core' {
 - Tests use `tests/fixtures/` directory containing mock tasks
 - Tests explicitly pass `-TaskDirectory 'tests/fixtures'` parameter
 - This achieves clean separation between production tasks and test infrastructure
-- No need to copy fixtures—they're referenced directly
+- No need to copy fixtures - they're referenced directly
 
 **For new Bicep tasks**:
 ```powershell
