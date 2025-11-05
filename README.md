@@ -847,9 +847,15 @@ cd ~/projects/gosh
 gosh -UninstallModule
 ```
 
+**Skip confirmation prompt:**
+```powershell
+.\gosh.ps1 -UninstallModule -Force
+gosh -UninstallModule -Force
+```
+
 **Features:**
 - ✅ Auto-detects all Gosh installations (default + custom paths)
-- ✅ Prompts for confirmation (safe by default)
+- ✅ Prompts for confirmation (safe by default, use `-Force` to skip)
 - ✅ Removes module from current session and disk
 - ✅ Creates recovery instructions if manual cleanup needed
 - ✅ Works across Windows, Linux, and macOS
