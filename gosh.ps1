@@ -41,6 +41,8 @@ using namespace System.Management.Automation
     installed versions (default user path and custom paths) and removes them.
     If automatic removal fails, creates a recovery instruction file with manual
     removal steps.
+.PARAMETER Force
+    Skip confirmation prompt before uninstalling. Used with -UninstallModule parameter.
 .PARAMETER Arguments
     Additional arguments to pass to the task scripts.
 .EXAMPLE
@@ -70,6 +72,9 @@ using namespace System.Management.Automation
 .EXAMPLE
     .\gosh.ps1 -UninstallModule
     Removes Gosh from all installed locations.
+.EXAMPLE
+    .\gosh.ps1 -UninstallModule -Force
+    Removes Gosh from all installed locations without confirmation prompt.
 #>
 [CmdletBinding(DefaultParameterSetName = 'Help')]
 param(
@@ -145,6 +150,9 @@ param(
     # UninstallModule parameter set
     [Parameter(Mandatory = $true, ParameterSetName = 'UninstallModule')]
     [switch]$UninstallModule,
+
+    [Parameter(ParameterSetName = 'UninstallModule')]
+    [switch]$Force,
 
     # TaskExecution parameter set - additional arguments
     [Parameter(ParameterSetName = 'TaskExecution', ValueFromRemainingArguments)]
@@ -711,6 +719,8 @@ function Invoke-Gosh {
 
         [switch]`$UninstallModule,
 
+        [switch]`$Force,
+
         [Parameter(ValueFromRemainingArguments)]
         [string[]]`$Arguments
     )
@@ -719,7 +729,7 @@ function Invoke-Gosh {
     if (`$UninstallModule) {
         # Pass directly to gosh-core.ps1 without requiring project root
         `$goshCorePath = Join-Path `$PSScriptRoot "gosh-core.ps1"
-        & `$goshCorePath -UninstallModule
+        & `$goshCorePath -UninstallModule -Force:`$Force
         exit `$LASTEXITCODE
     }
 
@@ -971,16 +981,16 @@ function Invoke-UninstallGoshModule {
     $successCount = 0
     $failureLocations = @()
 
+    # Remove module from memory if currently imported
+    $goshModule = Get-Module -Name $moduleName -ErrorAction SilentlyContinue
+    if ($goshModule) {
+        Write-Host "Removing Gosh module from current session..." -ForegroundColor Gray
+        Remove-Module -Name $moduleName -Force -ErrorAction SilentlyContinue
+    }
+
     # Remove each installation
     foreach ($location in $installLocations) {
         try {
-            # Remove module from memory if currently imported
-            $goshModule = Get-Module -Name $moduleName -ErrorAction SilentlyContinue
-            if ($goshModule) {
-                Write-Host "Removing Gosh module from current session..." -ForegroundColor Gray
-                Remove-Module -Name $moduleName -Force -ErrorAction SilentlyContinue
-            }
-
             # Remove the directory
             Write-Host "Removing: $location" -ForegroundColor Gray
             Remove-Item -Path $location -Recurse -Force -ErrorAction Stop
@@ -1025,23 +1035,23 @@ Please remove them manually:
 "@
 
         foreach ($failure in $failureLocations) {
-            $recoveryContent += "Location: $($failure.Path)`r`n"
-            $recoveryContent += "Error: $($failure.Error)`r`n"
-            $recoveryContent += "`r`n"
-            $recoveryContent += "To remove manually:`r`n"
-            $recoveryContent += "  - Use your file manager to navigate to: $(Split-Path $failure.Path)`r`n"
-            $recoveryContent += "  - Delete the 'Gosh' folder at that location.`r`n"
-            $recoveryContent += "`r`n"
+            $recoveryContent += "Location: $($failure.Path)$([Environment]::NewLine)"
+            $recoveryContent += "Error: $($failure.Error)$([Environment]::NewLine)"
+            $recoveryContent += [Environment]::NewLine
+            $recoveryContent += "To remove manually:$([Environment]::NewLine)"
+            $recoveryContent += "  - Use your file manager to navigate to: $(Split-Path $failure.Path)$([Environment]::NewLine)"
+            $recoveryContent += "  - Delete the 'Gosh' folder at that location.$([Environment]::NewLine)"
+            $recoveryContent += [Environment]::NewLine
         }
 
-        $recoveryContent += "Locations successfully removed: $successCount`r`n"
-        $recoveryContent += "`r`n"
-        $recoveryContent += "After removing the above locations manually, you may need to:`r`n"
-        $recoveryContent += "  - Restart PowerShell`r`n"
-        $recoveryContent += "  - Clear the module cache by running:`r`n"
-        $recoveryContent += "    Remove-Item -Path (Join-Path `$env:TEMP 'PowerShellModuleCache') -Force -Recurse`r`n"
-        $recoveryContent += "`r`n"
-        $recoveryContent += "For more help, visit: https://github.com/motowilliams/gosh`r`n"
+        $recoveryContent += "Locations successfully removed: $successCount$([Environment]::NewLine)"
+        $recoveryContent += [Environment]::NewLine
+        $recoveryContent += "After removing the above locations manually, you may need to:$([Environment]::NewLine)"
+        $recoveryContent += "  - Restart PowerShell$([Environment]::NewLine)"
+        $recoveryContent += "  - Clear the module cache by running:$([Environment]::NewLine)"
+        $recoveryContent += "    Remove-Item -Path (Join-Path `$env:TEMP 'PowerShellModuleCache') -Force -Recurse$([Environment]::NewLine)"
+        $recoveryContent += [Environment]::NewLine
+        $recoveryContent += "For more help, visit: https://github.com/motowilliams/gosh$([Environment]::NewLine)"
 
         try {
             $recoveryContent | Out-File -FilePath $recoveryPath -Encoding UTF8 -Force
@@ -1562,7 +1572,7 @@ switch ($PSCmdlet.ParameterSetName) {
         exit $(if ($installResult) { 0 } else { 1 })
     }
     'UninstallModule' {
-        $uninstallResult = Invoke-UninstallGoshModule
+        $uninstallResult = Invoke-UninstallGoshModule -Force:$Force
         exit $(if ($uninstallResult) { 0 } else { 1 })
     }
     'Help' {
