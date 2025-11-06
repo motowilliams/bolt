@@ -1162,11 +1162,12 @@ function Get-ProjectTasks {
         $lines = Get-Content $FilePath -First 30 -ErrorAction SilentlyContinue
         $content = $lines -join "`n"
         $metadata = @{
-            Names        = @()
-            Description  = ''
-            Dependencies = @()
-            ScriptPath   = $FilePath
-            IsCore       = $false
+            Names                  = @()
+            Description            = ''
+            Dependencies           = @()
+            ScriptPath             = $FilePath
+            IsCore                 = $false
+            UsedFilenameFallback   = $false
         }
 
         # Extract task names
@@ -1203,6 +1204,15 @@ function Get-ProjectTasks {
                 $taskName = $parts[0].ToLower()
             }
             $metadata.Names = @($taskName)
+
+            # Mark that this task used filename fallback (no # TASK: metadata)
+            $metadata.UsedFilenameFallback = $true
+
+            # Warn about filename fallback unless disabled via environment variable
+            if (-not $env:GOSH_NO_FALLBACK_WARNINGS) {
+                $fileName = Split-Path $FilePath -Leaf
+                Write-Warning "Task file '$fileName' does not have a # TASK: metadata tag. Using filename fallback to derive task name '$taskName'. To disable this warning, set: `$env:GOSH_NO_FALLBACK_WARNINGS = 1"
+            }
         }
 
         # Extract description

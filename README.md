@@ -304,6 +304,36 @@ exit 0  # Explicit exit code required
 - `# DESCRIPTION:` - Human-readable description
 - `# DEPENDS:` - Dependency list, comma-separated
 
+### Filename Fallback (Convenience Feature)
+
+If a task file has no `# TASK:` metadata, Gosh derives the task name from the filename:
+
+```powershell
+# Invoke-Deploy.ps1          -> task name: deploy
+# Invoke-My-Task.ps1         -> task name: my-task
+# Invoke-Clean-All.ps1       -> task name: clean-all
+```
+
+**Warning**: When using filename fallback, Gosh displays a warning to encourage explicit metadata:
+
+```
+WARNING: Task file 'Invoke-MyTask.ps1' does not have a # TASK: metadata tag. 
+Using filename fallback to derive task name 'mytask'. To disable this warning, 
+set: $env:GOSH_NO_FALLBACK_WARNINGS = 1
+```
+
+This warning helps avoid confusion during task discovery, especially if you rename files. To suppress the warning:
+
+```powershell
+# Disable fallback warnings
+$env:GOSH_NO_FALLBACK_WARNINGS = 1
+
+# Or in a script/profile
+[System.Environment]::SetEnvironmentVariable('GOSH_NO_FALLBACK_WARNINGS', '1', 'User')
+```
+
+**Best Practice**: Always include explicit `# TASK:` metadata for clarity and to avoid file-rename surprises.
+
 ## 🎯 Built for Azure Bicep
 
 While Gosh works with any PowerShell workflow, it's optimized for Azure Bicep infrastructure projects:
