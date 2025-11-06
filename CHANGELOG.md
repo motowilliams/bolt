@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Filename Fallback Warning System**: Tasks using filename-based task names (no `# TASK:` metadata) now display a warning
+  - Warning message explains the fallback behavior and encourages explicit metadata
+  - Can be disabled via environment variable `$env:GOSH_NO_FALLBACK_WARNINGS = 1`
+  - Helps prevent confusion from file rename operations
+  - Applies to both script mode and module mode
+
+### Fixed
+- **Task Discovery with File Renames**: Fixed issue where renaming task files without explicit `# TASK:` metadata would not update task discovery
+  - Tab completion now re-discovers tasks on each invocation (was already correct, verified)
+  - Task execution properly updates when files are renamed within same session
+  - Added test to verify file rename behavior: `Should handle file renames correctly during task discovery`
+
+### Added
 - **Manifest Generation Tooling**: New standalone scripts for PowerShell module manifest creation
   - `generate-manifest.ps1`: Analyzes existing PowerShell modules and generates `.psd1` manifest files
   - `generate-manifest-docker.ps1`: Docker wrapper for containerized manifest generation using `mcr.microsoft.com/powershell:latest`

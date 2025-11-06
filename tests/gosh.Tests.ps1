@@ -189,6 +189,38 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
                 }
             }
         }
+
+        It 'Should handle file renames correctly during task discovery' {
+            # BUG FIX: Task names should update when files are renamed within same session
+            # Create a temporary task directory with a file that uses filename fallback
+            $tempDir = Join-Path $projectRoot ".test-rename-$(Get-Random)"
+            New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+            try {
+                # Create initial task file with filename fallback (no TASK metadata)
+                $file1 = Join-Path $tempDir "Invoke-Original.ps1"
+                Set-Content -Path $file1 -Value "Write-Host 'Test'; exit 0"
+
+                # Verify initial discovery finds 'original' task
+                $output = & $script:GoshScriptPath -TaskDirectory $tempDir -ListTasks 6>&1 2>&1 | Out-String
+                $output | Should -Match '\boriginal\b'
+
+                # Rename the file
+                $file2 = Join-Path $tempDir "Invoke-Renamed.ps1"
+                Rename-Item -Path $file1 -NewName (Split-Path $file2 -Leaf)
+
+                # Verify discovery finds 'renamed' task after rename
+                $output = & $script:GoshScriptPath -TaskDirectory $tempDir -ListTasks 6>&1 2>&1 | Out-String
+                $output | Should -Match '\brenamed\b'
+                $output | Should -Not -Match '\boriginal\b'
+            }
+            finally {
+                # Cleanup
+                if (Test-Path $tempDir) {
+                    Remove-ItemWithRetry -Path $tempDir
+                }
+            }
+        }
     }
 
     Context 'Task Execution' {
