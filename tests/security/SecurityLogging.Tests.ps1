@@ -235,10 +235,10 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
         AfterAll {
             $env:GOSH_AUDIT_LOG = $null
-            # Clean up test task file
-            $taskFile = Join-Path $ProjectRoot ".build" "Invoke-Test-Logging-*.ps1"
-            if (Test-Path $taskFile) {
-                Remove-Item $taskFile -Force
+            # Clean up test task file - use Get-ChildItem with wildcard for proper matching
+            $buildPath = Join-Path $ProjectRoot ".build"
+            Get-ChildItem $buildPath -Filter "Invoke-Test-Logging-*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
+                Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
             }
         }
 
