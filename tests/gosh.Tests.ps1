@@ -193,7 +193,9 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
         It 'Should handle file renames correctly during task discovery' {
             # BUG FIX: Task names should update when files are renamed within same session
             # Create a temporary task directory with a file that uses filename fallback
-            $tempDir = Join-Path $projectRoot ".test-rename-$(Get-Random)"
+            # Use relative path from project root (for -TaskDirectory parameter)
+            $relativeDir = ".test-rename-$(Get-Random)"
+            $tempDir = Join-Path $projectRoot $relativeDir
             New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
             try {
@@ -202,7 +204,8 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
                 Set-Content -Path $file1 -Value "Write-Host 'Test'; exit 0"
 
                 # Verify initial discovery finds 'original' task
-                $output = & $script:GoshScriptPath -TaskDirectory $tempDir -ListTasks 6>&1 2>&1 | Out-String
+                # Use relative path for -TaskDirectory parameter (security validation)
+                $output = & $script:GoshScriptPath -TaskDirectory $relativeDir -ListTasks 6>&1 2>&1 | Out-String
                 $output | Should -Match '\boriginal\b'
 
                 # Rename the file
@@ -210,7 +213,7 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
                 Rename-Item -Path $file1 -NewName (Split-Path $file2 -Leaf)
 
                 # Verify discovery finds 'renamed' task after rename
-                $output = & $script:GoshScriptPath -TaskDirectory $tempDir -ListTasks 6>&1 2>&1 | Out-String
+                $output = & $script:GoshScriptPath -TaskDirectory $relativeDir -ListTasks 6>&1 2>&1 | Out-String
                 $output | Should -Match '\brenamed\b'
                 $output | Should -Not -Match '\boriginal\b'
             }
