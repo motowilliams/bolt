@@ -48,6 +48,37 @@ BeforeAll {
             }
         }
     }
+
+    # Helper function to clean up test logging task files
+    function Clear-TestLoggingTasks {
+        $buildPath = Join-Path $ProjectRoot ".build"
+        Get-ChildItem $buildPath -Filter "Invoke-Test-Logging-*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
+            $filePath = $_.FullName
+            if (Test-Path $filePath) {
+                # Use retry logic similar to Remove-Directory for consistency
+                $maxRetries = 3
+                $retryCount = 0
+                $baseDelay = 100  # milliseconds
+
+                while ($retryCount -lt $maxRetries) {
+                    try {
+                        Remove-Item $filePath -Force -ErrorAction Stop
+                        break  # Success, exit retry loop
+                    }
+                    catch {
+                        $retryCount++
+                        if ($retryCount -eq $maxRetries) {
+                            # On final retry, use SilentlyContinue to prevent test failures
+                            Remove-Item $filePath -Force -ErrorAction SilentlyContinue
+                            break
+                        }
+                        # Wait before retrying (exponential backoff)
+                        Start-Sleep -Milliseconds ($baseDelay * [Math]::Pow(2, $retryCount - 1))
+                    }
+                }
+            }
+        }
+    }
 }
 
 Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
@@ -235,19 +266,13 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
         BeforeEach {
             # Clean up any leftover test task files before each test
-            $buildPath = Join-Path $ProjectRoot ".build"
-            Get-ChildItem $buildPath -Filter "Invoke-Test-Logging-*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
-                Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
-            }
+            Clear-TestLoggingTasks
         }
 
         AfterAll {
             $env:GOSH_AUDIT_LOG = $null
             # Final cleanup of test task files after all tests in this context
-            $buildPath = Join-Path $ProjectRoot ".build"
-            Get-ChildItem $buildPath -Filter "Invoke-Test-Logging-*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
-                Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
-            }
+            Clear-TestLoggingTasks
         }
 
         It "Should log file creation when using -NewTask" {
