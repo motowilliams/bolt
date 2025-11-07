@@ -48,6 +48,14 @@ BeforeAll {
             }
         }
     }
+
+    # Helper function to clean up test logging task files
+    function Clear-TestLoggingTasks {
+        $buildPath = Join-Path $ProjectRoot ".build"
+        Get-ChildItem $buildPath -Filter "Invoke-Test-Logging-*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
@@ -235,19 +243,13 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
         BeforeEach {
             # Clean up any leftover test task files before each test
-            $buildPath = Join-Path $ProjectRoot ".build"
-            Get-ChildItem $buildPath -Filter "Invoke-Test-Logging-*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
-                Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
-            }
+            Clear-TestLoggingTasks
         }
 
         AfterAll {
             $env:GOSH_AUDIT_LOG = $null
             # Final cleanup of test task files after all tests in this context
-            $buildPath = Join-Path $ProjectRoot ".build"
-            Get-ChildItem $buildPath -Filter "Invoke-Test-Logging-*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
-                Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
-            }
+            Clear-TestLoggingTasks
         }
 
         It "Should log file creation when using -NewTask" {

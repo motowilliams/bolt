@@ -88,6 +88,19 @@ BeforeAll {
             Success = $exitCode -eq 0
         }
     }
+
+    # Helper function to clean up test task files
+    function Clear-TestTasks {
+        Get-ChildItem $script:BuildPath -Filter "Invoke-Test*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-ItemWithRetry -Path $_.FullName
+        }
+    }
+
+    # Helper function to clean up temp completion test files
+    function Clear-TempCompletionTask {
+        Get-ChildItem -Path $script:BuildPath -Filter "Invoke-Temp-Completion-Test.ps1" -ErrorAction SilentlyContinue |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    }
 }
 
 Describe 'Gosh Core Functionality' -Tag 'Core' {
@@ -272,16 +285,12 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
     Context 'New Task Creation' {
         BeforeEach {
             # Clean up any leftover test files before each test
-            Get-ChildItem $script:BuildPath -Filter "Invoke-Test*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
-                Remove-ItemWithRetry -Path $_.FullName
-            }
+            Clear-TestTasks
         }
 
         AfterEach {
             # Clean up any test-generated files with retry logic
-            Get-ChildItem $script:BuildPath -Filter "Invoke-Test*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
-                Remove-ItemWithRetry -Path $_.FullName
-            }
+            Clear-TestTasks
         }
 
         It 'Should create a new task file with -NewTask' {
@@ -627,8 +636,7 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
     Context 'Filename Fallback Completion' {
         BeforeAll {
             # Pre-cleanup: Remove any leftover test files from previous runs
-            Get-ChildItem -Path $script:BuildPath -Filter "Invoke-Temp-Completion-Test.ps1" -ErrorAction SilentlyContinue |
-                Remove-Item -Force -ErrorAction SilentlyContinue
+            Clear-TempCompletionTask
 
             # Create a temporary task file without TASK metadata to test filename fallback
             $script:TempTaskPath = Join-Path $script:BuildPath "Invoke-Temp-Completion-Test.ps1"
@@ -646,8 +654,7 @@ exit 0
 
         AfterAll {
             # Post-cleanup: Remove test file after all tests
-            Get-ChildItem -Path $script:BuildPath -Filter "Invoke-Temp-Completion-Test.ps1" -ErrorAction SilentlyContinue |
-                Remove-Item -Force -ErrorAction SilentlyContinue
+            Clear-TempCompletionTask
         }
 
         It 'Should fallback to filename-based task name when no metadata exists' {
