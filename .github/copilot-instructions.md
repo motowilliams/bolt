@@ -16,17 +16,72 @@
 ### Required Actions
 - **ALWAYS verify URLs exist before including them in any content**
 - **ALWAYS check the actual codebase for feature existence before documenting**
-- **ALWAYS use available tools (e.g., view, bash with grep/find) to verify information**
+- **ALWAYS use available tools (e.g., Get-ChildItem, Select-String, file_search) to verify information**
 - **ALWAYS ask the user if unsure about URL validity or feature existence**
 - **ALWAYS use real, working contact methods (like GitHub issues) instead of fictional ones**
 
 ### Verification Process
 1. **Before mentioning any URL**: Use tools to verify it exists or is a standard pattern
-2. **Before documenting features**: Use available search tools (e.g., bash with grep) to confirm implementation
+2. **Before documenting features**: Use available search tools (e.g., Select-String, semantic_search) to confirm implementation
 3. **Before creating contact info**: Verify the target actually accepts the intended type of communication
 4. **When in doubt**: Ask the user or state uncertainty explicitly
 
 **Remember**: It's better to say "I need to verify this" than to provide incorrect information.
+
+---
+
+## ⚠️ CRITICAL: USE POWERSHELL COMMANDS, NOT UNIX COMMANDS
+
+**This project uses PowerShell Core (cross-platform). NEVER use Unix-style commands - use PowerShell cmdlets instead.**
+
+### Commands to AVOID (Not Available)
+- **grep** - Use `Select-String` instead
+- **tail** - Use `Get-Content -Tail N` or `Select-Object -Last N` instead
+- **head** - Use `Get-Content -TotalCount N` or `Select-Object -First N` instead
+- **cat** - Use `Get-Content` instead
+- **ls** - Use `Get-ChildItem` instead (or `dir`)
+- **find** - Use `Get-ChildItem -Recurse` or `Where-Object` instead
+- **sed/awk** - Use `Select-String -Replace` or PowerShell string operations
+- **cut** - Use `Split-Path`, `substring()`
+- **wc** - Use `Measure-Object` instead
+
+### PowerShell Equivalents to USE
+
+| Task | PowerShell Command |
+|------|-------------------|
+| Search in files | `Select-String -Path *.ps1 -Pattern "text"` |
+| Show last N lines | `Get-Content file.txt -Tail 10` |
+| Show first N lines | `Get-Content file.txt -TotalCount 10` |
+| List files | `Get-ChildItem` or `dir` |
+| Find files recursively | `Get-ChildItem -Recurse -Filter "*.ps1"` |
+| Count items | `Get-ChildItem | Measure-Object` |
+| Filter output | `Get-ChildItem | Where-Object { $_.Length -gt 1000 }` |
+| Select specific properties | `Get-ChildItem | Select-Object Name, Length` |
+| Pipe output to file | `Get-Content file.txt | Out-File output.txt` |
+| Show last N results | `Get-Process | Select-Object -Last 5` |
+
+### Examples
+
+**❌ WRONG - Using Unix commands:**
+```powershell
+.\gosh.ps1 -ListTasks | grep "build"
+.\gosh.ps1 -ListTasks | tail -10
+Get-Content file.txt | head -5
+```
+
+**✅ CORRECT - Using PowerShell commands:**
+```powershell
+.\gosh.ps1 -ListTasks | Select-String "build"
+.\gosh.ps1 -ListTasks | Select-Object -Last 10
+Get-Content file.txt | Select-Object -First 5
+```
+
+### Key Rules
+- **Always use PowerShell cmdlets** when available (Get-ChildItem, Select-String, Where-Object, etc.)
+- **Never assume Unix command availability** - they may not be installed
+- **Test commands first** if unsure - use `Get-Command` to verify availability
+- **Use full cmdlet names initially**, then aliases in casual contexts
+- **When piping output, use PowerShell cmdlets**, not Unix utilities
 
 ---
 
