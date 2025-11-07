@@ -90,7 +90,7 @@ BeforeAll {
     }
 
     # Helper function to clean up test task files
-    function Clear-TestTasks {
+    function Clear-TestTask {
         Get-ChildItem $script:BuildPath -Filter "Invoke-Test*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
             Remove-ItemWithRetry -Path $_.FullName
         }
@@ -286,12 +286,12 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
     Context 'New Task Creation' {
         BeforeEach {
             # Clean up any leftover test files before each test
-            Clear-TestTasks
+            Clear-TestTask
         }
 
         AfterEach {
             # Clean up any test-generated files with retry logic
-            Clear-TestTasks
+            Clear-TestTask
         }
 
         It 'Should create a new task file with -NewTask' {

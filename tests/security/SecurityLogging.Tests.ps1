@@ -34,8 +34,7 @@ BeforeAll {
                 try {
                     Remove-Item $Path -Recurse -Force -ErrorAction Stop
                     break  # Success, exit retry loop
-                }
-                catch {
+                } catch {
                     $retryCount++
                     if ($retryCount -eq $maxRetries) {
                         # On final retry, use SilentlyContinue to prevent test failures
@@ -49,34 +48,34 @@ BeforeAll {
         }
     }
 
+    function Remove-ItemWithRetry {
+        param(
+            [string]$Path,
+            [int]$MaxRetries = 5,
+            [int]$DelayMs = 200
+        )
+
+        for ($i = 0; $i -lt $MaxRetries; $i++) {
+            try {
+                if (Test-Path $Path) {
+                    Remove-Item $Path -Recurse -Force -ErrorAction Stop
+                }
+                return $true
+            } catch {
+                if ($i -eq ($MaxRetries - 1)) {
+                    Write-Warning "Failed to remove $Path after $MaxRetries attempts: $_"
+                    return $false
+                }
+                Start-Sleep -Milliseconds $DelayMs
+            }
+        }
+    }
+
     # Helper function to clean up test logging task files
-    function Clear-TestLoggingTasks {
+    function Clear-TestLoggingTask {
         $buildPath = Join-Path $ProjectRoot ".build"
         Get-ChildItem $buildPath -Filter "Invoke-Test-Logging-*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
-            $filePath = $_.FullName
-            if (Test-Path $filePath) {
-                # Use retry logic similar to Remove-Directory for consistency
-                $maxRetries = 3
-                $retryCount = 0
-                $baseDelay = 100  # milliseconds
-
-                while ($retryCount -lt $maxRetries) {
-                    try {
-                        Remove-Item $filePath -Force -ErrorAction Stop
-                        break  # Success, exit retry loop
-                    }
-                    catch {
-                        $retryCount++
-                        if ($retryCount -eq $maxRetries) {
-                            # On final retry, use SilentlyContinue to prevent test failures
-                            Remove-Item $filePath -Force -ErrorAction SilentlyContinue
-                            break
-                        }
-                        # Wait before retrying (exponential backoff)
-                        Start-Sleep -Milliseconds ($baseDelay * [Math]::Pow(2, $retryCount - 1))
-                    }
-                }
-            }
+            Remove-ItemWithRetry $_.FullName
         }
     }
 }
@@ -266,13 +265,13 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
         BeforeEach {
             # Clean up any leftover test task files before each test
-            Clear-TestLoggingTasks
+            Clear-TestLoggingTask
         }
 
         AfterAll {
             $env:GOSH_AUDIT_LOG = $null
             # Final cleanup of test task files after all tests in this context
-            Clear-TestLoggingTasks
+            Clear-TestLoggingTask
         }
 
         It "Should log file creation when using -NewTask" {
