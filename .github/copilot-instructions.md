@@ -37,7 +37,7 @@
 ### Commands to AVOID (Not Available)
 - **grep** - Use `Select-String` instead
 - **tail** - Use `Get-Content -Tail N` or `Select-Object -Last N` instead
-- **head** - Use `Get-Content -Head N` or `Select-Object -First N` instead
+- **head** - Use `Get-Content -TotalCount N` or `Select-Object -First N` instead
 - **cat** - Use `Get-Content` instead
 - **ls** - Use `Get-ChildItem` instead (or `dir`)
 - **find** - Use `Get-ChildItem -Recurse` or `Where-Object` instead
@@ -51,7 +51,7 @@
 |------|-------------------|
 | Search in files | `Select-String -Path *.ps1 -Pattern "text"` |
 | Show last N lines | `Get-Content file.txt -Tail 10` |
-| Show first N lines | `Get-Content file.txt -Head 10` |
+| Show first N lines | `Get-Content file.txt -TotalCount 10` |
 | List files | `Get-ChildItem` or `dir` |
 | Find files recursively | `Get-ChildItem -Recurse -Filter "*.ps1"` |
 | Count items | `Get-ChildItem | Measure-Object` |
