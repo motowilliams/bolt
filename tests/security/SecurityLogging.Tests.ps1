@@ -69,7 +69,6 @@ BeforeAll {
                 Start-Sleep -Milliseconds $DelayMs
             }
         }
-        return $true
     }
 
     # Helper function to clean up test logging task files
