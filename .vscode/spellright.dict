@@ -1,7 +1,7 @@
 allowlist
 boolean
 Dependabot
-en
+em
 github
 gitignore
 gitignored
@@ -14,3 +14,4 @@ ps
 ps1
 stdout
 symlinks
+wc
