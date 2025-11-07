@@ -85,6 +85,164 @@ Get-Content file.txt | Select-Object -First 5
 
 ---
 
+## ⚠️ CRITICAL: GIT BRANCHING PRACTICES
+
+**ZERO TOLERANCE for commits to main/master branches. This policy is strictly enforced.**
+
+### Prohibited Actions
+- **NEVER commit directly to main or master** - This will break workflows and should never happen
+- **NEVER assume it's okay to commit to main** - Always ask first, even if instructions seem to imply it
+- **NEVER bypass the branching workflow** - Even for "small fixes" or "one-line changes"
+- **NEVER merge PRs yourself** - User is responsible for merging after review
+- **NEVER rebase main branch** - Use feature branches exclusively
+
+### Required Actions
+- **ALWAYS create a topic branch before making any commits** - Use feature/, bugfix/, documentation/, or hotfix/ prefix
+- **ALWAYS ask the user about branch strategy before committing** - Pause and ask: "Should I work on a new branch or an existing branch?"
+- **ALWAYS verify current branch before committing** - Run `git branch` to see which branch is active (will show * marker)
+- **ALWAYS use descriptive branch names** - Examples: `feature/add-task-validation`, `bugfix/task-rename-caching`, `documentation/update-readme`
+- **ALWAYS commit on the specified branch** - After user confirms strategy, only then proceed with `git commit`
+
+### Branching Workflow
+
+**Step 1: Identify Current Situation**
+```powershell
+# Check git status and current branch
+git status
+git branch
+
+# If on main or master, you must create a new branch
+```
+
+**Step 2: Ask User About Strategy**
+```
+Question to Ask: "I need to make changes to the following files:
+- file1.ps1
+- file2.ps1
+
+Should I:
+a) Create a new branch for this work (e.g., feature/name or bugfix/name)?
+b) Use an existing branch you have in mind?
+
+What branch strategy would you prefer?"
+```
+
+**Step 3: Create or Switch Branch**
+```powershell
+# If creating new branch (most common)
+git checkout -b feature/descriptive-name
+
+# If using existing branch
+git checkout existing-branch-name
+
+# Verify you're on the right branch
+git branch
+```
+
+**Step 4: Make Changes and Commit**
+```powershell
+# Make your code changes using standard tools
+# Then commit on the topic branch
+git add .
+git commit -m "descriptive message"
+
+# Show what you've done
+git log --oneline -1
+```
+
+### Branch Naming Conventions
+
+| Prefix | Use Case | Example |
+|--------|----------|---------|
+| `feature/` | New features or enhancements | `feature/add-task-caching` |
+| `bugfix/` | Bug fixes | `bugfix/fix-task-discovery` |
+| `documentation/` | Documentation or README updates | `documentation/update-instructions` |
+| `hotfix/` | Urgent fixes (rare) | `hotfix/security-patch` |
+| `test/` | Test improvements or debugging | `test/improve-cleanup-pattern` |
+
+### Real Examples from This Project
+
+**❌ WRONG - Committing to main**
+```powershell
+git add .
+git commit -m "Fix bug"
+# You're on main branch (just committed a major mistake!)
+```
+
+**✅ CORRECT - Working on feature branch**
+```powershell
+# Step 1: Check status
+git status        # Shows on main
+git branch        # Shows * main
+
+# Step 2: Ask user
+# "I need to fix the task discovery bug. Should I create a feature/fix-task-discovery branch?"
+
+# Step 3: Create branch (after user confirms)
+git checkout -b feature/fix-task-discovery
+
+# Step 4: Make changes and commit
+git add .
+git commit -m "fix: Improve task discovery handling for renamed files"
+```
+
+### Common Scenarios
+
+**Scenario 1: Need to split commits across branches**
+```
+User says: "The test cleanup changes should go on a branch, but the core fix can stay on bugfix/task-name-caching"
+
+Steps:
+1. git reset --soft HEAD~1          # Undo last commit, keep changes staged
+2. git reset HEAD                   # Unstage everything
+3. git add file1.ps1                # Stage test cleanup file only
+4. git commit -m "test: Improve cleanup" # Commit to feature/update-tests
+5. git checkout bugfix/task-name-caching  # Switch back to bugfix branch
+6. git add .                        # Stage remaining changes
+7. git commit -m "fix: Add filename fallback" # Commit to bugfix branch
+```
+
+**Scenario 2: Started on wrong branch**
+```
+You realize you committed to main by mistake:
+
+1. git reset --soft HEAD~1          # Undo commit but keep changes staged
+2. git checkout -b feature/correct-branch  # Create new branch with correct name
+3. git commit -m "descriptive message"  # Commit on new branch
+4. git checkout main                # Go back to main
+5. git reset --hard origin/main      # Reset main to match origin (remove your commit)
+```
+
+**Scenario 3: User says "just put it on main"**
+```
+Even if user explicitly says "just put it on main", STILL ask about branching:
+- "I understand you want the changes on main, but our workflow requires using topic branches first."
+- "Should I create a feature/descriptive-name branch and you can review/merge to main?"
+- This maintains code review workflow and prevents accidental breaking changes.
+```
+
+### Anti-Patterns to Avoid
+
+- ❌ **Committing directly to main** - Never, even if it's "just one line"
+- ❌ **Using `git push -f` (force push)** - Can break shared branches, only use on personal branches if absolutely necessary
+- ❌ **Merging without testing** - Verify changes work before considering a branch "ready"
+- ❌ **Committing before asking user** - Always confirm branch strategy first
+- ❌ **Using `git reset --hard` on shared branches** - Only safe on personal feature branches
+- ❌ **Assuming current branch is safe** - Always verify with `git branch` before committing
+
+### Key Rules
+
+1. **main is sacred** - Treat main like a production branch. Commits go through feature branches and review.
+2. **Always ask first** - Pause before committing and confirm branch strategy with user.
+3. **Verify branch name** - Run `git branch` to see which branch is active (has * marker).
+4. **Use descriptive names** - Branch names should explain the work (not "test", "work", "temp").
+5. **One feature per branch** - Don't mix unrelated changes on the same branch.
+6. **Commit descriptively** - Use clear commit messages that explain *what* and *why*.
+
+**Remember**: Protecting main is protecting the entire project. Always default to creating a topic branch and asking the user.
+
+---
+
 ## Writing Style: Keep It Simple and Direct
 
 Write like you're explaining something to a coworker - no fluff, no fancy words, just clear thinking. Use only printable ASCII characters in all documentation. No em dash characters allowed.
