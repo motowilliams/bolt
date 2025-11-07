@@ -98,8 +98,9 @@ BeforeAll {
 
     # Helper function to clean up temp completion test files
     function Clear-TempCompletionTask {
-        Get-ChildItem -Path $script:BuildPath -Filter "Invoke-Temp-Completion-Test.ps1" -ErrorAction SilentlyContinue |
-            Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path $script:BuildPath -Filter "Invoke-Temp-Completion-Test.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
+            Remove-ItemWithRetry -Path $_.FullName
+        }
     }
 }
 
