@@ -32,7 +32,7 @@
 
 ## ⚠️ CRITICAL: USE POWERSHELL COMMANDS, NOT UNIX COMMANDS
 
-**This project runs on Windows with PowerShell. NEVER use Unix-style commands.**
+**This project uses PowerShell Core (cross-platform). NEVER use Unix-style commands - use PowerShell cmdlets instead.**
 
 ### Commands to AVOID (Not Available)
 - **grep** - Use `Select-String` instead
@@ -40,9 +40,9 @@
 - **head** - Use `Get-Content -Head N` or `Select-Object -First N` instead
 - **cat** - Use `Get-Content` instead
 - **ls** - Use `Get-ChildItem` instead (or `dir`)
-- **find** - Use `Get-ChildItem -Recurse` or `where-Object` instead
+- **find** - Use `Get-ChildItem -Recurse` or `Where-Object` instead
 - **sed/awk** - Use `Select-String -Replace` or PowerShell string operations
-- **cut** - Use `Split-Path`, `Substring()`, or `SubString()` instead
+- **cut** - Use `Split-Path`, `substring()`
 - **wc** - Use `Measure-Object` instead
 
 ### PowerShell Equivalents to USE
