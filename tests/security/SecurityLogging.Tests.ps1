@@ -233,9 +233,17 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
             $testTaskName = "test-logging-$(Get-Random)"
         }
 
+        BeforeEach {
+            # Clean up any leftover test task files before each test
+            $buildPath = Join-Path $ProjectRoot ".build"
+            Get-ChildItem $buildPath -Filter "Invoke-Test-Logging-*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
+                Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+            }
+        }
+
         AfterAll {
             $env:GOSH_AUDIT_LOG = $null
-            # Clean up test task file - use Get-ChildItem with wildcard for proper matching
+            # Final cleanup of test task files after all tests in this context
             $buildPath = Join-Path $ProjectRoot ".build"
             Get-ChildItem $buildPath -Filter "Invoke-Test-Logging-*.ps1" -ErrorAction SilentlyContinue | ForEach-Object {
                 Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
