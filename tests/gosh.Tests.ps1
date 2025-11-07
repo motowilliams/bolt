@@ -626,6 +626,10 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
 
     Context 'Filename Fallback Completion' {
         BeforeAll {
+            # Pre-cleanup: Remove any leftover test files from previous runs
+            Get-ChildItem -Path $script:BuildPath -Filter "Invoke-Temp-Completion-Test.ps1" -ErrorAction SilentlyContinue |
+                Remove-Item -Force -ErrorAction SilentlyContinue
+
             # Create a temporary task file without TASK metadata to test filename fallback
             $script:TempTaskPath = Join-Path $script:BuildPath "Invoke-Temp-Completion-Test.ps1"
 
@@ -641,9 +645,9 @@ exit 0
         }
 
         AfterAll {
-            if (Test-Path $script:TempTaskPath) {
-                Remove-Item $script:TempTaskPath -Force -ErrorAction SilentlyContinue
-            }
+            # Post-cleanup: Remove test file after all tests
+            Get-ChildItem -Path $script:BuildPath -Filter "Invoke-Temp-Completion-Test.ps1" -ErrorAction SilentlyContinue |
+                Remove-Item -Force -ErrorAction SilentlyContinue
         }
 
         It 'Should fallback to filename-based task name when no metadata exists' {
