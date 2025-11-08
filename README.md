@@ -347,7 +347,7 @@ Understanding how Gosh executes tasks is critical for writing reliable, predicta
 Write-Host "Task complete"
 # If last external command succeeded (exit 0) → task succeeds
 # If last external command failed (exit non-zero) → task fails
-# If no external commands run → task succeeds ($LASTEXITCODE is null)
+# If no external commands run → task succeeds ($LASTEXITCODE is null, condition fails, task returns true)
 
 # ✅ CORRECT - Always use explicit exit
 Write-Host "✓ Task complete" -ForegroundColor Green
@@ -367,7 +367,7 @@ Copy-Item "app.zip" "\\server\share\"
 Write-Host "✓ Deployed successfully" -ForegroundColor Green
 
 # Oops! Developer checks something at the end
-Test-Path "\\server\share\optional-file.txt"  # Returns $false, but doesn't set LASTEXITCODE
+Test-Path "\\server\share\optional-file.txt"  # Test-Path returns $false (PowerShell cmdlet - doesn't affect $LASTEXITCODE)
 # No explicit exit
 
 # Task succeeds because $LASTEXITCODE is still 0 from Copy-Item
@@ -389,7 +389,7 @@ $result  # This won't appear in terminal
 Write-Host "Hello, World!" -ForegroundColor Cyan
 ```
 
-**Why**: When gosh.ps1 executes tasks, it creates a script block that dot-sources your task script. Implicit pipeline output (bare variables) goes to the pipeline but isn't captured or displayed.
+**Why**: When gosh.ps1 executes tasks, it creates a script block that dot-sources your task script, then executes that block with the call operator (`&`). Pipeline output from the script block is discarded unless you use `Write-Host` or `Write-Output`. Bare variables or expressions sent to the pipeline will not appear in the terminal.
 
 ### Pipeline Between Tasks
 
@@ -430,7 +430,7 @@ param(
 ```powershell
 # This does NOT work:
 .\gosh.ps1 yourtask -Name "Gosh"
-# Arguments are passed as an array, not parsed as named parameters
+# Arguments are passed as an array using @Arguments splatting, which only supports positional parameters
 ```
 
 **Recommended pattern**: Use environment variables or configuration files for dynamic task behavior.
