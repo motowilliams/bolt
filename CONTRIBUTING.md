@@ -28,7 +28,7 @@ Thank you for considering contributing to Gosh! 🎉
 
 When creating or modifying tasks in `.build/`:
 
-- ✅ **Use explicit exit codes**: `exit 0` (success) or `exit 1` (failure)
+- ✅ **Use explicit exit codes**: `exit 0` (success) or `exit 1` (failure) - **ALWAYS include explicit exit**
 - ✅ **Include metadata**: `# TASK:`, `# DESCRIPTION:`, `# DEPENDS:`
 - ✅ **Follow color conventions**:
   - Cyan: Task headers
@@ -38,7 +38,118 @@ When creating or modifying tasks in `.build/`:
   - Red: Errors (✗)
 - ✅ **Check $LASTEXITCODE**: After external commands
 - ✅ **Use descriptive variable names**: Avoid `$Task` (collides with gosh.ps1)
-- ✅ **Only use param() if needed**: Include only if your task accepts parameters
+- ✅ **Use `Write-Host` for output**: Pipeline output (bare variables) won't display - tasks execute inside script blocks
+
+#### Critical: Exit Codes Are Required
+
+**Tasks without explicit `exit` statements will succeed or fail based on `$LASTEXITCODE`:**
+
+```powershell
+# ❌ DANGEROUS - Implicit behavior, unpredictable results
+Write-Host "Task complete"
+# If last external command succeeded (exit 0) → task succeeds
+# If last external command failed (exit non-zero) → task fails
+# If no external commands run → task succeeds ($LASTEXITCODE is null)
+
+# ✅ CORRECT - Always use explicit exit
+Write-Host "✓ Task complete" -ForegroundColor Green
+exit 0  # Explicit success
+```
+
+**Why this matters:**
+- Without explicit `exit`, gosh.ps1 checks `$LASTEXITCODE` from the last external command
+- If `$LASTEXITCODE` is 0 or null → task succeeds
+- If `$LASTEXITCODE` is non-zero → task fails
+- This creates **fragile, unpredictable behavior** where task success depends on side effects
+
+**Example of the problem:**
+```powershell
+# TASK: deploy
+Write-Host "Deploying application..." -ForegroundColor Cyan
+
+# Your deployment logic (all succeeds)
+Copy-Item "app.zip" "\\server\share\"
+Write-Host "✓ Deployed successfully" -ForegroundColor Green
+
+# Oops! Developer checks something at the end
+Test-Path "\\server\share\optional-file.txt"  # Returns $false, but doesn't set LASTEXITCODE
+# No explicit exit
+
+# Task succeeds because $LASTEXITCODE is still 0 from Copy-Item
+# BUT if Copy-Item had failed, task would fail even though we didn't check it!
+```
+
+**Best practice**: Always end tasks with explicit `exit 0` or `exit 1`.
+
+#### Understanding Task Execution Context
+
+**Tasks execute inside a script block with injected utility functions.** This has important implications:
+
+**Output Behavior:**
+```powershell
+# ❌ BAD - Pipeline output won't display
+$result = "Hello, World!"
+$result  # This won't appear in terminal
+
+# ✅ GOOD - Use Write-Host for display output
+Write-Host "Hello, World!" -ForegroundColor Cyan
+
+# ✅ GOOD - Use Write-Output for pipeline objects (if task returns data)
+$data = Get-Something
+Write-Output $data  # For pipeline consumption by other tools
+```
+
+**Why this matters**: When gosh.ps1 executes tasks, it creates a script block that dot-sources your task script. Implicit pipeline output (bare variables, command results without assignment) goes to the pipeline but isn't captured or displayed. Use `Write-Host` for user-facing output, `Write-Output` for data that other cmdlets should consume.
+
+**Pipeline Between Tasks:**
+
+Tasks in a dependency chain do **NOT** pass pipeline objects to each other. Each task executes independently:
+
+```powershell
+# Given: build depends on lint, lint depends on format
+# When you run: .\gosh.ps1 build
+
+# Execution order:
+# 1. format executes → output goes to terminal (if using Write-Host)
+# 2. lint executes → does NOT receive format's output
+# 3. build executes → does NOT receive lint's output
+
+# Only success/failure status propagates between tasks
+```
+
+**Why**: Gosh uses `Invoke-Task` recursively for dependencies. Each task's return value is boolean (success/failure), not pipeline objects. Dependencies execute for orchestration purposes (ensuring prerequisites run first), not for data flow.
+
+**If you need data sharing between tasks**:
+- Use files (write/read from disk)
+- Use environment variables (`$env:VARIABLE_NAME`)
+- Use module-level variables (if using advanced patterns)
+- Design tasks as independent operations, not pipelines
+
+**Parameter Limitations:**
+
+Task scripts CAN use `param()` blocks and `[CmdletBinding()]`, but with limitations:
+
+```powershell
+# ✅ This works - Default parameters only
+[CmdletBinding()]
+param(
+    [string]$Name = "World",
+    [int]$Count = 1
+)
+# Usage: .\gosh.ps1 yourtask
+# (Parameters use their defaults)
+```
+
+**❌ Named parameter passing is NOT currently supported:**
+```powershell
+# This does NOT work:
+.\gosh.ps1 yourtask -Name "Gosh" -Count 3
+# Arguments are passed as an array, not parsed as named parameters
+```
+
+**Current limitation**: Gosh collects remaining arguments as an array and splats them to your task script. PowerShell array splatting only works for positional parameters, not named ones (hashtable splatting is required for named parameters, which would require parsing the argument structure).
+
+**Recommended pattern**: Use environment variables, configuration files, or `$env:` variables for dynamic task behavior rather than parameters.
 
 ### Example Task Template
 

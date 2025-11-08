@@ -334,6 +334,107 @@ $env:GOSH_NO_FALLBACK_WARNINGS = 1
 
 **Best Practice**: Always include explicit `# TASK:` metadata for clarity and to avoid file-rename surprises.
 
+## ⚠️ Important: Task Execution Behaviors
+
+Understanding how Gosh executes tasks is critical for writing reliable, predictable task scripts.
+
+### Exit Codes Are Required
+
+**Tasks without explicit `exit` statements will succeed or fail based on `$LASTEXITCODE`:**
+
+```powershell
+# ❌ DANGEROUS - Implicit behavior, unpredictable results
+Write-Host "Task complete"
+# If last external command succeeded (exit 0) → task succeeds
+# If last external command failed (exit non-zero) → task fails
+# If no external commands run → task succeeds ($LASTEXITCODE is null)
+
+# ✅ CORRECT - Always use explicit exit
+Write-Host "✓ Task complete" -ForegroundColor Green
+exit 0  # Explicit success
+```
+
+**Why this matters:**
+- Without explicit `exit`, gosh.ps1 checks `$LASTEXITCODE` from the last external command
+- If `$LASTEXITCODE` is 0 or null → task succeeds
+- If `$LASTEXITCODE` is non-zero → task fails
+- This creates **fragile, unpredictable behavior** where task success depends on side effects
+
+**Example of the problem:**
+```powershell
+# Your deployment logic (all succeeds)
+Copy-Item "app.zip" "\\server\share\"
+Write-Host "✓ Deployed successfully" -ForegroundColor Green
+
+# Oops! Developer checks something at the end
+Test-Path "\\server\share\optional-file.txt"  # Returns $false, but doesn't set LASTEXITCODE
+# No explicit exit
+
+# Task succeeds because $LASTEXITCODE is still 0 from Copy-Item
+# BUT if Copy-Item had failed, task would fail even though we didn't check it!
+```
+
+**Best practice**: **Always end tasks with explicit `exit 0` or `exit 1`.**
+
+### Output Behavior
+
+**Tasks execute inside a script block with injected utility functions.** Use `Write-Host` for output:
+
+```powershell
+# ❌ BAD - Pipeline output won't display
+$result = "Hello, World!"
+$result  # This won't appear in terminal
+
+# ✅ GOOD - Use Write-Host for display output
+Write-Host "Hello, World!" -ForegroundColor Cyan
+```
+
+**Why**: When gosh.ps1 executes tasks, it creates a script block that dot-sources your task script. Implicit pipeline output (bare variables) goes to the pipeline but isn't captured or displayed.
+
+### Pipeline Between Tasks
+
+Tasks in a dependency chain do **NOT** pass pipeline objects to each other:
+
+```powershell
+# Given: build depends on lint, lint depends on format
+# When you run: .\gosh.ps1 build
+
+# Execution order:
+# 1. format executes → output goes to terminal
+# 2. lint executes → does NOT receive format's output
+# 3. build executes → does NOT receive lint's output
+
+# Only success/failure status propagates between tasks
+```
+
+**Why**: Dependencies execute for orchestration purposes (ensuring prerequisites run first), not for data flow. This is the correct design for a build orchestrator - similar to Make, Rake, Gradle, etc.
+
+**If you need data sharing between tasks**:
+- Use files (write/read from disk)
+- Use environment variables (`$env:VARIABLE_NAME`)
+- Design tasks as independent operations
+
+### Parameter Limitations
+
+Task scripts CAN use `param()` blocks, but with limitations:
+
+```powershell
+# ✅ This works - Default parameters only
+param(
+    [string]$Name = "World"
+)
+# Usage: .\gosh.ps1 yourtask
+```
+
+**❌ Named parameter passing is NOT currently supported:**
+```powershell
+# This does NOT work:
+.\gosh.ps1 yourtask -Name "Gosh"
+# Arguments are passed as an array, not parsed as named parameters
+```
+
+**Recommended pattern**: Use environment variables or configuration files for dynamic task behavior.
+
 ## 🎯 Built for Azure Bicep
 
 While Gosh works with any PowerShell workflow, it's optimized for Azure Bicep infrastructure projects:
