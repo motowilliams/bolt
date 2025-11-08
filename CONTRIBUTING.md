@@ -72,7 +72,7 @@ Copy-Item "app.zip" "\\server\share\"
 Write-Host "✓ Deployed successfully" -ForegroundColor Green
 
 # Oops! Developer checks something at the end
-Test-Path "\\server\share\optional-file.txt"  # Returns $false, but doesn't set LASTEXITCODE
+Test-Path "\\server\share\optional-file.txt"  # Returns $false (PowerShell cmdlet - doesn't affect $LASTEXITCODE)
 # No explicit exit
 
 # Task succeeds because $LASTEXITCODE is still 0 from Copy-Item
@@ -99,7 +99,7 @@ $data = Get-Something
 Write-Output $data  # For pipeline consumption by other tools
 ```
 
-**Why this matters**: When gosh.ps1 executes tasks, it creates a script block that dot-sources your task script. Implicit pipeline output (bare variables, command results without assignment) goes to the pipeline but isn't captured or displayed. Use `Write-Host` for user-facing output, `Write-Output` for data that other cmdlets should consume.
+**Why this matters**: When gosh.ps1 executes tasks, it creates a script block that dot-sources your task script, then executes that block with the call operator `&`, which discards pipeline output by default. Use `Write-Host` for user-facing output. You can use `Write-Output` if you need to emit pipeline objects (for example, if your task is being called in a pipeline context), but note that pipeline output will not propagate between tasks.
 
 **Pipeline Between Tasks:**
 
