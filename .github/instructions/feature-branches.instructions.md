@@ -19,7 +19,7 @@ Worktrees should be created as sibling directories with a clear naming pattern:
 
 **Pattern**: `../<repo-name>-wt-<branch-name>`
 
-**Example**: For a repo named "MyProject" with branch "feature/new-login":
+**Example**: For a repo named "myproject" with branch "feature/new-login":
 
 ```
 /Users/username/source/myproject/              # Main repo
