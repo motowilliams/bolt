@@ -133,7 +133,7 @@ What branch strategy would you prefer?"
 
 **Step 3: Create Worktree (Preferred) or Branch**
 ```powershell
-# PREFERRED: Create a worktree (see feature-branches.instructions.md)
+# PREFERRED: Create a worktree (see .github/instructions/feature-branches.instructions.md)
 # Pattern: ../<repo-name>-wt-<sanitized-branch-name>
 # Example: branch 'feature/descriptive-name' → directory '../gosh-wt-feature-descriptive-name'
 git worktree add -b feature/descriptive-name ../gosh-wt-feature-descriptive-name main
