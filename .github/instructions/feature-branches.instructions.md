@@ -40,7 +40,7 @@ Example output:
 
 ```
 /Users/username/source/myproject        c5b174796b4 [main]
-/Users/username/source/myproject-wt-feature-auth   def5378 [feature/new-login]
+/Users/username/source/myproject-wt-feature-new-login   def5378 [feature/new-login]
 /Users/username/source/myproject-wt-hotfix-crash   ghi9022 [hotfix/button-crash-fix]
 ```
 
