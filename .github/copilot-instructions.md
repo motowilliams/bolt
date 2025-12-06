@@ -89,6 +89,10 @@ Get-Content file.txt | Select-Object -First 5
 
 **ZERO TOLERANCE for commits to main/master branches. This policy is strictly enforced.**
 
+**PREFERRED WORKFLOW: Use Git Worktrees** - See `.github/instructions/feature-branches.instructions.md` for detailed worktree workflow. Worktrees allow working on multiple branches simultaneously without stashing or losing work-in-progress.
+
+**Alternative: Traditional branching** - If worktrees are not appropriate for the situation, follow the traditional git checkout workflow below.
+
 ### Prohibited Actions
 - **NEVER commit directly to main or master** - This will break workflows and should never happen
 - **NEVER assume it's okay to commit to main** - Always ask first, even if instructions seem to imply it
@@ -127,9 +131,14 @@ b) Use an existing branch you have in mind?
 What branch strategy would you prefer?"
 ```
 
-**Step 3: Create or Switch Branch**
+**Step 3: Create Worktree (Preferred) or Branch**
 ```powershell
-# If creating new branch (most common)
+# PREFERRED: Create a worktree (see feature-branches.instructions.md)
+# Pattern: ../<repo-name>-wt-<sanitized-branch-name>
+git worktree add -b feature/descriptive-name ../gosh-wt-feature-descriptive-name main
+Set-Location -Path ../gosh-wt-feature-descriptive-name
+
+# ALTERNATIVE: Traditional branch (if worktrees not suitable)
 git checkout -b feature/descriptive-name
 
 # If using existing branch
@@ -169,7 +178,26 @@ git commit -m "Fix bug"
 # You're on main branch (just committed a major mistake!)
 ```
 
-**✅ CORRECT - Working on feature branch**
+**✅ CORRECT - Working on feature branch (Worktree - Preferred)**
+```powershell
+# Step 1: Check status
+git status        # Shows on main
+git branch        # Shows * main
+git worktree list # Shows existing worktrees
+
+# Step 2: Ask user
+# "I need to fix the task discovery bug. Should I create a feature/fix-task-discovery worktree?"
+
+# Step 3: Create worktree (after user confirms)
+git worktree add -b feature/fix-task-discovery ../gosh-wt-feature-fix-task-discovery main
+Set-Location -Path ../gosh-wt-feature-fix-task-discovery
+
+# Step 4: Make changes and commit
+git add .
+git commit -m "fix: Improve task discovery handling for renamed files"
+```
+
+**✅ CORRECT - Working on feature branch (Traditional)**
 ```powershell
 # Step 1: Check status
 git status        # Shows on main
