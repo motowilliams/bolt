@@ -32,7 +32,7 @@ Worktrees should be created as sibling directories with a clear naming pattern:
 
 Show all existing worktrees with their paths and branches:
 
-```bash
+```powershell
 git worktree list
 ```
 
@@ -50,13 +50,13 @@ When creating worktrees, automatically use the naming convention:
 
 **For existing branches:**
 
-```bash
+```powershell
 git worktree add ../<repo-name>-wt-<sanitized-branch-name> <branch-name>
 ```
 
 **For new branches:**
 
-```bash
+```powershell
 git worktree add -b <new-branch-name> ../<repo-name>-wt-<sanitized-branch-name> <base-branch>
 ```
 
@@ -64,7 +64,7 @@ git worktree add -b <new-branch-name> ../<repo-name>-wt-<sanitized-branch-name> 
 
 Examples:
 
-```bash
+```powershell
 # Checkout existing feature branch
 git worktree add ../myproject-wt-feature-auth feature/auth
 
@@ -79,7 +79,7 @@ git worktree add -b hotfix/critical-bug ../myproject-wt-hotfix-critical-bug main
 
 When you're done with a worktree:
 
-```bash
+```powershell
 # Remove worktree (must not have uncommitted changes)
 git worktree remove ../<repo-name>-wt-<branch-name>
 
@@ -91,7 +91,7 @@ git worktree remove --force ../<repo-name>-wt-<branch-name>
 
 Clean up worktree metadata for manually deleted directories:
 
-```bash
+```powershell
 git worktree prune
 ```
 
@@ -99,7 +99,7 @@ git worktree prune
 
 Relocate an existing worktree (maintaining naming convention):
 
-```bash
+```powershell
 git worktree move <old-path> <new-path>
 ```
 
@@ -107,7 +107,7 @@ git worktree move <old-path> <new-path>
 
 Prevent accidental deletion:
 
-```bash
+```powershell
 git worktree lock <path>
 git worktree unlock <path>
 ```
@@ -122,13 +122,14 @@ When creating worktrees, the skill should:
 
 Example logic:
 
-```bash
-REPO_NAME=$(basename "$(git rev-parse --show-toplevel)")
-BRANCH_NAME="feature/new-login"
-SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
-WORKTREE_PATH="../${REPO_NAME}-wt-${SANITIZED_BRANCH}"
+```powershell
+$repoRoot = git rev-parse --show-toplevel
+$repoName = Split-Path -Path $repoRoot -Leaf
+$branchName = "feature/new-login"
+$sanitizedBranch = $branchName -replace '/', '-'
+$worktreePath = "../$repoName-wt-$sanitizedBranch"
 
-git worktree add "$WORKTREE_PATH" "$BRANCH_NAME"
+git worktree add $worktreePath $branchName
 ```
 
 ## Best Practices
@@ -153,7 +154,7 @@ If you get an error that a worktree already exists for a branch, you can:
 
 If removal fails due to a lock:
 
-```bash
+```powershell
 git worktree unlock <path>
 git worktree remove <path>
 ```
@@ -162,7 +163,7 @@ git worktree remove <path>
 
 If worktrees were manually deleted:
 
-```bash
+```powershell
 git worktree prune
 ```
 
