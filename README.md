@@ -21,8 +21,8 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🎨 Colorized Output**: Consistent, readable task output
 - **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
-- **📦 Module Installation**: Install as PowerShell module with `-AsModule` for global access
-- **Module Uninstallation**: Remove Gosh from all installations with `-UninstallModule`
+- **📦 Module Installation**: Install as PowerShell module via `New-GoshModule.ps1` for global access
+- **Module Uninstallation**: Remove Gosh from all installations via `New-GoshModule.ps1`
 - **Manifest Generation**: Dedicated tooling for creating PowerShell module manifests (`.psd1`)
 - **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
 - **⬆️ Upward Directory Search**: Module mode finds `.build/` by searching parent directories
@@ -46,7 +46,7 @@ Install Gosh as a PowerShell module for global access:
 
 ```powershell
 # From the Gosh repository directory
-.\gosh.ps1 -AsModule
+.\New-GoshModule.ps1 -Install
 
 # Restart PowerShell or force import
 Import-Module Gosh -Force
@@ -60,7 +60,7 @@ gosh build
 - 🌍 Run `gosh` from any directory (no need for `.\gosh.ps1`)
 - 🔍 Automatic upward search for `.build/` folders (like git)
 - ⚡ Use from subdirectories within your projects
-- 🔄 Easy updates: re-run `.\gosh.ps1 -AsModule` to update
+- 🔄 Easy updates: re-run `.\New-GoshModule.ps1 -Install` to update
 
 ### First Run
 
@@ -116,13 +116,13 @@ gosh build
 .\gosh.ps1 -TaskDirectory "infra-tasks" -ListTasks
 
 # Install as a module
-.\gosh.ps1 -AsModule
+.\New-GoshModule.ps1 -Install
 
 # Uninstall module from all locations
-.\gosh.ps1 -UninstallModule
+.\New-GoshModule.ps1 -Uninstall
 ```
 
-**Module Mode** (after running `.\gosh.ps1 -AsModule`):
+**Module Mode** (after running `.\New-GoshModule.ps1 -Install`):
 ```powershell
 # All the same commands work, but simpler syntax
 gosh -Help
@@ -139,10 +139,10 @@ gosh build  # Automatically finds .build/ in parent directories
 
 # Update the module after modifying gosh.ps1
 cd ~/projects/gosh
-.\gosh.ps1 -AsModule  # Overwrites existing installation
+.\New-GoshModule.ps1 -Install  # Overwrites existing installation
 
 # Uninstall the module
-gosh -UninstallModule
+.\New-GoshModule.ps1 -Uninstall
 ```
 
 ## ⚙️ Parameter Sets
@@ -178,18 +178,18 @@ Gosh uses PowerShell parameter sets to provide a clean, validated interface with
    .\gosh.ps1 -NewTask validate -TaskDirectory "custom"  # Custom directory
    ```
 
-5. **InstallModule** - For module installation:
-   ```powershell
-   .\gosh.ps1 -AsModule                # Install as PowerShell module
-   .\gosh.ps1 -AsModule -NoImport      # Install without auto-importing
-   .\gosh.ps1 -AsModule -ModuleOutputPath "C:\Custom\Path"  # Custom path
-   ```
+**For module installation and uninstallation, use the separate `New-GoshModule.ps1` script:**
 
-6. **UninstallModule** - For module removal:
-   ```powershell
-   .\gosh.ps1 -UninstallModule         # Remove all installations
-   gosh -UninstallModule               # From module mode
-   ```
+```powershell
+# Install as PowerShell module
+.\New-GoshModule.ps1 -Install
+.\New-GoshModule.ps1 -Install -NoImport      # Install without auto-importing
+.\New-GoshModule.ps1 -Install -ModuleOutputPath "C:\Custom\Path"  # Custom path
+
+# Remove all installations
+.\New-GoshModule.ps1 -Uninstall
+.\New-GoshModule.ps1 -Uninstall -Force       # Skip confirmation
+```
 
 ### Benefits
 - **No Invalid Combinations**: PowerShell prevents mixing incompatible parameters like `-ListTasks -NewTask`
@@ -870,7 +870,7 @@ Gosh can be installed as a PowerShell module for global access, allowing you to 
 
 ```powershell
 # From the Gosh repository directory
-.\gosh.ps1 -AsModule
+.\New-GoshModule.ps1 -Install
 ```
 
 This creates a module in the user module path:
@@ -908,7 +908,7 @@ The installation is **idempotent** - you can re-run it to update:
 ```powershell
 # After modifying gosh.ps1 locally
 cd ~/projects/gosh
-.\gosh.ps1 -AsModule  # Overwrites existing module
+.\New-GoshModule.ps1 -Install  # Overwrites existing module
 
 # Reload in current session
 Import-Module Gosh -Force
@@ -943,7 +943,7 @@ This allows you to run `gosh` from any subdirectory within your project.
 | **Location** | Must be in project root | Run from any project subdirectory |
 | **Discovery** | Uses `$PSScriptRoot` | Searches upward for `.build/` |
 | **Tab Completion** | ✅ Yes | ✅ Yes |
-| **Updates** | Edit file | Re-run `.\gosh.ps1 -AsModule` |
+| **Updates** | Edit file | Re-run `.\New-GoshModule.ps1 -Install` |
 | **Portability** | Single file | Module in user profile |
 
 Both modes support all features: `-Only`, `-Outline`, `-TaskDirectory`, `-NewTask`, etc.
@@ -955,7 +955,7 @@ Remove Gosh from all module installation locations:
 **From script mode:**
 ```powershell
 cd ~/projects/gosh
-.\gosh.ps1 -UninstallModule
+.\New-GoshModule.ps1 -Uninstall
 
 # Output:
 # Gosh Module Uninstallation
@@ -975,13 +975,14 @@ cd ~/projects/gosh
 
 **From module mode (after installation):**
 ```powershell
-gosh -UninstallModule
+# The gosh command cannot uninstall itself, use the script directly
+cd ~/projects/gosh
+.\New-GoshModule.ps1 -Uninstall
 ```
 
 **Skip confirmation prompt:**
 ```powershell
-.\gosh.ps1 -UninstallModule -Force
-gosh -UninstallModule -Force
+.\New-GoshModule.ps1 -Uninstall -Force
 ```
 
 **Features:**

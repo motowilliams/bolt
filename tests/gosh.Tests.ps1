@@ -391,11 +391,6 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
             { & $script:GoshScriptPath -ListTasks -NewTask test 2>&1 } | Should -Throw -ExpectedMessage '*Parameter set cannot be resolved*'
         }
 
-        It 'Should reject invalid parameter combinations (AsModule + ListTasks)' {
-            # -AsModule and -ListTasks should be mutually exclusive
-            { & $script:GoshScriptPath -AsModule -ListTasks 2>&1 } | Should -Throw -ExpectedMessage '*Parameter set cannot be resolved*'
-        }
-
         It 'Should accept valid TaskExecution parameter set' {
             $result = Invoke-Gosh -Arguments @('check-index') -Parameters @{ Only = $true }
             $result.ExitCode | Should -BeIn @(0, 1)  # May succeed or fail, but should parse correctly

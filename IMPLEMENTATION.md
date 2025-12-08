@@ -13,11 +13,11 @@
 - **Exit Code Handling**: Properly propagates errors
 - **Parameterized Task Directory**: Use `-TaskDirectory` to specify custom task locations
 - **Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
-- **Module Installation**: Install as PowerShell module with `-AsModule` for global `gosh` command
+- **Module Installation**: Install as PowerShell module via `New-GoshModule.ps1` for global `gosh` command
   - `-ModuleOutputPath`: Custom installation path for build/release scenarios
   - `-NoImport`: Skip automatic importing for CI/CD pipelines
 - **Upward Directory Search**: Module mode finds `.build/` by searching parent directories (like git)
-- **Parameter Sets**: PowerShell parameter sets provide validated operation modes (Help, TaskExecution, ListTasks, CreateTask, InstallModule)
+- **Parameter Sets**: PowerShell parameter sets provide validated operation modes (Help, TaskExecution, ListTasks, CreateTask)
 
 ### 2. Build Tasks
 
@@ -191,7 +191,7 @@ Dedicated tooling for creating PowerShell module manifests from existing modules
 
 **Architecture:**
 - **Separation of Concerns**: Manifest generation is separate from core module installation
-- **Build Integration**: Works with enhanced `-AsModule -NoImport -ModuleOutputPath` options
+- **Build Integration**: Works with `New-GoshModule.ps1 -Install -NoImport -ModuleOutputPath` options
 - **CI/CD Ready**: Docker wrapper provides consistent containerized execution
 - **Validation**: Multiple validation layers ensure manifest correctness
 
@@ -215,10 +215,10 @@ Dedicated tooling for creating PowerShell module manifests from existing modules
 .\gosh.ps1 build
 
 # Install Gosh as a PowerShell module (enables 'gosh' command globally)
-.\gosh.ps1 -AsModule
+.\New-GoshModule.ps1 -Install
 
 # Install to custom location (for build/release)
-.\gosh.ps1 -AsModule -ModuleOutputPath "C:\Custom\Path" -NoImport
+.\New-GoshModule.ps1 -Install -ModuleOutputPath "C:\Custom\Path" -NoImport
 
 # Use global 'gosh' command (after module installation)
 gosh build
@@ -226,10 +226,7 @@ gosh -ListTasks
 gosh format lint build -Only
 
 # Uninstall Gosh module from all locations
-.\gosh.ps1 -UninstallModule
-
-# Uninstall via global command (after module installation)
-gosh -UninstallModule
+.\New-GoshModule.ps1 -Uninstall
 
 # Run test suite directly with Pester
 Invoke-Pester
@@ -339,7 +336,7 @@ Gosh can be installed as a PowerShell module for global command-line usage:
 **Basic Installation:**
 ```powershell
 # Install to default user module location
-.\gosh.ps1 -AsModule
+.\New-GoshModule.ps1 -Install
 
 # Output:
 # Installing Gosh as a PowerShell module...
@@ -351,13 +348,13 @@ Gosh can be installed as a PowerShell module for global command-line usage:
 **Advanced Installation Options:**
 ```powershell
 # Install to custom location
-.\gosh.ps1 -AsModule -ModuleOutputPath "C:\Custom\Modules\Path"
+.\New-GoshModule.ps1 -Install -ModuleOutputPath "C:\Custom\Modules\Path"
 
 # Install without auto-importing (for CI/CD pipelines)
-.\gosh.ps1 -AsModule -NoImport
+.\New-GoshModule.ps1 -Install -NoImport
 
 # Both options combined
-.\gosh.ps1 -AsModule -ModuleOutputPath ".\dist" -NoImport
+.\New-GoshModule.ps1 -Install -ModuleOutputPath ".\dist" -NoImport
 ```
 
 **After Installation:**
@@ -382,7 +379,7 @@ Remove Gosh from all module installation locations:
 **From Script Mode:**
 ```powershell
 # Uninstall from all known locations
-.\gosh.ps1 -UninstallModule
+.\New-GoshModule.ps1 -Uninstall
 
 # Output:
 # Gosh Module Uninstallation
@@ -400,10 +397,10 @@ Remove Gosh from all module installation locations:
 # ✓ Gosh module uninstalled successfully!
 ```
 
-**From Module Mode (After Installation):**
+**Skip Confirmation:**
 ```powershell
-# Use the 'gosh' command directly
-gosh -UninstallModule
+# Use -Force to skip confirmation prompt
+.\New-GoshModule.ps1 -Uninstall -Force
 ```
 
 **Uninstallation Features:**
