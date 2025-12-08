@@ -5,7 +5,7 @@
 > **Go** + **powerShell** = **Gosh!**  
 > Build orchestration for PowerShell
 
-A self-contained, cross-platform PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by Make and Rake, but pure PowerShell with no external dependencies - just PowerShell 7.0+.
+A self-contained, cross-platform PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by PSake, Make and Rake. Just PowerShell with no external dependencies - just PowerShell Core 7.0+.
 
 **Perfect for Azure Bicep infrastructure projects**, but flexible enough for any PowerShell workflow. Runs on Windows, Linux, and macOS.
 
@@ -435,54 +435,6 @@ param(
 
 **Recommended pattern**: Use environment variables or configuration files for dynamic task behavior.
 
-## 🎯 Built for Azure Bicep
-
-While Gosh works with any PowerShell workflow, it's optimized for Azure Bicep infrastructure projects:
-
-### Available Tasks
-
-- **`format`**: Formats all Bicep files using `bicep format`
-  - Runs in-place formatting on all `.bicep` files in `tests/iac/`
-  - Reports which files were formatted
-  
-- **`lint`**: Validates Bicep syntax using `bicep lint`
-  - Captures and displays errors and warnings with line numbers
-  - Parses diagnostics in format: `path(line,col) : Level rule-name: message`
-  - Fails if any errors are found
-  
-- **`build`**: Compiles Bicep to ARM JSON templates
-  - Only compiles `main*.bicep` files (e.g., `main.bicep`, `main.dev.bicep`)
-  - Module files in `tests/iac/modules/` are referenced, not compiled directly
-  - Output `.json` files placed alongside source `.bicep` files
-  - Depends on: `format`, `lint` (runs automatically)
-
-### Usage Examples
-
-```powershell
-# Full pipeline: format → lint → build
-.\gosh.ps1 build
-
-# Preview execution plan before running
-.\gosh.ps1 build -Outline
-
-# Individual steps
-.\gosh.ps1 format      # Format all files
-.\gosh.ps1 lint        # Validate syntax
-.\gosh.ps1 build -Only # Compile only (skip format/lint)
-
-# Preview what -Only would do
-.\gosh.ps1 build -Only -Outline
-```
-
-### Bicep CLI Integration
-
-All tasks use the official Azure Bicep CLI:
-- `bicep format` - Code formatting
-- `bicep lint` - Syntax validation  
-- `bicep build` - ARM template compilation
-
-Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
-
 ## 📊 Task Visualization with `-Outline`
 
 The `-Outline` flag displays the task dependency tree and execution order **without executing** any tasks:
@@ -649,7 +601,7 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 
 ```powershell
 # Run all tests (auto-discovers test files)
-Invoke-Pester                         # 267 tests total
+Invoke-Pester
 
 # Run with detailed output
 Invoke-Pester -Output Detailed
@@ -659,27 +611,27 @@ Invoke-Pester -Path tests/gosh.Tests.ps1
 Invoke-Pester -Path packages/.build-bicep/tests/
 
 # Run tests by tag
-Invoke-Pester -Tag Core               # Core orchestration only (28 tests, ~1s)
-Invoke-Pester -Tag Security           # Security validation only (205 tests, ~10s)
-Invoke-Pester -Tag Bicep-Tasks        # Bicep tasks only (16 tests, ~22s)
+Invoke-Pester -Tag Core
+Invoke-Pester -Tag Security
+Invoke-Pester -Tag Bicep-Tasks
 ```
 
 ### Test Tags
 
 Tests are organized with tags for flexible execution:
 
-- **`Core`** (28 tests) - Tests gosh.ps1 orchestration itself
+- **`Core`** - Tests gosh.ps1 orchestration itself
   - Fast execution (~1 second)
   - No external tool dependencies
   - Uses mock fixtures from `tests/fixtures/`
 
-- **`Security`** (205 tests) - Tests security validations and features
+- **`Security`** - Tests security validations and features
   - Moderate execution (~10 seconds)
   - Includes Security.Tests.ps1, SecurityTxt.Tests.ps1, SecurityLogging.Tests.ps1, OutputValidation.Tests.ps1
   - Validates input sanitization, RFC 9116 compliance, audit logging, and output validation
   - Tests P0 security fixes for TaskDirectory, path sanitization, task name validation, and terminal injection protection
   
-- **`Bicep-Tasks`** (16 tests) - Tests Bicep task implementation
+- **`Bicep-Tasks`** - Tests Bicep task implementation
   - Slower execution (~22 seconds)
   - Requires Bicep CLI for integration tests
   - Tests live with implementation in `packages/.build-bicep/tests/`
@@ -702,7 +654,7 @@ Invoke-Pester
 
 ### Test Coverage
 
-**Core Orchestration** (`tests/gosh.Tests.ps1` - 28 tests):
+**Core Orchestration** (`tests/gosh.Tests.ps1`):
 - Script validation and PowerShell version requirements
 - Task listing with `-ListTasks` and `-Help` parameters
 - Task discovery from `.build/` directory and test fixtures
@@ -714,16 +666,16 @@ Invoke-Pester
 - Parameter validation (comma/space-separated)
 - Documentation consistency
 
-**Security Tests** (`tests/security/` - 205 tests total):
+**Security Tests** (`tests/security/`):
 
-1. **Security.Tests.ps1** (87 tests) - Core security validation:
+1. **Security.Tests.ps1** - Core security validation:
    - Path traversal protection (absolute paths, parent directory references)
    - Command injection prevention (semicolons, pipes, backticks)
    - PowerShell injection prevention (special characters, variables, command substitution)
    - Input sanitization and validation
    - Error handling security (secure failure modes)
 
-2. **SecurityTxt.Tests.ps1** (20 tests) - RFC 9116 compliance:
+2. **SecurityTxt.Tests.ps1** - RFC 9116 compliance:
    - File existence and location (.well-known/security.txt)
    - Required fields (Contact, Expires)
    - Recommended fields (Preferred-Languages, Canonical, Policy)
@@ -732,7 +684,7 @@ Invoke-Pester
    - Security policy content (vulnerability reporting guidance)
    - Repository integration (GitHub references, git tracking)
 
-3. **SecurityLogging.Tests.ps1** (26 tests) - Audit logging:
+3. **SecurityLogging.Tests.ps1** - Audit logging:
    - Logging disabled by default (no overhead when not enabled)
    - Opt-in via `$env:GOSH_AUDIT_LOG` environment variable
    - Log entry format (timestamp, severity, user, machine, event, details)
@@ -744,7 +696,7 @@ Invoke-Pester
    - GitIgnore integration (.gosh/ excluded from version control)
    - Error handling (silent failures, directory conflicts)
 
-4. **OutputValidation.Tests.ps1** (44 tests) - Terminal injection protection:
+4. **OutputValidation.Tests.ps1** - Terminal injection protection:
    - Normal output pass-through (no modification of safe content)
    - ANSI escape sequence removal (colors, cursor control)
    - Control character filtering (null bytes, bell, backspace, etc.)
@@ -756,12 +708,12 @@ Invoke-Pester
    - Verbose output (detailed logging of sanitization)
    - Integration tests (check-index task output validation)
 
-**Bicep Tasks** (`packages/.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
+**Bicep Tasks** (`packages/.build-bicep/tests/Tasks.Tests.ps1`):
 - Format task: existence, syntax, metadata, aliases
 - Lint task: existence, syntax, metadata, dependencies
 - Build task: existence, syntax, metadata, dependencies
 
-**Bicep Integration** (`packages/.build-bicep/tests/Integration.Tests.ps1` - 4 tests):
+**Bicep Integration** (`packages/.build-bicep/tests/Integration.Tests.ps1`):
 - Format Bicep files integration
 - Lint Bicep files integration
 - Build Bicep files integration
@@ -827,7 +779,7 @@ Use Pester directly in CI pipelines:
 ### Test Results
 
 ```
-Tests Passed: 267
+Tests Passed: some_number
 Tests Failed: 0
 Skipped: 0
 Total Time: ~15 seconds
@@ -836,21 +788,7 @@ Total Time: ~15 seconds
 ## 🔧 Requirements
 
 - **PowerShell 7.0+** (uses `#Requires -Version 7.0` and modern syntax)
-- **Azure Bicep CLI** (for infrastructure tasks) - [Installation Guide](https://aka.ms/bicep-install)
 - **Git** (for `check-index` task)
-
-### Installation
-
-```powershell
-# Install Bicep CLI (Windows)
-winget install Microsoft.Bicep
-
-# Or via Azure CLI
-az bicep install
-
-# Verify installation
-bicep --version
-```
 
 ## 🎨 Output Formatting
 
