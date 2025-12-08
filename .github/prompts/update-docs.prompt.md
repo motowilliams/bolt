@@ -10,6 +10,7 @@ Scan scripts and tests making sure documentation is current with the latest data
 - **ONLY reference actual, existing files, functions, and features**
 - **If unsure about a URL or endpoint, either verify it exists or ask the user**
 - **When updating contact information, use only verified, working URLs**
+- **Don't put test counts in documentation**
 
 **Examples of prohibited behavior:**
 - Creating fictional GitHub security advisory URLs
