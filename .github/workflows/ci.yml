@@ -184,7 +184,7 @@ jobs:
 
           # Test local manifest generation (requires Gosh module)
           Write-Host "Creating test module for manifest generation..." -ForegroundColor Gray
-          pwsh -File gosh.ps1 -AsModule -NoImport -ModuleOutputPath ".\test-module"
+          pwsh -File New-GoshModule.ps1 -Install -NoImport -ModuleOutputPath ".\test-module"
 
           # Test manifest generation
           Write-Host "Testing generate-manifest.ps1..." -ForegroundColor Gray

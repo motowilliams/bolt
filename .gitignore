@@ -90,3 +90,4 @@ logs/
 *.tmp
 *.temp
 temp/
+test-module/**/*

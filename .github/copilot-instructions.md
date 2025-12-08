@@ -400,7 +400,7 @@ The project is a **working example** that includes:
 - ✅ Tab completion and help system (script and module mode)
 - ✅ Parameterized task directory (`-TaskDirectory`)
 - ✅ Task outline visualization (`-Outline`)
-- ✅ Module installation (`-AsModule`) with upward directory search
+- ✅ Module installation via `New-GoshModule.ps1` with upward directory search
 - ✅ Test tags for fast/slow test separation
 - ✅ Cross-platform support (Windows, Linux, macOS)
 - ✅ Security validation suite (path traversal, command injection protection)
@@ -470,7 +470,7 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files (or 
 
 # ===== Module Mode =====
 # Install as module first (one-time setup)
-.\gosh.ps1 -AsModule
+.\New-GoshModule.ps1 -Install
 
 # Then use globally with 'gosh' command
 gosh build                   # Runs from any subdirectory
@@ -1186,7 +1186,7 @@ Add a **`### Technical Notes`** subsection within relevant changelog entries to 
 ## [Unreleased]
 
 ### Added
-- **Module Installation**: `-AsModule` parameter to install Gosh as a PowerShell module
+- **Module Installation**: `New-GoshModule.ps1` script to install Gosh as a PowerShell module
   - Enables global `gosh` command accessible from any directory
   - Cross-platform support (Windows, Linux, macOS)
   - Automatic upward directory search for `.build/` folders
@@ -1281,12 +1281,11 @@ Get-ChildItem .build               # See all project tasks
 Select-String "# TASK:" .build/*.ps1  # See task names
 
 # Module installation
-.\gosh.ps1 -AsModule               # Install as PowerShell module for current user
-.\gosh.ps1 -AsModule -ModuleOutputPath "C:\Custom" # Install to custom path
-.\gosh.ps1 -AsModule -NoImport     # Install without importing (build/release)
-.\gosh.ps1 -AsModule -ModuleOutputPath ".\dist" -NoImport # Full control
-gosh build                         # Use globally after installation
-gosh -ListTasks                    # Works from any subdirectory (upward search)
+.\New-GoshModule.ps1 -Install               # Install as PowerShell module for current user
+.\New-GoshModule.ps1 -Install -ModuleOutputPath "C:\Custom" # Install to custom path
+.\New-GoshModule.ps1 -Install -NoImport     # Install without importing (build/release)
+gosh build                                  # Use globally after installation
+gosh -ListTasks                             # Works from any subdirectory (upward search)
 
 # Manifest generation
 .\generate-manifest.ps1 -ModulePath "MyModule.psm1" -ModuleVersion "1.0.0" -Tags "Build,DevOps"
