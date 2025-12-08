@@ -192,11 +192,7 @@ Describe 'Module Uninstallation' -Tag 'Core' {
         }
     }
 
-    It 'Should require confirmation without -Force flag' {
-        # This test would need user interaction, so we skip it
-        # The actual behavior is tested manually
-        Set-ItResult -Skipped -Because "Requires user interaction"
-    }
+
 }
 
 Describe 'Cross-Platform Compatibility' -Tag 'Core' {
