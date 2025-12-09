@@ -1,6 +1,6 @@
-# Contributing to Gosh
+# Contributing to Bolt
 
-Thank you for considering contributing to Gosh! 🎉
+Thank you for considering contributing to Bolt! 🎉
 
 ## ⚠️ Important: No Hallucinations Policy
 
@@ -10,7 +10,7 @@ Thank you for considering contributing to Gosh! 🎉
 
 ## Project Philosophy
 
-**Keep it simple, keep it self-contained.** Gosh is designed to have zero external dependencies beyond PowerShell 7.0+ and the tools your tasks use (Bicep, Git, etc.).
+**Keep it simple, keep it self-contained.** Bolt is designed to have zero external dependencies beyond PowerShell 7.0+ and the tools your tasks use (Bicep, Git, etc.).
 
 ## Getting Started
 
@@ -19,7 +19,7 @@ Thank you for considering contributing to Gosh! 🎉
    - PowerShell 7.0+
    - Azure Bicep CLI: `winget install Microsoft.Bicep`
 3. **Make your changes** following the guidelines below
-4. **Test locally**: Run `.\gosh.ps1 build` to ensure everything works
+4. **Test locally**: Run `.\bolt.ps1 build` to ensure everything works
 5. **Submit a pull request**
 
 ## Development Guidelines
@@ -37,7 +37,7 @@ When creating or modifying tasks in `.build/`:
   - Yellow: Warnings (⚠)
   - Red: Errors (✗)
 - ✅ **Check $LASTEXITCODE**: After external commands
-- ✅ **Use descriptive variable names**: Avoid `$Task` (collides with gosh.ps1)
+- ✅ **Use descriptive variable names**: Avoid `$Task` (collides with bolt.ps1)
 - ✅ **Use `Write-Host` for output**: Pipeline output (bare variables) won't display - tasks execute inside script blocks
 
 #### Critical: Exit Codes Are Required
@@ -57,7 +57,7 @@ exit 0  # Explicit success
 ```
 
 **Why this matters:**
-- Without explicit `exit`, gosh.ps1 checks `$LASTEXITCODE` from the last external command
+- Without explicit `exit`, bolt.ps1 checks `$LASTEXITCODE` from the last external command
 - If `$LASTEXITCODE` is 0 or null → task succeeds
 - If `$LASTEXITCODE` is non-zero → task fails
 - This creates **fragile, unpredictable behavior** where task success depends on side effects
@@ -99,7 +99,7 @@ $data = Get-Something
 Write-Output $data  # For pipeline consumption by other tools
 ```
 
-**Why this matters**: When gosh.ps1 executes tasks, it creates a script block that dot-sources your task script, then executes that block with the call operator `&`, which discards pipeline output by default. Use `Write-Host` for user-facing output. You can use `Write-Output` if you need to emit pipeline objects (for example, if your task is being called in a pipeline context), but note that pipeline output will not propagate between tasks.
+**Why this matters**: When bolt.ps1 executes tasks, it creates a script block that dot-sources your task script, then executes that block with the call operator `&`, which discards pipeline output by default. Use `Write-Host` for user-facing output. You can use `Write-Output` if you need to emit pipeline objects (for example, if your task is being called in a pipeline context), but note that pipeline output will not propagate between tasks.
 
 **Pipeline Between Tasks:**
 
@@ -107,7 +107,7 @@ Tasks in a dependency chain do **NOT** pass pipeline objects to each other. Each
 
 ```powershell
 # Given: build depends on lint, lint depends on format
-# When you run: .\gosh.ps1 build
+# When you run: .\bolt.ps1 build
 
 # Execution order:
 # 1. format executes → output goes to terminal (if using Write-Host)
@@ -117,7 +117,7 @@ Tasks in a dependency chain do **NOT** pass pipeline objects to each other. Each
 # Only success/failure status propagates between tasks
 ```
 
-**Why**: Gosh uses `Invoke-Task` recursively for dependencies. Each task's return value is boolean (success/failure), not pipeline objects. Dependencies execute for orchestration purposes (ensuring prerequisites run first), not for data flow.
+**Why**: Bolt uses `Invoke-Task` recursively for dependencies. Each task's return value is boolean (success/failure), not pipeline objects. Dependencies execute for orchestration purposes (ensuring prerequisites run first), not for data flow.
 
 **If you need data sharing between tasks**:
 - Use files (write/read from disk)
@@ -136,18 +136,18 @@ param(
     [string]$Name = "World",
     [int]$Count = 1
 )
-# Usage: .\gosh.ps1 yourtask
+# Usage: .\bolt.ps1 yourtask
 # (Parameters use their defaults)
 ```
 
 **❌ Named parameter passing is NOT currently supported:**
 ```powershell
 # This does NOT work:
-.\gosh.ps1 yourtask -Name "Gosh" -Count 3
+.\bolt.ps1 yourtask -Name "Bolt" -Count 3
 # Arguments are passed as an array, not parsed as named parameters
 ```
 
-**Current limitation**: Gosh collects remaining arguments as an array and splats them to your task script. PowerShell array splatting only works for positional parameters, not named ones (hashtable splatting is required for named parameters, which would require parsing the argument structure).
+**Current limitation**: Bolt collects remaining arguments as an array and splats them to your task script. PowerShell array splatting only works for positional parameters, not named ones (hashtable splatting is required for named parameters, which would require parsing the argument structure).
 
 **Recommended pattern**: Use environment variables, configuration files, or `$env:` variables for dynamic task behavior rather than parameters.
 
@@ -201,14 +201,14 @@ Before submitting changes:
 - **Verify exit codes**: Ensure tasks return 0 for success, 1 for failure
 - **Test cross-platform**: All changes should work on Windows, Linux, and macOS with PowerShell Core
 - **Add new tests**: Choose the appropriate test file:
-  - **Core orchestration changes** → `tests/gosh.Tests.ps1` (uses mock fixtures, tag with `Core`)
+  - **Core orchestration changes** → `tests/bolt.Tests.ps1` (uses mock fixtures, tag with `Core`)
   - **Security changes** → `tests/security/Security.Tests.ps1` (validates security fixes, tag with `Security`)
   - **New Bicep tasks** → `packages/.build-bicep/tests/Tasks.Tests.ps1` (validates task structure, tag with `Bicep-Tasks`)
   - **Bicep integrations** → `packages/.build-bicep/tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Bicep-Tasks`)
 
 ### Cross-Platform Guidelines
 
-Gosh is **cross-platform by design**. Follow these patterns:
+Bolt is **cross-platform by design**. Follow these patterns:
 
 **Path Handling:**
 ```powershell
@@ -240,13 +240,13 @@ $bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File
 
 When adding new functionality, include Pester tests in the appropriate file:
 
-**For core Gosh features** (use `-TaskDirectory` parameter with mock fixtures):
+**For core Bolt features** (use `-TaskDirectory` parameter with mock fixtures):
 ```powershell
-# Add to tests/gosh.Tests.ps1
+# Add to tests/bolt.Tests.ps1
 Describe "Your New Feature" -Tag 'Core' {
     It "Should do something correctly" {
         # Tests use -TaskDirectory to point to fixtures
-        $result = Invoke-Gosh -Arguments @('mock-simple') `
+        $result = Invoke-Bolt -Arguments @('mock-simple') `
                               -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
         $result.ExitCode | Should -Be 0
     }
@@ -277,24 +277,24 @@ Describe "YourNewTask Task" -Tag 'Bicep-Tasks' {
 
 Test your changes:
 ```powershell
-# Via Gosh (tests the integration)
-.\gosh.ps1 test
+# Via Bolt (tests the integration)
+.\bolt.ps1 test
 
-# Directly via Pester (tests gosh.ps1 itself)
+# Directly via Pester (tests bolt.ps1 itself)
 Invoke-Pester
 
 # Specific test file
-Invoke-Pester -Path tests\gosh.Tests.ps1
+Invoke-Pester -Path tests\bolt.Tests.ps1
 
 # Quick core tests during development
 Invoke-Pester -Tag Core
 ```
 
-> **Important**: When modifying `gosh.ps1`, always test with `Invoke-Pester` directly to avoid circular dependency issues.
+> **Important**: When modifying `bolt.ps1`, always test with `Invoke-Pester` directly to avoid circular dependency issues.
 
 ## Modifying Core Files
 
-### gosh.ps1
+### bolt.ps1
 
 The orchestrator rarely needs modification. If you think it does:
 
@@ -333,7 +333,7 @@ When updating documentation:
 Please **DO NOT** report security vulnerabilities through public GitHub issues.
 
 Instead, report them via:
-- **GitHub Security Advisories** (preferred): https://github.com/motowilliams/gosh/security/advisories/new
+- **GitHub Security Advisories** (preferred): https://github.com/motowilliams/bolt/security/advisories/new
 - **Security Policy**: See [SECURITY.md](SECURITY.md) for complete vulnerability disclosure process
 - **RFC 9116 Policy**: See [.well-known/security.txt](.well-known/security.txt)
 
@@ -345,4 +345,4 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 ---
 
-**Gosh, thanks for contributing!** ✨
+**Thanks for contributing to Bolt!** ⚡

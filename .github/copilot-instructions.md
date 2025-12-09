@@ -1,6 +1,6 @@
-# Gosh! - AI Agent Instructions
+# Bolt! - AI Agent Instructions
 
-> **Go** + **powerShell** = **Gosh!** 🎉
+> **Bolt** - Lightning-fast PowerShell! ⚡
 
 ## ⚠️ CRITICAL: NO HALLUCINATIONS POLICY
 
@@ -64,15 +64,15 @@
 
 **❌ WRONG - Using Unix commands:**
 ```powershell
-.\gosh.ps1 -ListTasks | grep "build"
-.\gosh.ps1 -ListTasks | tail -10
+.\bolt.ps1 -ListTasks | grep "build"
+.\bolt.ps1 -ListTasks | tail -10
 Get-Content file.txt | head -5
 ```
 
 **✅ CORRECT - Using PowerShell commands:**
 ```powershell
-.\gosh.ps1 -ListTasks | Select-String "build"
-.\gosh.ps1 -ListTasks | Select-Object -Last 10
+.\bolt.ps1 -ListTasks | Select-String "build"
+.\bolt.ps1 -ListTasks | Select-Object -Last 10
 Get-Content file.txt | Select-Object -First 5
 ```
 
@@ -135,9 +135,9 @@ What branch strategy would you prefer?"
 ```powershell
 # PREFERRED: Create a worktree (see .github/instructions/feature-branches.instructions.md)
 # Pattern: ../<repo-name>-wt-<sanitized-branch-name>
-# Example: branch 'feature/descriptive-name' → directory '../gosh-wt-feature-descriptive-name'
-git worktree add -b feature/descriptive-name ../gosh-wt-feature-descriptive-name main
-Set-Location -Path ../gosh-wt-feature-descriptive-name
+# Example: branch 'feature/descriptive-name' → directory '../bolt-wt-feature-descriptive-name'
+git worktree add -b feature/descriptive-name ../bolt-wt-feature-descriptive-name main
+Set-Location -Path ../bolt-wt-feature-descriptive-name
 
 # ALTERNATIVE: Traditional branch (if worktrees not suitable)
 git checkout -b feature/descriptive-name
@@ -190,8 +190,8 @@ git worktree list # Shows existing worktrees
 # "I need to fix the task discovery bug. Should I create a feature/fix-task-discovery worktree?"
 
 # Step 3: Create worktree (after user confirms)
-git worktree add -b feature/fix-task-discovery ../gosh-wt-feature-fix-task-discovery main
-Set-Location -Path ../gosh-wt-feature-fix-task-discovery
+git worktree add -b feature/fix-task-discovery ../bolt-wt-feature-fix-task-discovery main
+Set-Location -Path ../bolt-wt-feature-fix-task-discovery
 
 # Step 4: Make changes and commit
 git add .
@@ -282,13 +282,13 @@ Write like you're explaining something to a coworker - no fluff, no fancy words,
 - **Vague descriptions**: powerful, elegant, sophisticated, amazing, brilliant, state-of-the-art
 - **Overused jargon**: utilize (just say "use"), implement (say "add" or "create"), facilitate, optimize, scalable
 
-### How to Write About Gosh
+### How to Write About Bolt
 
 **❌ Bad:**
-> Gosh leverages a comprehensive, robust architecture to seamlessly orchestrate tasks with innovative dependency resolution capabilities.
+> Bolt leverages a comprehensive, robust architecture to seamlessly orchestrate tasks with innovative dependency resolution capabilities.
 
 **✅ Good:**
-> Gosh runs tasks in order and automatically handles their dependencies - no special setup needed.
+> Bolt runs tasks in order and automatically handles their dependencies - no special setup needed.
 
 **❌ Bad:**
 > This implementation provides a synergistic approach to cross-platform module management.
@@ -383,16 +383,16 @@ Before implementing any changes or answering requests:
 
 ## Project Overview
 
-This is **Gosh**, a self-contained PowerShell build system (`gosh.ps1`) designed for Azure Bicep infrastructure projects. It provides extensible task orchestration with automatic dependency resolution, similar to Make or Rake, but pure PowerShell with no external dependencies.
+This is **Bolt**, a self-contained PowerShell build system (`bolt.ps1`) designed for Azure Bicep infrastructure projects. It provides extensible task orchestration with automatic dependency resolution, similar to Make or Rake, but pure PowerShell with no external dependencies.
 
-**Architecture Pattern**: Monolithic orchestrator (`gosh.ps1`) + modular task scripts (`.build/*.ps1`)
+**Architecture Pattern**: Monolithic orchestrator (`bolt.ps1`) + modular task scripts (`.build/*.ps1`)
 
 **Last Updated**: October 2025
 
 ### Current Project Status
 
 The project is a **working example** that includes:
-- ✅ Complete build orchestration system (`gosh.ps1`)
+- ✅ Complete build orchestration system (`bolt.ps1`)
 - ✅ Three project tasks: `format`, `lint`, `build`
 - ✅ Pester test suite with comprehensive coverage
 - ✅ Example Azure infrastructure (App Service + SQL)
@@ -400,7 +400,7 @@ The project is a **working example** that includes:
 - ✅ Tab completion and help system (script and module mode)
 - ✅ Parameterized task directory (`-TaskDirectory`)
 - ✅ Task outline visualization (`-Outline`)
-- ✅ Module installation via `New-GoshModule.ps1` with upward directory search
+- ✅ Module installation via `New-BoltModule.ps1` with upward directory search
 - ✅ Test tags for fast/slow test separation
 - ✅ Cross-platform support (Windows, Linux, macOS)
 - ✅ Security validation suite (path traversal, command injection protection)
@@ -426,7 +426,7 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files (or 
 - **Parameterized task directory** - use `-TaskDirectory` to specify custom locations (default: `.build`)
 - **Dependency resolution happens at runtime** - `Invoke-Task` recursively executes deps with circular dependency prevention via `$ExecutedTasks` hashtable
 - **Exit codes propagate correctly** - `$LASTEXITCODE` checked after script execution, returns boolean for orchestration
-- **Project tasks override core tasks** - allows customization without modifying `gosh.ps1`
+- **Project tasks override core tasks** - allows customization without modifying `bolt.ps1`
 
 ### Task Discovery Flow
 
@@ -442,45 +442,45 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files (or 
 ```powershell
 # ===== Script Mode =====
 # Single task with dependencies
-.\gosh.ps1 build              # Runs: format → lint → build
+.\bolt.ps1 build              # Runs: format → lint → build
 
 # Preview execution plan without running
-.\gosh.ps1 build -Outline     # Shows dependency tree and execution order
+.\bolt.ps1 build -Outline     # Shows dependency tree and execution order
 
 # Multiple tasks in sequence
-.\gosh.ps1 lint format        # Runs: lint, then format
-.\gosh.ps1 format,lint,build  # Comma-separated also works
+.\bolt.ps1 lint format        # Runs: lint, then format
+.\bolt.ps1 format,lint,build  # Comma-separated also works
 
 # Skip dependencies (faster iteration)
-.\gosh.ps1 build -Only        # Runs: build only (no format/lint)
+.\bolt.ps1 build -Only        # Runs: build only (no format/lint)
 
 # Preview what -Only would do
-.\gosh.ps1 build -Only -Outline
+.\bolt.ps1 build -Only -Outline
 
 # Multiple tasks without dependencies
-.\gosh.ps1 format lint build -Only  # Runs all three, skipping build's deps
+.\bolt.ps1 format lint build -Only  # Runs all three, skipping build's deps
 
 # Custom task directory
-.\gosh.ps1 -TaskDirectory "infra-tasks" -ListTasks
-.\gosh.ps1 deploy -TaskDirectory "deployment-tasks"
+.\bolt.ps1 -TaskDirectory "infra-tasks" -ListTasks
+.\bolt.ps1 deploy -TaskDirectory "deployment-tasks"
 
 # Individual steps
-.\gosh.ps1 format            # Format all .bicep files
-.\gosh.ps1 lint              # Validate all .bicep files
+.\bolt.ps1 format            # Format all .bicep files
+.\bolt.ps1 lint              # Validate all .bicep files
 
 # ===== Module Mode =====
 # Install as module first (one-time setup)
-.\New-GoshModule.ps1 -Install
+.\New-BoltModule.ps1 -Install
 
-# Then use globally with 'gosh' command
-gosh build                   # Runs from any subdirectory
-gosh -ListTasks              # Lists all tasks
-gosh build -Outline          # Preview execution plan
-gosh format lint build -Only # Multiple tasks without dependencies
+# Then use globally with 'bolt' command
+bolt build                   # Runs from any subdirectory
+bolt -ListTasks              # Lists all tasks
+bolt build -Outline          # Preview execution plan
+bolt format lint build -Only # Multiple tasks without dependencies
 
 # Module finds .build/ directory by searching upward
 cd tests/iac
-gosh build                   # Works from subdirectories (searches up)
+bolt build                   # Works from subdirectories (searches up)
 ```
 
 **Important**: 
@@ -496,11 +496,11 @@ gosh build                   # Works from subdirectories (searches up)
 **Quick method** - Use the built-in task generator:
 
 ```powershell
-.\gosh.ps1 -NewTask deploy
+.\bolt.ps1 -NewTask deploy
 # Creates .build/Invoke-Deploy.ps1 with proper metadata structure
 
 # Or in a custom directory:
-.\gosh.ps1 -NewTask validate -TaskDirectory "quality-tasks"
+.\bolt.ps1 -NewTask validate -TaskDirectory "quality-tasks"
 # Creates quality-tasks/Invoke-Validate.ps1
 ```
 
@@ -524,7 +524,7 @@ exit 0  # Explicit exit code required
 
 ### Cross-Platform Compatibility
 
-**Gosh is designed to run on Windows, Linux, and macOS with PowerShell Core 7.0+**
+**Bolt is designed to run on Windows, Linux, and macOS with PowerShell Core 7.0+**
 
 Key cross-platform patterns:
 - **Use `Join-Path` for all path construction** - never hardcode path separators (`/` or `\`)
@@ -588,7 +588,7 @@ Write-Host "✓ Task succeeded" -ForegroundColor Green
 exit 0
 ```
 
-**Critical**: Always use explicit `exit 0` or `exit 1` - gosh.ps1 checks `$LASTEXITCODE` for orchestration.
+**Critical**: Always use explicit `exit 0` or `exit 1` - bolt.ps1 checks `$LASTEXITCODE` for orchestration.
 
 ### Output Formatting Standards
 
@@ -619,7 +619,7 @@ $diagnostics = $output | Where-Object { $_ -match '^\S+\(\d+,\d+\)\s*:\s*(Error|
 
 The format task formats Bicep files in-place:
 
-**In-place formatting**: `.\gosh.ps1 format`
+**In-place formatting**: `.\bolt.ps1 format`
 - Modifies files directly using `bicep format --outfile`
 - Reports which files were formatted
 - Always succeeds if bicep format runs without errors
@@ -674,7 +674,7 @@ The `-Outline` flag provides task visualization without execution:
 **Purpose**: Preview dependency trees and execution order before running tasks.
 
 **Implementation**:
-- `Show-TaskOutline` function (152 lines) in `gosh.ps1`
+- `Show-TaskOutline` function (152 lines) in `bolt.ps1`
 - Displays ASCII tree structure (├── └──)
 - Shows task descriptions inline
 - Calculates deduplicated execution order
@@ -684,7 +684,7 @@ The `-Outline` flag provides task visualization without execution:
 **Example Usage**:
 ```powershell
 # Preview build dependencies
-.\gosh.ps1 build -Outline
+.\bolt.ps1 build -Outline
 
 # Output:
 # Task execution plan for: build
@@ -699,11 +699,11 @@ The `-Outline` flag provides task visualization without execution:
 #   3. build
 
 # Preview with -Only flag
-.\gosh.ps1 build -Only -Outline
+.\bolt.ps1 build -Only -Outline
 # Shows: build only (dependencies skipped)
 
 # Multiple tasks
-.\gosh.ps1 format lint build -Outline
+.\bolt.ps1 format lint build -Outline
 # Shows combined execution plan with deduplication
 ```
 
@@ -717,7 +717,7 @@ The `-Outline` flag provides task visualization without execution:
 
 **Local-First Principle (90/10 Rule)**: Tasks should run identically locally and in CI pipelines.
 
-- **Same commands**: `.\gosh.ps1 build` works the same locally and in CI
+- **Same commands**: `.\bolt.ps1 build` works the same locally and in CI
 - **No special CI flags**: Avoid `if ($env:CI)` branches unless absolutely necessary
 - **Consistent tooling**: Use same Bicep CLI version, same PowerShell modules
 - **Deterministic behavior**: Tasks produce same results regardless of environment
@@ -743,7 +743,7 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
 3. **Core Tests**: Fast tests (~1s, no Bicep required) - `Invoke-Pester -Tag Core`
 4. **Bicep Tasks Tests**: Bicep-dependent tests (~22s) - `Invoke-Pester -Tag Bicep-Tasks`
 5. **Test Report**: Generate NUnit XML - `Invoke-Pester -Configuration $config`
-6. **Build Pipeline**: Run full pipeline - `pwsh -File gosh.ps1 build`
+6. **Build Pipeline**: Run full pipeline - `pwsh -File bolt.ps1 build`
 7. **Verify Artifacts**: Check compiled ARM JSON templates exist
 
 **Artifacts**:
@@ -753,14 +753,14 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
 
 **Status Badge**:
 ```markdown
-[![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
+[![CI](https://github.com/motowilliams/bolt/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/bolt/actions/workflows/ci.yml)
 ```
 
 **Example for other CI platforms**:
 ```yaml
 # Azure DevOps, GitLab CI, etc.
 - name: Build
-  run: pwsh -File gosh.ps1 build
+  run: pwsh -File bolt.ps1 build
   
 - name: Test
   run: |
@@ -781,7 +781,7 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
    - `Register-ArgumentCompleter` caches task list
    
 3. **Variable naming in tasks** - avoid using `$Task` variable name in task scripts
-   - Collides with gosh.ps1's `-Task` parameter in some contexts
+   - Collides with bolt.ps1's `-Task` parameter in some contexts
    - Use descriptive names like `$currentTask`, `$taskName`, etc.
 
 ## Troubleshooting Common Issues
@@ -868,7 +868,7 @@ $path = "$PSScriptRoot\subfolder\file.txt"
 **Solution**: Review task dependencies in `.build/` files
 ```powershell
 # Check dependency chain with -Outline
-.\gosh.ps1 taskname -Outline
+.\bolt.ps1 taskname -Outline
 
 # Verify no task depends on itself directly or indirectly
 # Example: build → lint → format → build (CIRCULAR!)
@@ -881,20 +881,20 @@ $path = "$PSScriptRoot\subfolder\file.txt"
 This project uses **Pester** for PowerShell testing. The test suite is organized with separate locations for core and module-specific tests:
 
 **Test Structure**:
-- **`tests/gosh.Tests.ps1`** - Core Gosh orchestration using mock fixtures
+- **`tests/bolt.Tests.ps1`** - Core Bolt orchestration using mock fixtures
 - **`tests/security/Security.Tests.ps1`** - Core security validation tests (P0 fixes)
 - **`tests/security/SecurityTxt.Tests.ps1`** - RFC 9116 compliance tests
 - **`tests/security/SecurityLogging.Tests.ps1`** - Security event logging tests
 - **`tests/security/OutputValidation.Tests.ps1`** - Terminal injection protection tests
 - **`packages/.build-bicep/tests/Tasks.Tests.ps1`** - Bicep task validation tests
 - **`packages/.build-bicep/tests/Integration.Tests.ps1`** - End-to-end Bicep integration tests
-- **`tests/fixtures/`** - Mock tasks for testing Gosh orchestration without external dependencies
+- **`tests/fixtures/`** - Mock tasks for testing Bolt orchestration without external dependencies
 
 **Running tests**:
 ```powershell
 Invoke-Pester                      # Run all tests (auto-discovers *.Tests.ps1)
 Invoke-Pester -Output Detailed     # With detailed output
-Invoke-Pester -Path tests/gosh.Tests.ps1  # Run specific test file
+Invoke-Pester -Path tests/bolt.Tests.ps1  # Run specific test file
 
 # Use tags for targeted testing
 Invoke-Pester -Tag Core            # Only core orchestration tests (fast, ~1s)
@@ -903,13 +903,13 @@ Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (slower, ~22s)
 ```
 
 **Test Tags**:
-- **`Core`** - Tests gosh.ps1 orchestration, fast, no external dependencies
+- **`Core`** - Tests bolt.ps1 orchestration, fast, no external dependencies
 - **`Security`** - Tests all security features (security validation + RFC 9116 + logging + output validation)
 - **`Bicep-Tasks`** - Tests Bicep task implementation, slower, requires Bicep CLI
 
 **Test Coverage**:
 
-1. **Core Orchestration Tests** (`tests/gosh.Tests.ps1`):
+1. **Core Orchestration Tests** (`tests/bolt.Tests.ps1`):
    - Script validation (syntax, PowerShell version)
    - Task listing (`-ListTasks`, `-Help`)
    - Task discovery from `.build/` and test fixtures
@@ -949,11 +949,11 @@ Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (slower, ~22s)
 **Test Architecture Pattern:**
 ```powershell
 # Tests use -TaskDirectory parameter to reference fixtures directly
-$result = Invoke-Gosh -Arguments @('mock-simple') `
+$result = Invoke-Bolt -Arguments @('mock-simple') `
                       -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
 
 # This achieves clean separation:
-# - No test-specific code in gosh.ps1
+# - No test-specific code in bolt.ps1
 # - Tests explicitly declare fixture location
 # - No file copying or temporary directories needed
 ```
@@ -973,10 +973,10 @@ Total Time: ~15 seconds
 - **NUnit XML output**: `TestResults.xml` for CI/CD pipeline integration
 - **Bicep validation**: lint task catches syntax errors
 - **Local-first principle**: Tasks run identically locally and in CI (90/10 rule)
-- **Direct testing**: Use `Invoke-Pester` to test the Gosh orchestrator itself
+- **Direct testing**: Use `Invoke-Pester` to test the Bolt orchestrator itself
 - **PSScriptAnalyzer**: Always use project settings when running analysis
   ```powershell
-  Invoke-ScriptAnalyzer -Path "gosh.ps1" -Settings ".vscode/PSScriptAnalyzerSettings.psd1"
+  Invoke-ScriptAnalyzer -Path "bolt.ps1" -Settings ".vscode/PSScriptAnalyzerSettings.psd1"
   ```
 
 ## VS Code Integration
@@ -988,10 +988,10 @@ Pre-configured VS Code tasks in `.vscode/tasks.json`:
 **Build Tasks:**
 ```json
 {
-  "label": "Gosh: Build",       // Default build task (Ctrl+Shift+B)
-  "label": "Gosh: Format",      // Format Bicep files
-  "label": "Gosh: Lint",        // Validate Bicep files
-  "label": "Gosh: List Tasks"   // Show available tasks
+  "label": "Bolt: Build",       // Default build task (Ctrl+Shift+B)
+  "label": "Bolt: Format",      // Format Bicep files
+  "label": "Bolt: Lint",        // Validate Bicep files
+  "label": "Bolt: List Tasks"   // Show available tasks
 }
 ```
 
@@ -1013,10 +1013,10 @@ Pre-configured VS Code tasks in `.vscode/tasks.json`:
 
 ```json
 {
-  "label": "Gosh: YourTask",
+  "label": "Bolt: YourTask",
   "type": "shell",
   "command": "pwsh",
-  "args": ["-File", "${workspaceFolder}/gosh.ps1", "yourtask"]
+  "args": ["-File", "${workspaceFolder}/bolt.ps1", "yourtask"]
 }
 ```
 
@@ -1100,8 +1100,8 @@ This project follows [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1.1
 **Examples**:
 ```markdown
 ### Added
-- **Module Installation**: `-AsModule` parameter to install Gosh as a PowerShell module
-  - Enables global `gosh` command accessible from any directory
+- **Module Installation**: `-AsModule` parameter to install Bolt as a PowerShell module
+  - Enables global `bolt` command accessible from any directory
   - Cross-platform support (Windows, Linux, macOS)
   - Automatic upward directory search for `.build/` folders
 
@@ -1132,9 +1132,9 @@ When creating a new release:
 
 3. **Add version comparison links** at bottom:
    ```markdown
-   [Unreleased]: https://github.com/motowilliams/gosh/compare/v1.1.0...HEAD
-   [1.1.0]: https://github.com/motowilliams/gosh/compare/v1.0.0...v1.1.0
-   [1.0.0]: https://github.com/motowilliams/gosh/releases/tag/v1.0.0
+   [Unreleased]: https://github.com/motowilliams/bolt/compare/v1.1.0...HEAD
+   [1.1.0]: https://github.com/motowilliams/bolt/compare/v1.0.0...v1.1.0
+   [1.0.0]: https://github.com/motowilliams/bolt/releases/tag/v1.0.0
    ```
 
 4. **Create empty `[Unreleased]` section** for next changes
@@ -1186,8 +1186,8 @@ Add a **`### Technical Notes`** subsection within relevant changelog entries to 
 ## [Unreleased]
 
 ### Added
-- **Module Installation**: `New-GoshModule.ps1` script to install Gosh as a PowerShell module
-  - Enables global `gosh` command accessible from any directory
+- **Module Installation**: `New-BoltModule.ps1` script to install Bolt as a PowerShell module
+  - Enables global `bolt` command accessible from any directory
   - Cross-platform support (Windows, Linux, macOS)
   - Automatic upward directory search for `.build/` folders
   
@@ -1198,8 +1198,8 @@ Add a **`### Technical Notes`** subsection within relevant changelog entries to 
   - ❌ **Failed**: Tried passing project root as function parameter to every function
     - Required massive refactoring of all functions
     - Made function signatures inconsistent and hard to maintain
-  - ✅ **Solution**: Used environment variable `$env:GOSH_PROJECT_ROOT` to pass context
-    - Module sets variable before invoking gosh-core.ps1
+  - ✅ **Solution**: Used environment variable `$env:BOLT_PROJECT_ROOT` to pass context
+    - Module sets variable before invoking bolt-core.ps1
     - Core script checks variable and sets `$script:EffectiveScriptRoot`
     - All functions use `$script:EffectiveScriptRoot` instead of `$PSScriptRoot`
 ```
@@ -1255,15 +1255,15 @@ Add a **`### Technical Notes`** subsection within relevant changelog entries to 
 
 ```powershell
 # Common tasks
-.\gosh.ps1 -ListTasks              # List all available tasks
-.\gosh.ps1 -Help                   # Same as -ListTasks
-.\gosh.ps1 build                   # Full pipeline (format → lint → build)
-.\gosh.ps1 build -Outline          # Preview execution plan (no execution)
-.\gosh.ps1 build -Only             # Build only (skip format/lint)
-.\gosh.ps1 build -Only -Outline    # Preview what -Only would do
-.\gosh.ps1 format lint             # Multiple tasks (space-separated)
-.\gosh.ps1 format,lint             # Multiple tasks (comma-separated)
-.\gosh.ps1 format lint build -Only # Multiple tasks without deps
+.\bolt.ps1 -ListTasks              # List all available tasks
+.\bolt.ps1 -Help                   # Same as -ListTasks
+.\bolt.ps1 build                   # Full pipeline (format → lint → build)
+.\bolt.ps1 build -Outline          # Preview execution plan (no execution)
+.\bolt.ps1 build -Only             # Build only (skip format/lint)
+.\bolt.ps1 build -Only -Outline    # Preview what -Only would do
+.\bolt.ps1 format lint             # Multiple tasks (space-separated)
+.\bolt.ps1 format,lint             # Multiple tasks (comma-separated)
+.\bolt.ps1 format lint build -Only # Multiple tasks without deps
 
 # Testing with Pester
 Invoke-Pester                      # Run all tests (267 tests, ~15s)
@@ -1273,19 +1273,19 @@ Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (16 tests, ~22s)
 Invoke-Pester -Output Detailed     # With detailed output
 
 # Creating new tasks
-.\gosh.ps1 -NewTask deploy         # Create new task file in .build/
-.\gosh.ps1 -NewTask validate -TaskDirectory "custom" # Create in custom dir
+.\bolt.ps1 -NewTask deploy         # Create new task file in .build/
+.\bolt.ps1 -NewTask validate -TaskDirectory "custom" # Create in custom dir
 
 # Task discovery
 Get-ChildItem .build               # See all project tasks
 Select-String "# TASK:" .build/*.ps1  # See task names
 
 # Module installation
-.\New-GoshModule.ps1 -Install               # Install as PowerShell module for current user
-.\New-GoshModule.ps1 -Install -ModuleOutputPath "C:\Custom" # Install to custom path
-.\New-GoshModule.ps1 -Install -NoImport     # Install without importing (build/release)
-gosh build                                  # Use globally after installation
-gosh -ListTasks                             # Works from any subdirectory (upward search)
+.\New-BoltModule.ps1 -Install               # Install as PowerShell module for current user
+.\New-BoltModule.ps1 -Install -ModuleOutputPath "C:\Custom" # Install to custom path
+.\New-BoltModule.ps1 -Install -NoImport     # Install without importing (build/release)
+bolt build                                  # Use globally after installation
+bolt -ListTasks                             # Works from any subdirectory (upward search)
 
 # Manifest generation
 .\generate-manifest.ps1 -ModulePath "MyModule.psm1" -ModuleVersion "1.0.0" -Tags "Build,DevOps"
@@ -1306,21 +1306,21 @@ Ctrl+Shift+P > Tasks: Run Test Task # Select test task
 - `CHANGELOG.md` - Version history and release notes
 
 ### Source Code
-- `gosh.ps1` - Main orchestrator (task discovery, dependency resolution, execution)
+- `bolt.ps1` - Main orchestrator (task discovery, dependency resolution, execution)
 - `generate-manifest.ps1` - PowerShell module manifest generator (analyzes modules, creates .psd1 files)
 - `generate-manifest-docker.ps1` - Docker wrapper for containerized manifest generation
 - `.build/Invoke-*.ps1` - User-customizable task templates (placeholders)
 - `packages/.build-bicep/Invoke-*.ps1` - Bicep task implementations (format, lint, build)
 
 ### Testing
-- `tests/gosh.Tests.ps1` - Core Gosh orchestration tests (28 tests, uses mock fixtures, tag: `Core`)
+- `tests/bolt.Tests.ps1` - Core Bolt orchestration tests (28 tests, uses mock fixtures, tag: `Core`)
 - `tests/security/Security.Tests.ps1` - Security validation tests (87 tests, P0 fixes, tag: `Security`)
 - `tests/security/SecurityTxt.Tests.ps1` - RFC 9116 compliance tests (20 tests, tag: `SecurityTxt`, `Operational`)
 - `tests/security/SecurityLogging.Tests.ps1` - Security event logging tests (26 tests, tag: `SecurityLogging`, `Operational`)
 - `tests/security/OutputValidation.Tests.ps1` - Output sanitization tests (44 tests, tag: `OutputValidation`, `Security`)
 - `packages/.build-bicep/tests/Tasks.Tests.ps1` - Bicep task validation tests (12 tests, tag: `Bicep-Tasks`)
 - `packages/.build-bicep/tests/Integration.Tests.ps1` - End-to-end Bicep integration tests (4 tests, tag: `Bicep-Tasks`)
-- `tests/fixtures/Invoke-Mock*.ps1` - Mock tasks for testing Gosh without external dependencies
+- `tests/fixtures/Invoke-Mock*.ps1` - Mock tasks for testing Bolt without external dependencies
 
 ### Infrastructure
 - `packages/.build-bicep/tests/iac/main.bicep` - Example infrastructure template for testing

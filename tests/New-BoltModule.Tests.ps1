@@ -3,7 +3,7 @@
 
 <#
 .SYNOPSIS
-    Pester tests for New-GoshModule.ps1 script
+    Pester tests for New-BoltModule.ps1 script
 .DESCRIPTION
     Tests module installation, uninstallation, and building functionality.
 #>
@@ -11,8 +11,8 @@
 BeforeAll {
     # Get project root
     $moduleRoot = Resolve-Path (Split-Path -Parent $PSScriptRoot)
-    $script:NewGoshModulePath = Join-Path $moduleRoot 'New-GoshModule.ps1'
-    $script:GoshScriptPath = Join-Path $moduleRoot 'gosh.ps1'
+    $script:NewGoshModulePath = Join-Path $moduleRoot 'New-BoltModule.ps1'
+    $script:BoltScriptPath = Join-Path $moduleRoot 'bolt.ps1'
 
     # Helper function to get a temp module path
     function Get-TempModulePath {
@@ -33,7 +33,7 @@ BeforeAll {
     }
 }
 
-Describe 'New-GoshModule.ps1 Script Validation' -Tag 'Core' {
+Describe 'New-BoltModule.ps1 Script Validation' -Tag 'Core' {
     It 'Should exist and be a valid PowerShell script' {
         $script:NewGoshModulePath | Should -Exist
         { & $script:NewGoshModulePath -? } | Should -Not -Throw
@@ -61,7 +61,7 @@ Describe 'Parameter Sets' -Tag 'Core' {
         try {
             $output = & $script:NewGoshModulePath -Install -ModuleOutputPath $tempPath -NoImport *>&1 | Out-String
             $LASTEXITCODE | Should -Be 0
-            $output | Should -Match 'Gosh module installed successfully'
+            $output | Should -Match 'Bolt module installed successfully'
         }
         finally {
             Remove-TempModulePath -Path $tempPath
@@ -85,11 +85,11 @@ Describe 'Module Installation' -Tag 'Core' {
             $LASTEXITCODE | Should -Be 0
             
             # Check that module directory was created
-            $modulePath = Join-Path $tempPath "Gosh"
+            $modulePath = Join-Path $tempPath "Bolt"
             $modulePath | Should -Exist
             
             # Check that required files exist
-            Join-Path $modulePath "gosh-core.ps1" | Should -Exist
+            Join-Path $modulePath "bolt-core.ps1" | Should -Exist
             Join-Path $modulePath "Gosh.psm1" | Should -Exist
         }
         finally {
@@ -97,16 +97,16 @@ Describe 'Module Installation' -Tag 'Core' {
         }
     }
 
-    It 'Should create gosh-core.ps1 from gosh.ps1' {
+    It 'Should create bolt-core.ps1 from bolt.ps1' {
         $tempPath = Get-TempModulePath
         try {
             & $script:NewGoshModulePath -Install -ModuleOutputPath $tempPath -NoImport 2>&1 | Out-Null
             
-            $goshCorePath = Join-Path $tempPath "Gosh" "gosh-core.ps1"
+            $goshCorePath = Join-Path $tempPath "Bolt" "bolt-core.ps1"
             $goshCorePath | Should -Exist
             
-            # Verify it's a copy of gosh.ps1
-            $originalContent = Get-Content $script:GoshScriptPath -Raw
+            # Verify it's a copy of bolt.ps1
+            $originalContent = Get-Content $script:BoltScriptPath -Raw
             $coreContent = Get-Content $goshCorePath -Raw
             $coreContent | Should -Be $originalContent
         }
@@ -120,12 +120,12 @@ Describe 'Module Installation' -Tag 'Core' {
         try {
             & $script:NewGoshModulePath -Install -ModuleOutputPath $tempPath -NoImport 2>&1 | Out-Null
             
-            $moduleManifestPath = Join-Path $tempPath "Gosh" "Gosh.psm1"
+            $moduleManifestPath = Join-Path $tempPath "Bolt" "Gosh.psm1"
             $moduleManifestPath | Should -Exist
             
             # Verify module manifest contains key components
             $manifestContent = Get-Content $moduleManifestPath -Raw
-            $manifestContent | Should -Match 'function Invoke-Gosh'
+            $manifestContent | Should -Match 'function Invoke-Bolt'
             $manifestContent | Should -Match 'function Find-BuildDirectory'
             $manifestContent | Should -Match 'Export-ModuleMember'
             $manifestContent | Should -Match 'Set-Alias -Name gosh'
@@ -169,7 +169,7 @@ Describe 'Module Uninstallation' -Tag 'Core' {
         $output = & $script:NewGoshModulePath -Uninstall -Force *>&1 | Out-String
         # When no module is found, should return exit code 1
         if ($LASTEXITCODE -eq 1) {
-            $output | Should -Match 'Gosh module is not installed'
+            $output | Should -Match 'Bolt module is not installed'
         }
     }
 
@@ -180,7 +180,7 @@ Describe 'Module Uninstallation' -Tag 'Core' {
             & $script:NewGoshModulePath -Install -ModuleOutputPath $tempPath -NoImport 2>&1 | Out-Null
             
             # Verify installation
-            $modulePath = Join-Path $tempPath "Gosh"
+            $modulePath = Join-Path $tempPath "Bolt"
             $modulePath | Should -Exist
             
             # Note: The uninstall function only checks standard paths, not custom ones

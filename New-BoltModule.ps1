@@ -3,16 +3,16 @@ using namespace System.Management.Automation
 
 <#
 .SYNOPSIS
-    Gosh! Module builder and installer
+    Bolt! Module builder and installer
 .DESCRIPTION
-    Manages the Gosh PowerShell module installation, uninstallation, and building.
+    Manages the Bolt PowerShell module installation, uninstallation, and building.
     This script handles creating the module structure, copying files, and managing
     module paths across different platforms (Windows, Linux, macOS).
 .PARAMETER Install
-    Install Gosh as a PowerShell module for the current user. This enables the
-    'gosh' command to be used globally from any directory.
+    Install Bolt as a PowerShell module for the current user. This enables the
+    'bolt' command to be used globally from any directory.
 .PARAMETER Uninstall
-    Remove Gosh from the PowerShell module installation. Automatically detects all
+    Remove Bolt from the PowerShell module installation. Automatically detects all
     installed versions and removes them.
 .PARAMETER ModuleOutputPath
     Specify a custom path where the module should be installed. If not provided,
@@ -24,7 +24,7 @@ using namespace System.Management.Automation
     Skip confirmation prompt before uninstalling. Used with -Uninstall parameter.
 .EXAMPLE
     .\New-GoshModule.ps1 -Install
-    Installs Gosh as a PowerShell module for the current user.
+    Installs Bolt as a PowerShell module for the current user.
 .EXAMPLE
     .\New-GoshModule.ps1 -Install -NoImport
     Installs the module without importing it (useful for build scenarios).
@@ -33,10 +33,10 @@ using namespace System.Management.Automation
     Installs the module to a custom path.
 .EXAMPLE
     .\New-GoshModule.ps1 -Uninstall
-    Removes Gosh from all installed locations.
+    Removes Bolt from all installed locations.
 .EXAMPLE
     .\New-GoshModule.ps1 -Uninstall -Force
-    Removes Gosh without confirmation prompt.
+    Removes Bolt without confirmation prompt.
 #>
 [CmdletBinding(DefaultParameterSetName = 'Install')]
 param(
@@ -61,13 +61,13 @@ param(
 function Install-GoshModule {
     <#
     .SYNOPSIS
-        Installs Gosh as a PowerShell module for the current user
+        Installs Bolt as a PowerShell module for the current user
     .DESCRIPTION
         Creates a PowerShell module in the user module path:
         - Windows: ~/Documents/PowerShell/Modules/Gosh/
         - Linux/macOS: ~/.local/share/powershell/Modules/Gosh/
 
-        The module allows running 'gosh' commands from any directory and
+        The module allows running 'bolt' commands from any directory and
         searches upward from the current directory for .build/ folders.
     .PARAMETER ModuleOutputPath
         Custom path where the module should be installed. If not provided,
@@ -82,11 +82,11 @@ function Install-GoshModule {
         [switch]$NoImport
     )
 
-    Write-Host "Installing Gosh as a PowerShell module..." -ForegroundColor Cyan
+    Write-Host "Installing Bolt as a PowerShell module..." -ForegroundColor Cyan
     Write-Host ""
 
     # Determine module installation path (cross-platform)
-    $moduleName = "Gosh"
+    $moduleName = "Bolt"
 
     if ($ModuleOutputPath) {
         # Use custom path
@@ -117,18 +117,18 @@ function Install-GoshModule {
     New-Item -Path $userModulePath -ItemType Directory -Force | Out-Null
     Write-Host "Created module directory: $userModulePath" -ForegroundColor Gray
 
-    # Copy gosh.ps1 to the module directory (so it can be invoked as a script)
-    $goshScriptPath = Join-Path $PSScriptRoot "gosh.ps1"
+    # Copy bolt.ps1 to the module directory (so it can be invoked as a script)
+    $goshScriptPath = Join-Path $PSScriptRoot "bolt.ps1"
     if (-not (Test-Path $goshScriptPath)) {
-        Write-Error "Could not find gosh.ps1 at: $goshScriptPath"
+        Write-Error "Could not find bolt.ps1 at: $goshScriptPath"
         return $false
     }
 
-    $goshCorePath = Join-Path $userModulePath "gosh-core.ps1"
+    $goshCorePath = Join-Path $userModulePath "bolt-core.ps1"
     Copy-Item -Path $goshScriptPath -Destination $goshCorePath -Force
     Write-Host "Copied gosh core script to module" -ForegroundColor Gray
 
-    # Generate module script (.psm1) that wraps gosh.ps1 with upward directory search
+    # Generate module script (.psm1) that wraps bolt.ps1 with upward directory search
     $moduleScriptPath = Join-Path $userModulePath "$moduleName.psm1"
 
     $moduleScript = @"
@@ -137,10 +137,10 @@ using namespace System.Management.Automation
 
 <#
 .SYNOPSIS
-    Gosh! Build orchestration for PowerShell (Module Version)
+    Bolt! Build orchestration for PowerShell (Module Version)
 .DESCRIPTION
-    PowerShell module version of Gosh that searches upward from the current directory
-    for .build/ folders, enabling 'gosh' command usage from any project directory.
+    PowerShell module version of Bolt that searches upward from the current directory
+    for .build/ folders, enabling 'bolt' command usage from any project directory.
 #>
 
 function Find-BuildDirectory {
@@ -191,12 +191,12 @@ function Find-BuildDirectory {
     return `$null
 }
 
-function Invoke-Gosh {
+function Invoke-Bolt {
     <#
     .SYNOPSIS
-        Gosh! Build orchestration
+        Bolt! Build orchestration
     .DESCRIPTION
-        Executes Gosh build tasks. When running as a module, searches upward from
+        Executes Bolt build tasks. When running as a module, searches upward from
         the current directory for .build/ folder.
     .PARAMETER Task
         One or more task names to execute
@@ -249,8 +249,8 @@ function Invoke-Gosh {
     Write-Verbose "Project root: `$projectRoot"
     Write-Verbose "Build path: `$buildPath"
 
-    # Get path to the gosh-core.ps1 script in this module
-    `$goshCorePath = Join-Path `$PSScriptRoot "gosh-core.ps1"
+    # Get path to the bolt-core.ps1 script in this module
+    `$goshCorePath = Join-Path `$PSScriptRoot "bolt-core.ps1"
 
     # Build parameter hashtable for splatting
     `$goshParams = @{}
@@ -262,15 +262,15 @@ function Invoke-Gosh {
     if (`$NewTask) { `$goshParams['NewTask'] = `$NewTask }
     if (`$Arguments) { `$goshParams['Arguments'] = `$Arguments }
 
-    # Execute gosh-core.ps1 from the project root directory
+    # Execute bolt-core.ps1 from the project root directory
     # Set environment variable to signal module mode and pass the project root
     try {
         Push-Location `$projectRoot
 
-        # Set environment variable to tell gosh.ps1 it's running in module mode
-        `$env:GOSH_PROJECT_ROOT = `$projectRoot
+        # Set environment variable to tell bolt.ps1 it's running in module mode
+        `$env:BOLT_PROJECT_ROOT = `$projectRoot
 
-        # Execute gosh.ps1 with proper parameter splatting
+        # Execute bolt.ps1 with proper parameter splatting
         & `$goshCorePath @goshParams
 
         # Propagate exit code
@@ -280,14 +280,14 @@ function Invoke-Gosh {
 
     } finally {
         # Clean up environment variable
-        Remove-Item Env:GOSH_PROJECT_ROOT -ErrorAction SilentlyContinue
+        Remove-Item Env:BOLT_PROJECT_ROOT -ErrorAction SilentlyContinue
         Pop-Location
     }
 }
 
 # Create alias first, then export
-Set-Alias -Name gosh -Value Invoke-Gosh
-Export-ModuleMember -Function Invoke-Gosh -Alias gosh
+Set-Alias -Name gosh -Value Invoke-Bolt
+Export-ModuleMember -Function Invoke-Bolt -Alias gosh
 
 # Register argument completer for tab completion
 `$taskCompleter = {
@@ -330,7 +330,7 @@ Export-ModuleMember -Function Invoke-Gosh -Alias gosh
         }
     }
 
-    # Core tasks (defined in gosh-core.ps1)
+    # Core tasks (defined in bolt-core.ps1)
     `$coreTasks = @('check-index', 'check')
 
     # Combine and get unique task names
@@ -343,15 +343,15 @@ Export-ModuleMember -Function Invoke-Gosh -Alias gosh
     }
 }
 
-Register-ArgumentCompleter -CommandName 'Invoke-Gosh' -ParameterName 'Task' -ScriptBlock `$taskCompleter
-Register-ArgumentCompleter -CommandName 'gosh' -ParameterName 'Task' -ScriptBlock `$taskCompleter
+Register-ArgumentCompleter -CommandName 'Invoke-Bolt' -ParameterName 'Task' -ScriptBlock `$taskCompleter
+Register-ArgumentCompleter -CommandName 'bolt' -ParameterName 'Task' -ScriptBlock `$taskCompleter
 "@
 
     $moduleScript | Out-File -FilePath $moduleScriptPath -Encoding UTF8 -Force
     Write-Host "Created module script: $moduleName.psm1" -ForegroundColor Gray
 
     Write-Host ""
-    Write-Host "✓ Gosh module installed successfully!" -ForegroundColor Green
+    Write-Host "✓ Bolt module installed successfully!" -ForegroundColor Green
     Write-Host ""
 
     if (-not $NoImport) {
@@ -361,7 +361,7 @@ Register-ArgumentCompleter -CommandName 'gosh' -ParameterName 'Task' -ScriptBloc
             Import-Module $userModulePath -Force
             Write-Host "✓ Module imported successfully!" -ForegroundColor Green
             Write-Host ""
-            Write-Host "You can now use 'gosh' command from any directory." -ForegroundColor Yellow
+            Write-Host "You can now use 'bolt' command from any directory." -ForegroundColor Yellow
             Write-Host "Examples:" -ForegroundColor Gray
             Write-Host "  gosh build" -ForegroundColor Gray
             Write-Host "  gosh -ListTasks" -ForegroundColor Gray
@@ -388,7 +388,7 @@ Register-ArgumentCompleter -CommandName 'gosh' -ParameterName 'Task' -ScriptBloc
     Write-Host ""
     Write-Host "Module location: $userModulePath" -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host "To update the module after modifying gosh.ps1, run: .\New-GoshModule.ps1 -Install" -ForegroundColor DarkGray
+    Write-Host "To update the module after modifying bolt.ps1, run: .\New-GoshModule.ps1 -Install" -ForegroundColor DarkGray
 
     return $true
 }
@@ -396,9 +396,9 @@ Register-ArgumentCompleter -CommandName 'gosh' -ParameterName 'Task' -ScriptBloc
 function Invoke-UninstallGoshModule {
     <#
     .SYNOPSIS
-        Removes Gosh from all installed module locations
+        Removes Bolt from all installed module locations
     .DESCRIPTION
-        Uninstalls Gosh from the PowerShell module installation. Automatically detects
+        Uninstalls Bolt from the PowerShell module installation. Automatically detects
         and removes all installed versions from default user paths. If removal fails,
         creates a recovery file with manual removal instructions.
     .PARAMETER Force
@@ -409,11 +409,11 @@ function Invoke-UninstallGoshModule {
         [switch]$Force
     )
 
-    Write-Host "Gosh Module Uninstallation" -ForegroundColor Cyan
+    Write-Host "Bolt Module Uninstallation" -ForegroundColor Cyan
     Write-Host ""
 
-    # Detect all Gosh module installations (current platform only)
-    $moduleName = "Gosh"
+    # Detect all Bolt module installations (current platform only)
+    $moduleName = "Bolt"
     $installLocations = @()
 
     # Build list of potential installation paths based on current platform
@@ -442,7 +442,7 @@ function Invoke-UninstallGoshModule {
     }
 
     if ($installLocations.Count -eq 0) {
-        Write-Host "⚠ Gosh module is not installed in any known location." -ForegroundColor Yellow
+        Write-Host "⚠ Bolt module is not installed in any known location." -ForegroundColor Yellow
         Write-Host ""
         Write-Host "Checked paths:" -ForegroundColor Gray
         if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
@@ -458,7 +458,7 @@ function Invoke-UninstallGoshModule {
     }
 
     # Display installations found
-    Write-Host "Found $($installLocations.Count) Gosh installation(s):" -ForegroundColor Yellow
+    Write-Host "Found $($installLocations.Count) Bolt installation(s):" -ForegroundColor Yellow
     Write-Host ""
     foreach ($location in $installLocations) {
         Write-Host "  - $location" -ForegroundColor Gray
@@ -467,7 +467,7 @@ function Invoke-UninstallGoshModule {
 
     # Confirm uninstallation
     if (-not $Force) {
-        $response = Read-Host "Uninstall Gosh from all locations? (y/n)"
+        $response = Read-Host "Uninstall Bolt from all locations? (y/n)"
         if ($response -ne 'y' -and $response -ne 'Y') {
             Write-Host "Uninstallation cancelled." -ForegroundColor Yellow
             return $false
@@ -484,7 +484,7 @@ function Invoke-UninstallGoshModule {
     # Remove module from memory if currently imported
     $goshModule = Get-Module -Name $moduleName -ErrorAction SilentlyContinue
     if ($goshModule) {
-        Write-Host "Removing Gosh module from current session..." -ForegroundColor Gray
+        Write-Host "Removing Bolt module from current session..." -ForegroundColor Gray
         Remove-Module -Name $moduleName -Force -ErrorAction SilentlyContinue
     }
 
@@ -511,9 +511,9 @@ function Invoke-UninstallGoshModule {
     # Handle results
     if ($failureLocations.Count -eq 0) {
         # Complete success
-        Write-Host "✓ Gosh module uninstalled successfully from all locations!" -ForegroundColor Green
+        Write-Host "✓ Bolt module uninstalled successfully from all locations!" -ForegroundColor Green
         Write-Host ""
-        Write-Host "The 'gosh' command will no longer be available." -ForegroundColor Yellow
+        Write-Host "The 'bolt' command will no longer be available." -ForegroundColor Yellow
         Write-Host "You may need to restart PowerShell for changes to take effect." -ForegroundColor Yellow
         Write-Host ""
         return $true

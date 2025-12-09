@@ -26,13 +26,13 @@ This document contains **16 total security items**: **7 code-level fixes (all co
 **Summary of Code-Level Changes (Complete ✅):**
 | Priority | Action Item | File | Status | Test Coverage |
 |----------|-------------|------|--------|---------------|
-| P0 | TaskDirectory Validation | `gosh.ps1:84-90` | ✅ **COMPLETE** | 6/6 tests passing |
-| P0 | Path Sanitization | `gosh.ps1:651-666` | ✅ **COMPLETE** | 3/3 tests passing |
-| P0 | Task Name Validation | `gosh.ps1:54-69,93-104,393-406` | ✅ **COMPLETE** | 14/14 tests passing |
-| P1 | Git Output Sanitization | `gosh.ps1:227-285` | ✅ **COMPLETE** | 15/15 tests passing |
-| P1 | Runtime Path Validation | `gosh.ps1:475-498` | ✅ **COMPLETE** | 15/15 tests passing |
-| P2 | Atomic File Creation | `gosh.ps1:807-819` | ✅ **COMPLETE** | 14/14 tests passing |
-| P2 | Execution Policy Check | `gosh.ps1:108-121` | ✅ **COMPLETE** | 15/15 tests passing |
+| P0 | TaskDirectory Validation | `bolt.ps1:84-90` | ✅ **COMPLETE** | 6/6 tests passing |
+| P0 | Path Sanitization | `bolt.ps1:651-666` | ✅ **COMPLETE** | 3/3 tests passing |
+| P0 | Task Name Validation | `bolt.ps1:54-69,93-104,393-406` | ✅ **COMPLETE** | 14/14 tests passing |
+| P1 | Git Output Sanitization | `bolt.ps1:227-285` | ✅ **COMPLETE** | 15/15 tests passing |
+| P1 | Runtime Path Validation | `bolt.ps1:475-498` | ✅ **COMPLETE** | 15/15 tests passing |
+| P2 | Atomic File Creation | `bolt.ps1:807-819` | ✅ **COMPLETE** | 14/14 tests passing |
+| P2 | Execution Policy Check | `bolt.ps1:108-121` | ✅ **COMPLETE** | 15/15 tests passing |
 
 **Summary of Operational Security (In Progress 🟡):**
 | Priority | Finding | Category | Status |
@@ -59,7 +59,7 @@ This document contains **16 total security items**: **7 code-level fixes (all co
 **Security Status:** 🟢 **ALL CODE-LEVEL SECURITY ACTION ITEMS COMPLETE** (October 24, 2025)  
 **Operational Security Status:** � **ALL P0 CRITICAL OPERATIONAL ITEMS COMPLETE** (October 26, 2025)
 
-This document contains a comprehensive security analysis of `gosh.ps1`, identifying **16 total security items** across two categories:
+This document contains a comprehensive security analysis of `bolt.ps1`, identifying **16 total security items** across two categories:
 
 ### Part 1: Code-Level Security (Complete ✅)
 **7 actionable security fixes** have been implemented with comprehensive test coverage. The most significant issues involved arbitrary code execution through dynamic ScriptBlock creation and unvalidated task script loading.
@@ -95,7 +95,7 @@ This document contains a comprehensive security analysis of `gosh.ps1`, identify
 - **October 25, 2025:** Operational security evaluation completed, 13 findings documented
 - **October 26, 2025:** Integrated operational security recommendations into this document
 
-**Important Context:** Gosh is designed as a **local development tool** for **trusted environments**. Many identified risks are acceptable trade-offs for a developer tool where users already have full system access. However, the implemented mitigations provide defense-in-depth protection.
+**Important Context:** Bolt is designed as a **local development tool** for **trusted environments**. Many identified risks are acceptable trade-offs for a developer tool where users already have full system access. However, the implemented mitigations provide defense-in-depth protection.
 
 ---
 
@@ -110,7 +110,7 @@ Below are **specific, actionable tasks** that can be assigned to an AI coding ag
 ### Priority 0 (Critical) - Implement Immediately
 
 #### Action Item #1: Add TaskDirectory Parameter Validation
-**File:** `gosh.ps1`, Lines 84-90  
+**File:** `bolt.ps1`, Lines 84-90  
 **Status:** ✅ **IMPLEMENTED** (October 20, 2025)
 
 **Implemented Code:**
@@ -156,15 +156,15 @@ Below are **specific, actionable tasks** that can be assigned to an AI coding ag
 **Test Cases:**
 ```powershell
 # Should succeed
-.\gosh.ps1 -TaskDirectory ".build" -ListTasks
-.\gosh.ps1 -TaskDirectory "custom-tasks" -ListTasks
-.\gosh.ps1 -TaskDirectory "build_v2" -ListTasks
+.\bolt.ps1 -TaskDirectory ".build" -ListTasks
+.\bolt.ps1 -TaskDirectory "custom-tasks" -ListTasks
+.\bolt.ps1 -TaskDirectory "build_v2" -ListTasks
 
 # Should fail with validation error
-.\gosh.ps1 -TaskDirectory "..\..\" -ListTasks
-.\gosh.ps1 -TaskDirectory "C:\Windows\System32" -ListTasks
-.\gosh.ps1 -TaskDirectory "tasks/../../../etc" -ListTasks
-.\gosh.ps1 -TaskDirectory "tasks;rm-rf" -ListTasks
+.\bolt.ps1 -TaskDirectory "..\..\" -ListTasks
+.\bolt.ps1 -TaskDirectory "C:\Windows\System32" -ListTasks
+.\bolt.ps1 -TaskDirectory "tasks/../../../etc" -ListTasks
+.\bolt.ps1 -TaskDirectory "tasks;rm-rf" -ListTasks
 ```
 
 **Acceptance Criteria:**
@@ -177,7 +177,7 @@ Below are **specific, actionable tasks** that can be assigned to an AI coding ag
 ---
 
 #### Action Item #2: Add Path Sanitization in Invoke-Task
-**File:** `gosh.ps1`, Lines 651-666 (Invoke-Task function)  
+**File:** `bolt.ps1`, Lines 651-666 (Invoke-Task function)  
 **Status:** ✅ **IMPLEMENTED** (October 20, 2025)
 
 **Implemented Code:**
@@ -291,7 +291,7 @@ Describe "Path Injection Protection" {
 ---
 
 #### Action Item #3: Add Task Name Validation
-**File:** `gosh.ps1`, Multiple Locations  
+**File:** `bolt.ps1`, Multiple Locations  
 **Status:** ✅ **IMPLEMENTED** (October 20, 2025)
 
 **Implementation Locations:**
@@ -375,9 +375,9 @@ if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
 - ✅ Task file discovery validates and warns about invalid names
 
 **Original Requirement:**  
-**File:** `gosh.ps1`, Line 71 (NewTask parameter) and Lines 347-352 (Get-TaskMetadata)
+**File:** `bolt.ps1`, Line 71 (NewTask parameter) and Lines 347-352 (Get-TaskMetadata)
 **Original Requirement:**  
-**File:** `gosh.ps1`, Line 71 (NewTask parameter) and Lines 347-352 (Get-TaskMetadata)
+**File:** `bolt.ps1`, Line 71 (NewTask parameter) and Lines 347-352 (Get-TaskMetadata)
 
 **Before Implementation:**
 ```powershell
@@ -399,7 +399,7 @@ if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
 [string]$NewTask,
 ```
 
-**Additional Change - File:** `gosh.ps1`, Lines 347-352 (Get-TaskMetadata function)  
+**Additional Change - File:** `bolt.ps1`, Lines 347-352 (Get-TaskMetadata function)  
 **Current Code:**
 ```powershell
 if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
@@ -437,18 +437,18 @@ if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
 **Test Cases:**
 ```powershell
 # Should succeed
-.\gosh.ps1 -NewTask "my-task"
-.\gosh.ps1 -NewTask "build"
-.\gosh.ps1 -NewTask "deploy-prod"
-.\gosh.ps1 -NewTask "test123"
+.\bolt.ps1 -NewTask "my-task"
+.\bolt.ps1 -NewTask "build"
+.\bolt.ps1 -NewTask "deploy-prod"
+.\bolt.ps1 -NewTask "test123"
 
 # Should fail with validation error
-.\gosh.ps1 -NewTask "My-Task"           # Uppercase
-.\gosh.ps1 -NewTask "task name"         # Space
-.\gosh.ps1 -NewTask "task;rm-rf"        # Semicolon
-.\gosh.ps1 -NewTask "task`$(evil)"      # Command injection attempt
-.\gosh.ps1 -NewTask "task\x1b[31m"      # Escape sequences
-.\gosh.ps1 -NewTask ("a" * 51)          # Too long
+.\bolt.ps1 -NewTask "My-Task"           # Uppercase
+.\bolt.ps1 -NewTask "task name"         # Space
+.\bolt.ps1 -NewTask "task;rm-rf"        # Semicolon
+.\bolt.ps1 -NewTask "task`$(evil)"      # Command injection attempt
+.\bolt.ps1 -NewTask "task\x1b[31m"      # Escape sequences
+.\bolt.ps1 -NewTask ("a" * 51)          # Too long
 
 # Test task name parsing from files
 Describe "Task Name Validation from Files" {
@@ -478,7 +478,7 @@ Describe "Task Name Validation from Files" {
 ### Priority 1 (High) - Implement Soon
 
 #### Action Item #4: Sanitize Git Output
-**File:** `gosh.ps1`, Lines 227-285 (Get-GitStatus and Invoke-CheckGitIndex functions)  
+**File:** `bolt.ps1`, Lines 227-285 (Get-GitStatus and Invoke-CheckGitIndex functions)  
 **Status:** ✅ **IMPLEMENTED** (October 24, 2025)
 
 **Implementation Summary:**
@@ -533,7 +533,7 @@ return [PSCustomObject]@{
 ```
 
 **Original Requirement:**
-**File:** `gosh.ps1`, Lines 227-285  
+**File:** `bolt.ps1`, Lines 227-285  
 **Analysis:** The original concern was that git output could contain malicious ANSI escape sequences or control characters from crafted filenames. However, the current implementation already uses safe patterns:
 - Output stored in variables (not executed)
 - Machine-readable `--porcelain` format
@@ -582,7 +582,7 @@ After comprehensive testing (15 tests), the existing implementation was verified
 ---
 
 #### Action Item #5: Add Runtime Path Validation in Get-AllTasks
-**File:** `gosh.ps1`, Lines 475-498 (Get-AllTasks function)  
+**File:** `bolt.ps1`, Lines 475-498 (Get-AllTasks function)  
 **Status:** ✅ **IMPLEMENTED** (October 24, 2025)
 
 **Implementation Summary:**
@@ -678,7 +678,7 @@ $projectTasks = Get-ProjectTasks -BuildPath $buildPath
 ### Priority 2 (Medium) - Implement When Possible
 
 #### Action Item #6: Add Atomic File Creation in NewTask
-**File:** `gosh.ps1`, Lines 685-690  
+**File:** `bolt.ps1`, Lines 685-690  
 **Current Code:**
 ```powershell
 # Check if file already exists
@@ -721,15 +721,15 @@ try {
 Describe "Atomic Task File Creation" {
     It "Should create new task file" {
         $taskName = "test-atomic-$(Get-Random)"
-        .\gosh.ps1 -NewTask $taskName
+        .\bolt.ps1 -NewTask $taskName
         Test-Path ".build\Invoke-$taskName.ps1" | Should -Be $true
         Remove-Item ".build\Invoke-$taskName.ps1"
     }
     
     It "Should fail if file already exists" {
         $taskName = "test-existing-$(Get-Random)"
-        .\gosh.ps1 -NewTask $taskName
-        { .\gosh.ps1 -NewTask $taskName } | Should -Throw "*already exists*"
+        .\bolt.ps1 -NewTask $taskName
+        { .\bolt.ps1 -NewTask $taskName } | Should -Throw "*already exists*"
         Remove-Item ".build\Invoke-$taskName.ps1"
     }
     
@@ -750,7 +750,7 @@ Describe "Atomic Task File Creation" {
 ---
 
 #### Action Item #7: Add Execution Policy Awareness
-**File:** `gosh.ps1`, After line 80 (after parameter block, before main logic)
+**File:** `bolt.ps1`, After line 80 (after parameter block, before main logic)
 
 **Required Change:** Add execution policy check:
 ```powershell
@@ -771,19 +771,19 @@ if ($executionPolicy -eq 'Unrestricted' -or $executionPolicy -eq 'Bypass') {
 Describe "Execution Policy Awareness" {
     It "Should warn about permissive policies" {
         Mock Get-ExecutionPolicy { return 'Unrestricted' }
-        $output = .\gosh.ps1 -ListTasks -Verbose 4>&1
+        $output = .\bolt.ps1 -ListTasks -Verbose 4>&1
         $output | Should -Match "permissive execution policy"
     }
     
     It "Should warn about restricted policy" {
         Mock Get-ExecutionPolicy { return 'Restricted' }
-        $output = .\gosh.ps1 -ListTasks 3>&1
+        $output = .\bolt.ps1 -ListTasks 3>&1
         $output | Should -Match "execution policy is set to Restricted"
     }
     
     It "Should run normally with RemoteSigned" {
         Mock Get-ExecutionPolicy { return 'RemoteSigned' }
-        { .\gosh.ps1 -ListTasks } | Should -Not -Throw
+        { .\bolt.ps1 -ListTasks } | Should -Not -Throw
     }
 }
 ```
@@ -803,19 +803,19 @@ Use this checklist to track implementation progress:
 
 ### Priority 0 (Critical)
 - [x] **Action Item #1**: TaskDirectory Parameter Validation
-  - [x] Code implemented (lines 84-90 in gosh.ps1)
+  - [x] Code implemented (lines 84-90 in bolt.ps1)
   - [x] Tests written and passing (6/6 tests passing)
   - [x] Documentation updated (SECURITY.md)
   - [ ] PR reviewed and merged
 
 - [x] **Action Item #2**: Path Sanitization in Invoke-Task
-  - [x] Code implemented (lines 651-666 in gosh.ps1)
+  - [x] Code implemented (lines 651-666 in bolt.ps1)
   - [x] Tests written and passing (3/3 tests passing)
   - [x] Documentation updated (SECURITY.md)
   - [ ] PR reviewed and merged
 
 - [x] **Action Item #3**: Task Name Validation
-  - [x] Code implemented (lines 54-69, 93-104, 393-406 in gosh.ps1)
+  - [x] Code implemented (lines 54-69, 93-104, 393-406 in bolt.ps1)
   - [x] Tests written and passing (14/14 tests passing)
   - [x] Documentation updated (SECURITY.md)
   - [ ] PR reviewed and merged
@@ -828,20 +828,20 @@ Use this checklist to track implementation progress:
   - [ ] PR reviewed and merged
 
 - [x] **Action Item #5**: Runtime Path Validation
-  - [x] Code implemented (lines 475-498 in gosh.ps1)
+  - [x] Code implemented (lines 475-498 in bolt.ps1)
   - [x] Tests written and passing (15/15 tests passing)
   - [x] Documentation updated (SECURITY.md)
   - [ ] PR reviewed and merged
 
 ### Priority 2 (Medium)
 - [x] **Action Item #6**: Atomic File Creation
-  - [x] Code implemented (lines 807-819 in gosh.ps1)
+  - [x] Code implemented (lines 807-819 in bolt.ps1)
   - [x] Tests written and passing (14/14 tests passing)
   - [x] Documentation updated (SECURITY.md)
   - [ ] PR reviewed and merged
 
 - [x] **Action Item #7**: Execution Policy Awareness
-  - [x] Code implemented (lines 108-121 in gosh.ps1)
+  - [x] Code implemented (lines 108-121 in bolt.ps1)
   - [x] Tests written and passing (15/15 tests passing)
   - [x] Documentation updated (SECURITY.md)
   - [ ] PR reviewed and merged
@@ -852,12 +852,12 @@ Use this checklist to track implementation progress:
 
 ### 1. Arbitrary Code Execution via Dynamic ScriptBlock Creation
 
-**Location:** `gosh.ps1`, Lines 641-658 (Invoke-Task function)
+**Location:** `bolt.ps1`, Lines 641-658 (Invoke-Task function)
 
 **Code:**
 ```powershell
 $scriptContent = @"
-# Injected Gosh utility functions
+# Injected Bolt utility functions
 $($utilityDefinitions -join "`n")
 
 # Set task context variables
@@ -913,7 +913,7 @@ if (-not $scriptPath.StartsWith($PSScriptRoot)) {
 
 ### 2. Unvalidated Script Execution from File System
 
-**Location:** `gosh.ps1`, Lines 377-379 (Get-ProjectTasks function)
+**Location:** `bolt.ps1`, Lines 377-379 (Get-ProjectTasks function)
 
 **Code:**
 ```powershell
@@ -981,7 +981,7 @@ if ($taskName -notin $allowedTasks) {
 
 ### 3. Path Traversal Vulnerability
 
-**Location:** `gosh.ps1`, Lines 408-413 (Get-AllTasks function)
+**Location:** `bolt.ps1`, Lines 408-413 (Get-AllTasks function)
 
 **Code:**
 ```powershell
@@ -1004,8 +1004,8 @@ $projectTasks = Get-ProjectTasks -BuildPath $buildPath
 **Attack Vector:**
 ```powershell
 # Attacker provides malicious path
-.\gosh.ps1 -TaskDirectory "..\..\..\..\Windows\System32" malicious-task
-.\gosh.ps1 -TaskDirectory "C:\MaliciousScripts" evil-task
+.\bolt.ps1 -TaskDirectory "..\..\..\..\Windows\System32" malicious-task
+.\bolt.ps1 -TaskDirectory "C:\MaliciousScripts" evil-task
 ```
 
 **Likelihood:** High (parameter is user-controlled via command line)
@@ -1039,7 +1039,7 @@ if (-not $resolvedPath.StartsWith($PSScriptRoot, [StringComparison]::OrdinalIgno
 
 ### 4. Dynamic Function Injection
 
-**Location:** `gosh.ps1`, Lines 632-637 (Invoke-Task function)
+**Location:** `bolt.ps1`, Lines 632-637 (Invoke-Task function)
 
 **Code:**
 ```powershell
@@ -1092,7 +1092,7 @@ foreach ($util in $utilities.GetEnumerator()) {
 
 ### 5. Insufficient Input Validation on Task Names
 
-**Location:** `gosh.ps1`, Lines 347-349 (Get-TaskMetadata function)
+**Location:** `bolt.ps1`, Lines 347-349 (Get-TaskMetadata function)
 
 **Code:**
 ```powershell
@@ -1155,7 +1155,7 @@ if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
 
 ### 6. Command Injection Risk in Git Operations
 
-**Location:** `gosh.ps1`, Lines 234, 245 (Get-GitStatus function)
+**Location:** `bolt.ps1`, Lines 234, 245 (Get-GitStatus function)
 
 **Code:**
 ```powershell
@@ -1254,11 +1254,11 @@ This section contains operational security, supply chain, and GitHub platform re
 
 **Key Contents:**
 ```
-Contact: https://github.com/motowilliams/gosh/security/advisories/new
+Contact: https://github.com/motowilliams/bolt/security/advisories/new
 Expires: 2026-10-26T00:00:00.000Z
 Preferred-Languages: en
 Canonical: https://raw.githubusercontent.com/motowilliams/gosh/main/.well-known/security.txt
-Policy: https://github.com/motowilliams/gosh/blob/main/SECURITY.md
+Policy: https://github.com/motowilliams/bolt/blob/main/SECURITY.md
 ```
 
 **Documentation Updates:**
@@ -1268,8 +1268,8 @@ Policy: https://github.com/motowilliams/gosh/blob/main/SECURITY.md
 
 **How to Report Vulnerabilities:**
 Security researchers can now easily find our vulnerability disclosure policy at:
-- **Primary**: https://github.com/motowilliams/gosh/security/advisories/new (GitHub Security Advisories)
-- **Policy**: https://github.com/motowilliams/gosh/blob/main/SECURITY.md (detailed security documentation)
+- **Primary**: https://github.com/motowilliams/bolt/security/advisories/new (GitHub Security Advisories)
+- **Policy**: https://github.com/motowilliams/bolt/blob/main/SECURITY.md (detailed security documentation)
 - **RFC 9116**: https://raw.githubusercontent.com/motowilliams/gosh/main/.well-known/security.txt (machine-readable)
 
 **Original Action Items:**
@@ -1300,8 +1300,8 @@ Invoke-Pester -Path "tests/security/SecurityTxt.Tests.ps1"
 Contact: security@example.com
 Expires: 2026-10-25T00:00:00.000Z
 Preferred-Languages: en
-Canonical: https://github.com/motowilliams/gosh/security.txt
-Policy: https://github.com/motowilliams/gosh/blob/main/SECURITY.md
+Canonical: https://github.com/motowilliams/bolt/security.txt
+Policy: https://github.com/motowilliams/bolt/blob/main/SECURITY.md
 ```
 
 **Acceptance Criteria:**
@@ -1312,7 +1312,7 @@ Policy: https://github.com/motowilliams/gosh/blob/main/SECURITY.md
 
 **LLM Prompt for Resolution:**
 ```
-Task: Implement RFC 9116 compliant security.txt file for the Gosh project
+Task: Implement RFC 9116 compliant security.txt file for the Bolt project
 
 Context: The project needs a security policy file to facilitate responsible vulnerability disclosure. This follows RFC 9116 standard for security.txt files.
 
@@ -1322,7 +1322,7 @@ Requirements:
 3. Set expiration date 1 year from today
 4. Link to existing SECURITY.md for detailed policy
 5. Update README.md to reference the security.txt file
-6. Ensure the file is accessible at: https://github.com/motowilliams/gosh/.well-known/security.txt
+6. Ensure the file is accessible at: https://github.com/motowilliams/bolt/.well-known/security.txt
 
 Please implement this security policy file following RFC 9116 specifications and update relevant documentation.
 
@@ -1342,10 +1342,10 @@ Testing & Documentation Requirements:
 **Status:** ✅ **IMPLEMENTED** (October 26, 2025)
 
 **Implementation Summary:**
-- ✅ Write-SecurityLog function implemented (gosh.ps1:193-251)
-- ✅ Opt-in via `$env:GOSH_AUDIT_LOG=1` environment variable
-- ✅ Logs written to `.gosh/audit.log` with structured format
-- ✅ `.gosh/` added to `.gitignore` (excluded from version control)
+- ✅ Write-SecurityLog function implemented (bolt.ps1:193-251)
+- ✅ Opt-in via `$env:BOLT_AUDIT_LOG=1` environment variable
+- ✅ Logs written to `.bolt/audit.log` with structured format
+- ✅ `.bolt/` added to `.gitignore` (excluded from version control)
 - ✅ 25/26 Pester tests passing (1 skipped due to git availability)
 - ✅ Security events logged: TaskDirectoryUsage, FileCreation, TaskExecution, TaskCompletion, CommandExecution
 
@@ -1355,11 +1355,11 @@ Testing & Documentation Requirements:
 - ✅ Log file system operations (line 890, New-Item for -NewTask)
 - ✅ Log external command executions (line 349, git status)
 - ✅ Include user context (username, machine name in log format)
-- ✅ Write logs to `.gosh/audit.log` (opt-in, off by default)
+- ✅ Write logs to `.bolt/audit.log` (opt-in, off by default)
 
 **Implementation Details:**
 ```powershell
-# Write-SecurityLog function (gosh.ps1:193-251)
+# Write-SecurityLog function (bolt.ps1:193-251)
 function Write-SecurityLog {
     param(
         [string]$Event,
@@ -1368,7 +1368,7 @@ function Write-SecurityLog {
     )
     
     # Early return if logging not enabled (performance optimization)
-    if ($env:GOSH_AUDIT_LOG -ne '1') {
+    if ($env:BOLT_AUDIT_LOG -ne '1') {
         return
     }
     
@@ -1378,7 +1378,7 @@ function Write-SecurityLog {
         $machine = [Environment]::MachineName
         $entry = "$timestamp | $Severity | $user@$machine | $Event | $Details"
         
-        $logPath = Join-Path $PSScriptRoot '.gosh' 'audit.log'
+        $logPath = Join-Path $PSScriptRoot '.bolt' 'audit.log'
         $logDir = Split-Path $logPath -Parent
         
         if (-not (Test-Path -PathType Container $logDir)) {
@@ -1392,7 +1392,7 @@ function Write-SecurityLog {
     }
 }
 
-# Usage examples throughout gosh.ps1:
+# Usage examples throughout bolt.ps1:
 Write-SecurityLog -Event "TaskDirectoryUsage" -Details "Using non-default directory: $TaskDirectory"
 Write-SecurityLog -Event "FileCreation" -Details "Created task file: $fileName in $TaskDirectory"
 Write-SecurityLog -Event "TaskExecution" -Details "Task: $primaryName, Script: $($TaskInfo.ScriptPath)"
@@ -1423,15 +1423,15 @@ Write-SecurityLog -Event "CommandExecution" -Details "Executing: git status --po
 
 **Acceptance Criteria Met:**
 - ✅ Security logging function implemented with opt-in behavior
-- ✅ Opt-in via `$env:GOSH_AUDIT_LOG=1` (explicitly requires '1')
-- ✅ Logs written to `.gosh/audit.log` with structured pipe-delimited format
-- ✅ `.gosh/` added to `.gitignore` to exclude audit logs
+- ✅ Opt-in via `$env:BOLT_AUDIT_LOG=1` (explicitly requires '1')
+- ✅ Logs written to `.bolt/audit.log` with structured pipe-delimited format
+- ✅ `.bolt/` added to `.gitignore` to exclude audit logs
 - ✅ Comprehensive test coverage (25 tests validating all aspects)
 - ✅ Documentation pending (README.md needs logging usage section)
 
 **Pending Documentation Updates:**
 - Update README.md with security logging section
-- Add examples of enabling logging: `$env:GOSH_AUDIT_LOG=1; .\gosh.ps1 build`
+- Add examples of enabling logging: `$env:BOLT_AUDIT_LOG=1; .\bolt.ps1 build`
 - Document log location and format in user documentation
 - Explain what events are logged and why logging is opt-in
 
@@ -1444,7 +1444,7 @@ Write-SecurityLog -Event "CommandExecution" -Details "Executing: git status --po
 **Status:** ✅ **IMPLEMENTED** (October 26, 2025)
 
 **Implementation Summary:**
-- ✅ Test-CommandOutput function implemented (gosh.ps1:251-355)
+- ✅ Test-CommandOutput function implemented (bolt.ps1:251-355)
 - ✅ ANSI escape sequence removal (regex: `\x1b\[[0-9;]*[a-zA-Z]`)
 - ✅ Control character sanitization (preserves \n, \r, \t only)
 - ✅ Output length validation and truncation (default: 100KB)
@@ -1462,7 +1462,7 @@ Write-SecurityLog -Event "CommandExecution" -Details "Executing: git status --po
 
 **Implementation Details:**
 ```powershell
-# Test-CommandOutput function (gosh.ps1:251-355)
+# Test-CommandOutput function (bolt.ps1:251-355)
 function Test-CommandOutput {
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -1510,7 +1510,7 @@ function Test-CommandOutput {
     return $sanitized
 }
 
-# Usage in check-index task (gosh.ps1:514):
+# Usage in check-index task (bolt.ps1:514):
 $rawGitOutput = (git status --short 2>&1) -join "`n"
 $sanitizedOutput = Test-CommandOutput -Output $rawGitOutput
 Write-Host $sanitizedOutput
@@ -1618,12 +1618,12 @@ Requirements:
    - Git >= 2.30.0
    - Bicep >= 0.20.0 (optional)
    - Azure CLI >= 2.50.0 (optional)
-2. Implement Test-Dependencies function in gosh.ps1:
+2. Implement Test-Dependencies function in bolt.ps1:
    - Load and parse dependencies.json
    - Check PowerShell version ($PSVersionTable.PSVersion)
    - Verify other tools are installed and meet version requirements
    - Return clear error messages for missing/outdated dependencies
-3. Call Test-Dependencies at gosh.ps1 startup (early in script)
+3. Call Test-Dependencies at bolt.ps1 startup (early in script)
 4. Update CI/CD workflows to verify dependency versions
 5. Document dependency requirements in README.md
 
@@ -1663,7 +1663,7 @@ $buildFiles = Get-ChildItem $BuildPath -Filter "*.ps1" -File -Force |
     Where-Object { $_.Name -notmatch '\.Tests\.ps1$' }
 
 # Add signature verification if enabled
-if ($env:GOSH_REQUIRE_SIGNED_TASKS -eq '1') {
+if ($env:BOLT_REQUIRE_SIGNED_TASKS -eq '1') {
     $buildFiles = $buildFiles | Where-Object {
         $signature = Get-AuthenticodeSignature $_.FullName
         if ($signature.Status -ne 'Valid') {
@@ -1677,20 +1677,20 @@ if ($env:GOSH_REQUIRE_SIGNED_TASKS -eq '1') {
 
 **Acceptance Criteria:**
 - [ ] Signature verification implemented
-- [ ] Opt-in via `$env:GOSH_REQUIRE_SIGNED_TASKS=1`
+- [ ] Opt-in via `$env:BOLT_REQUIRE_SIGNED_TASKS=1`
 - [ ] Unsigned scripts skipped with warning
 - [ ] Documentation includes signing instructions
 - [ ] Example signing script provided
 
 **LLM Prompt for Resolution:**
 ```
-Task: Implement code signing verification for task scripts in gosh.ps1
+Task: Implement code signing verification for task scripts in bolt.ps1
 
 Context: Task scripts in .build/ directory should optionally support signature verification to ensure code integrity and prevent execution of tampered scripts.
 
 Requirements:
-1. Modify Get-ProjectTasks function (lines 459-465) in gosh.ps1
-2. Add signature verification when $env:GOSH_REQUIRE_SIGNED_TASKS=1:
+1. Modify Get-ProjectTasks function (lines 459-465) in bolt.ps1
+2. Add signature verification when $env:BOLT_REQUIRE_SIGNED_TASKS=1:
    - Use Get-AuthenticodeSignature to check each .ps1 file
    - Skip unsigned or invalid scripts with clear warning
    - Only execute scripts with Status='Valid'
@@ -1767,20 +1767,20 @@ function Test-RateLimit {
 **Acceptance Criteria:**
 - [ ] Rate limiting function implemented
 - [ ] Called before each task execution
-- [ ] Configurable via `$env:GOSH_RATE_LIMIT`
+- [ ] Configurable via `$env:BOLT_RATE_LIMIT`
 - [ ] Clear error message when limit exceeded
 - [ ] History cleared after successful execution
 
 **LLM Prompt for Resolution:**
 ```
-Task: Implement rate limiting for task execution in gosh.ps1
+Task: Implement rate limiting for task execution in bolt.ps1
 
 Context: Prevent DoS attacks and resource exhaustion from rapid or infinite task execution loops.
 
 Requirements:
-1. Add global execution tracking in gosh.ps1:
+1. Add global execution tracking in bolt.ps1:
    - $script:ExecutionHistory hashtable to track task execution timestamps
-   - $script:MaxExecutionsPerMinute = 10 (configurable via $env:GOSH_RATE_LIMIT)
+   - $script:MaxExecutionsPerMinute = 10 (configurable via $env:BOLT_RATE_LIMIT)
 2. Create Test-RateLimit function:
    - Accept $TaskName parameter
    - Track execution times per task
@@ -1791,7 +1791,7 @@ Requirements:
 5. Allow configuration via environment variable
 6. Test with rapid task execution scenarios
 
-Files to modify: gosh.ps1 (add function and integrate into Invoke-Task)
+Files to modify: bolt.ps1 (add function and integrate into Invoke-Task)
 Please implement rate limiting to prevent resource exhaustion attacks.
 
 Testing & Documentation Requirements:
@@ -1858,12 +1858,12 @@ Write-Warning "Project root: $(Get-SanitizedPath $projectRoot -Verbose)"
 
 **LLM Prompt for Resolution:**
 ```
-Task: Sanitize file paths in error and warning messages in gosh.ps1
+Task: Sanitize file paths in error and warning messages in bolt.ps1
 
 Context: Full file paths in error messages expose sensitive directory structure and user information.
 
 Requirements:
-1. Create Get-SanitizedPath function in gosh.ps1:
+1. Create Get-SanitizedPath function in bolt.ps1:
    - Accept path and optional -Verbose switch
    - Convert absolute paths to relative paths from project root
    - Remove user-specific components (usernames, home directories)
@@ -1877,7 +1877,7 @@ Requirements:
 3. Test that sanitized paths hide sensitive information
 4. Ensure debugging is still possible with -Verbose flag
 
-Files to modify: gosh.ps1 (add function and update all Write-Error/Write-Warning calls)
+Files to modify: bolt.ps1 (add function and update all Write-Error/Write-Warning calls)
 Please implement path sanitization to prevent information disclosure.
 
 Testing & Documentation Requirements:
@@ -1944,25 +1944,25 @@ function Test-TaskScriptForSecrets {
 - [ ] Secrets scanner function implemented
 - [ ] Called during -NewTask creation
 - [ ] Called before task execution (optional)
-- [ ] Configurable via `$env:GOSH_SCAN_SECRETS=1`
+- [ ] Configurable via `$env:BOLT_SCAN_SECRETS=1`
 - [ ] Pre-commit hook script provided
 - [ ] Documentation includes secrets management guide
 
 **LLM Prompt for Resolution:**
 ```
-Task: Implement secrets detection scanner for task scripts in gosh.ps1
+Task: Implement secrets detection scanner for task scripts in bolt.ps1
 
 Context: Prevent accidental commits of API keys, passwords, tokens, and other secrets in .build/ task scripts.
 
 Requirements:
-1. Create Test-TaskScriptForSecrets function in gosh.ps1:
+1. Create Test-TaskScriptForSecrets function in bolt.ps1:
    - Scan file content for common secret patterns (API keys, passwords, tokens, connection strings, private keys)
    - Use regex patterns to detect: api[_-]?key, password, token, connection[_-]?string, -----BEGIN.*PRIVATE KEY-----
    - Return $false if secrets found, $true otherwise
    - Display clear warnings with detected secret types
 2. Integrate scanning:
    - Call during -NewTask creation (validate template before writing)
-   - Optionally scan before task execution when $env:GOSH_SCAN_SECRETS=1
+   - Optionally scan before task execution when $env:BOLT_SCAN_SECRETS=1
 3. Create pre-commit hook script (.githooks/pre-commit):
    - Scan all .ps1 files in .build/ before commit
    - Block commits if secrets detected
@@ -2028,12 +2028,12 @@ Write-Host "    $safeDescription" -ForegroundColor Gray
 
 **LLM Prompt for Resolution:**
 ```
-Task: Implement content security policy and HTML encoding for task output in gosh.ps1
+Task: Implement content security policy and HTML encoding for task output in bolt.ps1
 
 Context: Task descriptions and names displayed in -ListTasks and -Outline outputs could contain HTML/JavaScript that executes if output is rendered in a web context.
 
 Requirements:
-1. Create ConvertTo-SafeHtml function in gosh.ps1:
+1. Create ConvertTo-SafeHtml function in bolt.ps1:
    - Encode HTML entities: & < > " '
    - Convert to: &amp; &lt; &gt; &quot; &#39;
    - Return sanitized string
@@ -2047,7 +2047,7 @@ Requirements:
    - Description: "Click <a href='evil.com'>here</a>"
 4. Ensure no code execution possible via task metadata
 
-Files to modify: gosh.ps1 (add function and apply to Show-TaskOutline and task listing code)
+Files to modify: bolt.ps1 (add function and apply to Show-TaskOutline and task listing code)
 Please implement output encoding to prevent injection attacks.
 
 Testing & Documentation Requirements:
@@ -2153,7 +2153,7 @@ jobs:
 
 **LLM Prompt for Resolution:**
 ```
-Task: Enable and configure GitHub security features for the Gosh repository
+Task: Enable and configure GitHub security features for the Bolt repository
 
 Context: GitHub provides built-in security scanning tools that should be enabled to detect vulnerabilities, secrets, and code issues.
 
@@ -2273,12 +2273,12 @@ Testing & Documentation Requirements:
 - [ ] Create `.github/CODEOWNERS`
 - [ ] Assign owners for security-critical files
 - [ ] Require owner review for SECURITY.md changes
-- [ ] Require owner review for gosh.ps1 changes
+- [ ] Require owner review for bolt.ps1 changes
 
 **Implementation in `.github/CODEOWNERS`:**
 ```
 # Security-critical files require review from security team
-/gosh.ps1 @motowilliams
+/bolt.ps1 @motowilliams
 /SECURITY.md @motowilliams
 /security-github.md @motowilliams
 /.github/workflows/ @motowilliams
@@ -2304,7 +2304,7 @@ Context: Ensure security-critical files are reviewed by appropriate team members
 
 Requirements:
 1. Create .github/CODEOWNERS file with ownership assignments:
-   - /gosh.ps1 → @motowilliams (main script)
+   - /bolt.ps1 → @motowilliams (main script)
    - /SECURITY.md → @motowilliams (security documentation)
    - /security-github.md → @motowilliams (security report)
    - /.github/workflows/ → @motowilliams (CI/CD workflows)
@@ -2354,7 +2354,7 @@ Testing & Documentation Requirements:
 **Please do not report security vulnerabilities through public GitHub issues.**
 
 Instead, please report them via:
-1. GitHub Security Advisories (preferred): https://github.com/motowilliams/gosh/security/advisories/new
+1. GitHub Security Advisories (preferred): https://github.com/motowilliams/bolt/security/advisories/new
 2. Email: security@example.com
 
 You should receive a response within 48 hours. If not, please follow up via email.
@@ -2391,7 +2391,7 @@ Requirements:
    - Enable "Allow users to privately report potential security vulnerabilities"
 2. Update SECURITY.md with vulnerability reporting section:
    - Add GitHub Security Advisories as preferred reporting method
-   - Provide link: https://github.com/motowilliams/gosh/security/advisories/new
+   - Provide link: https://github.com/motowilliams/bolt/security/advisories/new
    - Include alternative contact method (email)
    - Define response SLAs:
      * Initial response: Within 48 hours
@@ -2426,7 +2426,7 @@ Testing & Documentation Requirements:
 
 ### 7. Information Disclosure via Error Messages
 
-**Location:** Multiple locations throughout `gosh.ps1`
+**Location:** Multiple locations throughout `bolt.ps1`
 
 **Examples:**
 ```powershell
@@ -2472,7 +2472,7 @@ function Get-SanitizedPath {
     return Split-Path $Path -Leaf
     
     # Option 3: Redact path completely in production
-    if ($env:GOSH_PRODUCTION) {
+    if ($env:BOLT_PRODUCTION) {
         return "[PATH REDACTED]"
     }
     return $Path
@@ -2491,7 +2491,7 @@ Write-Verbose "Full path: $filePath"
 
 **Location:** Multiple locations with Time-of-Check-Time-of-Use patterns
 
-**Example 1:** `gosh.ps1`, Lines 685-690
+**Example 1:** `bolt.ps1`, Lines 685-690
 ```powershell
 # Check if file already exists
 if (Test-Path $filePath) {
@@ -2742,7 +2742,7 @@ Gosh is designed as a **local development tool** for **trusted environments**. I
 2. **Script Execution**
    - Developers already have PowerShell execution rights
    - They can run any script manually
-   - Gosh provides convenience, not security boundary
+   - Bolt provides convenience, not security boundary
 
 3. **No Built-in Sandboxing**
    - Intended for trusted code
@@ -2769,10 +2769,10 @@ Gosh is designed as a **local development tool** for **trusted environments**. I
 ```powershell
 # Developer's own machine, own project
 cd C:\MyProjects\MyApp
-.\gosh.ps1 build
+.\bolt.ps1 build
 
 # Custom tasks in project
-.\gosh.ps1 -TaskDirectory ".build-custom" deploy
+.\bolt.ps1 -TaskDirectory ".build-custom" deploy
 ```
 
 #### ⚠️ Caution Required:
@@ -2789,7 +2789,7 @@ icacls .build /inheritance:r /grant:r "$env:USERNAME:(OI)(CI)F"
 #### ❌ Unsafe Usage:
 ```powershell
 # DON'T: Run with tasks from untrusted sources
-.\gosh.ps1 -TaskDirectory "C:\Downloads\suspicious-tasks" unknown-task
+.\bolt.ps1 -TaskDirectory "C:\Downloads\suspicious-tasks" unknown-task
 
 # DON'T: Use in production automation without hardening
 # DON'T: Share .build directory on network drive without access controls
@@ -2802,7 +2802,7 @@ icacls .build /inheritance:r /grant:r "$env:USERNAME:(OI)(CI)F"
 
 ### For Developers Using Gosh
 
-- [ ] Only run Gosh in directories you control
+- [ ] Only run Bolt in directories you control
 - [ ] Review task scripts before first execution
 - [ ] Keep `.build` directory in version control
 - [ ] Don't run tasks from untrusted sources
@@ -2811,7 +2811,7 @@ icacls .build /inheritance:r /grant:r "$env:USERNAME:(OI)(CI)F"
 - [ ] Consider signing task scripts for team projects
 - [ ] Use `-Outline` to preview task execution
 
-### For Gosh Maintainers
+### For Bolt Maintainers
 
 - [ ] Implement P0 mitigations (path validation, input sanitization)
 - [ ] Add security tests to test suite
@@ -2886,7 +2886,7 @@ Path traversal vulnerability in TaskDirectory parameter allows loading tasks fro
 ## Action Required
 Implement parameter validation as specified in SECURITY.md Action Item #1
 
-**File:** `gosh.ps1`, Line 68
+**File:** `bolt.ps1`, Line 68
 
 ## Implementation Details
 See [SECURITY.md - Action Item #1](./SECURITY.md#action-item-1-add-taskdirectory-parameter-validation)
@@ -2921,7 +2921,7 @@ Dynamic ScriptBlock creation with unsanitized path interpolation enables code in
 ## Action Required
 Implement path validation as specified in SECURITY.md Action Item #2
 
-**File:** `gosh.ps1`, Lines 641-660
+**File:** `bolt.ps1`, Lines 641-660
 
 ## Implementation Details
 See [SECURITY.md - Action Item #2](./SECURITY.md#action-item-2-add-path-sanitization-in-invoke-task)
@@ -2958,8 +2958,8 @@ Insufficient input validation on task names allows special characters and potent
 Implement task name validation as specified in SECURITY.md Action Item #3
 
 **Files:** 
-- `gosh.ps1`, Line 71 (NewTask parameter)
-- `gosh.ps1`, Lines 347-352 (Get-TaskMetadata function)
+- `bolt.ps1`, Line 71 (NewTask parameter)
+- `bolt.ps1`, Lines 347-352 (Get-TaskMetadata function)
 
 ## Implementation Details
 See [SECURITY.md - Action Item #3](./SECURITY.md#action-item-3-add-task-name-validation)
@@ -2994,7 +2994,7 @@ Git output may contain ANSI escape sequences and control characters from malicio
 ## Action Required
 Implement output sanitization as specified in SECURITY.md Action Item #4
 
-**File:** `gosh.ps1`, Lines 234-247
+**File:** `bolt.ps1`, Lines 234-247
 
 ## Implementation Details
 See [SECURITY.md - Action Item #4](./SECURITY.md#action-item-4-sanitize-git-output)
@@ -3029,7 +3029,7 @@ Additional defense-in-depth needed for TaskDirectory path resolution.
 ## Action Required
 Implement runtime validation as specified in SECURITY.md Action Item #5
 
-**File:** `gosh.ps1`, Lines 408-420
+**File:** `bolt.ps1`, Lines 408-420
 
 ## Implementation Details
 See [SECURITY.md - Action Item #5](./SECURITY.md#action-item-5-add-runtime-path-validation-in-get-alltasks)
@@ -3064,7 +3064,7 @@ TOCTOU (Time-of-check-time-of-use) vulnerability in file creation.
 ## Action Required
 Implement atomic file creation as specified in SECURITY.md Action Item #6
 
-**File:** `gosh.ps1`, Lines 685-690
+**File:** `bolt.ps1`, Lines 685-690
 
 ## Implementation Details
 See [SECURITY.md - Action Item #6](./SECURITY.md#action-item-6-add-atomic-file-creation-in-newtask)
@@ -3099,7 +3099,7 @@ Script lacks awareness of PowerShell execution policy settings.
 ## Action Required
 Implement policy check as specified in SECURITY.md Action Item #7
 
-**File:** `gosh.ps1`, After line 80
+**File:** `bolt.ps1`, After line 80
 
 ## Implementation Details
 See [SECURITY.md - Action Item #7](./SECURITY.md#action-item-7-add-execution-policy-awareness)
@@ -3187,24 +3187,24 @@ Invoke-Pester -Tag Security
 Invoke-Pester -Path tests/security/test-path-injection.ps1
 
 # Validate syntax only
-Test-ScriptFileInfo gosh.ps1
+Test-ScriptFileInfo bolt.ps1
 
 # Check for common security issues
-Get-ScriptAnalyzerRule -Severity Warning,Error | Invoke-ScriptAnalyzer -Path gosh.ps1
+Get-ScriptAnalyzerRule -Severity Warning,Error | Invoke-ScriptAnalyzer -Path bolt.ps1
 ```
 
 ### File Locations Reference
 
 | Component | File Path | Lines |
 |-----------|-----------|-------|
-| TaskDirectory Parameter | `gosh.ps1` | 68 |
-| Path Sanitization | `gosh.ps1` | 641-660 |
-| Task Name Validation (Param) | `gosh.ps1` | 71 |
-| Task Name Validation (Parse) | `gosh.ps1` | 347-352 |
-| Git Output Sanitization | `gosh.ps1` | 234-247 |
-| Runtime Path Validation | `gosh.ps1` | 408-420 |
-| File Creation | `gosh.ps1` | 685-690 |
-| Execution Policy | `gosh.ps1` | After 80 |
+| TaskDirectory Parameter | `bolt.ps1` | 68 |
+| Path Sanitization | `bolt.ps1` | 641-660 |
+| Task Name Validation (Param) | `bolt.ps1` | 71 |
+| Task Name Validation (Parse) | `bolt.ps1` | 347-352 |
+| Git Output Sanitization | `bolt.ps1` | 234-247 |
+| Runtime Path Validation | `bolt.ps1` | 408-420 |
+| File Creation | `bolt.ps1` | 685-690 |
+| Execution Policy | `bolt.ps1` | After 80 |
 
 ### Priority Matrix
 

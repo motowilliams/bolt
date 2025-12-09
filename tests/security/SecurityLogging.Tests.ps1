@@ -7,7 +7,7 @@
 
 .DESCRIPTION
     Validates that security-relevant events are properly logged when
-    $env:GOSH_AUDIT_LOG is enabled, including task execution, file creation,
+    $env:BOLT_AUDIT_LOG is enabled, including task execution, file creation,
     external command execution, and user context capture.
 
 .NOTES
@@ -16,8 +16,8 @@
 
 BeforeAll {
     $ProjectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-    $GoshScript = Join-Path $ProjectRoot "gosh.ps1"
-    $LogDir = Join-Path $ProjectRoot ".gosh"
+    $GoshScript = Join-Path $ProjectRoot "bolt.ps1"
+    $LogDir = Join-Path $ProjectRoot ".bolt"
     $LogFile = Join-Path $LogDir "audit.log"
 
     # Safe cleanup function to handle race conditions
@@ -94,7 +94,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
     Context "Logging Disabled by Default" {
 
-        It "Should not create .gosh directory when logging is disabled" {
+        It "Should not create .bolt directory when logging is disabled" {
             # Run a simple task without enabling logging
             & $GoshScript -ListTasks | Out-Null
 
@@ -109,7 +109,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
         It "Should work normally without logging overhead" {
             # Ensure logging is explicitly disabled
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
 
             # Execute a simple task without logging enabled
             $ErrorActionPreference = 'SilentlyContinue'
@@ -124,14 +124,14 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "Logging Enabled via Environment Variable" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
-        It "Should create .gosh directory when logging is enabled" {
+        It "Should create .bolt directory when logging is enabled" {
             # Execute a simple task to trigger logging
             & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
 
@@ -160,11 +160,11 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "Log Entry Format" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should include timestamp in log entries" {
@@ -229,11 +229,11 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "TaskDirectory Usage Logging" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should not log when using default TaskDirectory" {
@@ -259,7 +259,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "File Creation Logging" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
             $testTaskName = "test-logging-$(Get-Random)"
         }
 
@@ -269,7 +269,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
             # Final cleanup of test task files after all tests in this context
             Clear-TestLoggingTask
         }
@@ -295,7 +295,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "Task Execution Logging" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
 
             # Create a simple test task
             $testTaskName = "test-exec-logging"
@@ -303,7 +303,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should log task execution start" {
@@ -337,11 +337,11 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "External Command Logging" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should log git command execution" {
@@ -365,11 +365,11 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "Log File Management" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should append to existing log file" {
@@ -404,12 +404,12 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
     Context "GitIgnore Integration" {
 
-        It "Should have .gosh/ in .gitignore" {
+        It "Should have .bolt/ in .gitignore" {
             $gitignorePath = Join-Path $ProjectRoot ".gitignore"
 
             if (Test-Path $gitignorePath) {
                 $content = Get-Content $gitignorePath -Raw
-                $content | Should -Match '\.gosh/'
+                $content | Should -Match '\.bolt/'
             } else {
                 Set-ItResult -Skipped -Because ".gitignore file not found"
             }
@@ -425,20 +425,20 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
             }
 
             # Enable logging and execute a task to create log file
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
             & $GoshScript -TaskDirectory 'tests/fixtures' mock-simple | Out-Null
 
             # Verify log file was created
             Test-Path $LogFile | Should -BeTrue
 
-            # Verify .gosh/ is not tracked by git
+            # Verify .bolt/ is not tracked by git
             Push-Location $ProjectRoot
             try {
-                $status = git status --porcelain .gosh/ 2>$null
+                $status = git status --porcelain .bolt/ 2>$null
                 $status | Should -BeNullOrEmpty
             } finally {
                 Pop-Location
-                $env:GOSH_AUDIT_LOG = $null
+                $env:BOLT_AUDIT_LOG = $null
             }
         }
     }
@@ -446,11 +446,11 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "Error Handling" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should not fail script execution if logging fails" {

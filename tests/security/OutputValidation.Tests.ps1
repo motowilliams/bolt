@@ -16,7 +16,7 @@
 
 BeforeAll {
     $ProjectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-    $GoshScript = Join-Path $ProjectRoot "gosh.ps1"
+    $GoshScript = Join-Path $ProjectRoot "bolt.ps1"
 
     # Dot-source the gosh script to access Test-CommandOutput function
     . $GoshScript

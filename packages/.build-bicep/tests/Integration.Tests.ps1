@@ -24,7 +24,7 @@ BeforeAll {
         }
         $currentPath = Split-Path -Parent $currentPath
     }
-    $script:GoshScriptPath = Join-Path $projectRoot 'gosh.ps1'
+    $script:GoshScriptPath = Join-Path $projectRoot 'bolt.ps1'
 
     $script:IacPath = Join-Path $PSScriptRoot 'iac'
 

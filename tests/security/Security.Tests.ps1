@@ -5,12 +5,12 @@
     Security tests for Gosh build system.
 
 .DESCRIPTION
-    Tests for security vulnerabilities and input validation in gosh.ps1.
+    Tests for security vulnerabilities and input validation in bolt.ps1.
     Covers P0 security fixes: TaskDirectory validation and Path sanitization.
 #>
 
 BeforeAll {
-    $GoshScript = Join-Path $PSScriptRoot ".." ".." "gosh.ps1"
+    $GoshScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
 
     # Helper function to safely remove directory with retry logic
     function Remove-TestDirectory {
@@ -115,7 +115,7 @@ Describe "Security Tests" -Tag "Security", "P0" {
         }
 
         It "Should reject path traversal attempts with .." {
-            # Call gosh.ps1 directly to catch parameter validation exception
+            # Call bolt.ps1 directly to catch parameter validation exception
             {
                 & $GoshScript -TaskDirectory "../etc" -ListTasks
             } | Should -Throw "*TaskDirectory*"
@@ -167,7 +167,7 @@ exit 0
             # This test verifies that paths with dangerous characters are rejected
             # We can't easily inject a malicious path, but we can verify the validation logic
 
-            # Read the gosh.ps1 file and verify path sanitization code exists
+            # Read the bolt.ps1 file and verify path sanitization code exists
             $goshContent = Get-Content $GoshScript -Raw
             $goshContent | Should -Match 'if \(\$scriptPath -match ''\[\`\$\(\);{}\\\[\\\]\|&<>\]''\)'
             $goshContent | Should -Match 'throw "Script path contains potentially dangerous characters'
@@ -213,7 +213,7 @@ exit 0
 
         It "Should protect against path traversal via TaskDirectory and malicious script paths" {
             # This is a defense-in-depth test: even if one validation fails, the other should catch it
-            # Call gosh.ps1 directly to catch parameter validation exception
+            # Call bolt.ps1 directly to catch parameter validation exception
             {
                 & $GoshScript -Task "malicious" -TaskDirectory "../../../Windows/System32" -Only
             } | Should -Throw
@@ -416,7 +416,7 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
             $script:inRepo = $LASTEXITCODE -eq 0
         }
 
-        $script:GoshScript = Join-Path $PSScriptRoot ".." ".." "gosh.ps1"
+        $script:GoshScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
     }
 
     Context "Git Status Output Safety (P1 - Git Output Sanitization)" {
@@ -658,7 +658,7 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
 
 Describe "P1: Runtime Path Validation" -Tag 'Security' {
     BeforeAll {
-        $GoshScript = Join-Path $PSScriptRoot ".." ".." "gosh.ps1"
+        $GoshScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
     }
 
     Context "Get-AllTasks Function Runtime Validation" {
@@ -871,7 +871,7 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
 
 Describe "P2: Atomic File Creation" -Tag 'Security' {
     BeforeAll {
-        $GoshScript = Join-Path $PSScriptRoot ".." ".." "gosh.ps1"
+        $GoshScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
         # Use simple directory name compatible with TaskDirectory validation
         $testBuildDir = "temp-atomic-test"
         $testBuildPath = Join-Path $PSScriptRoot $testBuildDir
@@ -899,7 +899,7 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
             # Create task - use relative path from project root
             Push-Location (Join-Path $PSScriptRoot ".." "..")
             try {
-                $output = & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1
+                $output = & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1
 
                 # Verify file was created
                 $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Atomic-*.ps1" -ErrorAction SilentlyContinue
@@ -917,7 +917,7 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
             Push-Location (Join-Path $PSScriptRoot ".." "..")
             try {
                 # Create task first time (should succeed)
-                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+                & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
 
                 # Verify file was created
                 $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Existing-*.ps1"
@@ -925,7 +925,7 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
 
                 # Try to create same task again (should fail atomically)
                 try {
-                    $output2 = & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-String
+                    $output2 = & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-String
                     $output2 | Should -Match "already exists"
                 } catch {
                     # Expected to fail - error is in Write-Error which may terminate
@@ -937,7 +937,7 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
         }
 
         It "Should use NoClobber parameter for atomic operation" {
-            # Verify the gosh.ps1 code uses -NoClobber
+            # Verify the bolt.ps1 code uses -NoClobber
             $goshContent = Get-Content $GoshScript -Raw
 
             # Should contain -NoClobber parameter with Out-File
@@ -965,7 +965,7 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
             Push-Location (Join-Path $PSScriptRoot ".." "..")
             try {
                 # Create it first time
-                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+                & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
 
                 # Get the created file
                 $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Partial-*.ps1"
@@ -976,7 +976,7 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
 
                 # Try to create again (should fail without modifying file)
                 try {
-                    & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                    & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-Null
                 } catch {
                     # Expected to fail
                 }
@@ -1025,12 +1025,12 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
                 $tempContent = "# Temporary content"
                 $testFile = Join-Path $testBuildPath "Invoke-Test-Concurrent-$($taskName.Substring(16)).ps1"
 
-                # Use Out-File to match what gosh.ps1 uses
+                # Use Out-File to match what bolt.ps1 uses
                 $tempContent | Out-File -FilePath $testFile -Encoding UTF8
 
                 # Now try to create task with same name (should fail)
                 try {
-                    $output = & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-String
+                    $output = & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-String
                     $output | Should -Match "already exists"
                 } catch {
                     # Expected to fail
@@ -1061,11 +1061,11 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
             Push-Location (Join-Path $PSScriptRoot ".." "..")
             try {
                 # Create first time
-                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+                & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
 
                 # Create second time and capture error
                 try {
-                    $output = & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-String
+                    $output = & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-String
 
                     # Should have clear error message
                     $output | Should -Match "Task file already exists"
@@ -1093,11 +1093,11 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
             Push-Location (Join-Path $PSScriptRoot ".." "..")
             try {
                 # Create first time
-                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+                & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
 
                 # Try to create again
                 try {
-                    & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-Null
+                    & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" -ErrorAction SilentlyContinue 2>&1 | Out-Null
                 } catch {
                     # Expected to fail
                 }
@@ -1118,7 +1118,7 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
             Push-Location (Join-Path $PSScriptRoot ".." "..")
             try {
                 # Create task
-                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+                & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
 
                 # Verify encoding (UTF8)
                 $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Encoding-*.ps1"
@@ -1144,7 +1144,7 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
             Push-Location (Join-Path $PSScriptRoot ".." "..")
             try {
                 # Create task (should create directory)
-                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+                & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
 
                 # Directory should exist
                 Test-Path $testBuildPath | Should -Be $true
@@ -1164,7 +1164,7 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
             Push-Location (Join-Path $PSScriptRoot ".." "..")
             try {
                 # Create task
-                & ".\gosh.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
+                & ".\bolt.ps1" -NewTask $taskName -TaskDirectory "tests/security/$testBuildDir" 2>&1 | Out-Null
 
                 # Verify file exists and is complete
                 $createdFiles = Get-ChildItem $testBuildPath -Filter "Invoke-Test-Integrity-*.ps1"
@@ -1189,7 +1189,7 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
 
 Describe "P2: Execution Policy Awareness" -Tag "Security" {
     BeforeAll {
-        $GoshScript = Join-Path $PSScriptRoot ".." ".." "gosh.ps1"
+        $GoshScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
     }
 
     Context "Execution Policy Detection" {
@@ -1258,7 +1258,7 @@ Describe "P2: Execution Policy Awareness" -Tag "Security" {
             if ($currentPolicy -in @('RemoteSigned', 'Unrestricted', 'Bypass')) {
                 Push-Location (Join-Path $PSScriptRoot ".." "..")
                 try {
-                    { & ".\gosh.ps1" -ListTasks -ErrorAction Stop 2>&1 | Out-Null } | Should -Not -Throw
+                    { & ".\bolt.ps1" -ListTasks -ErrorAction Stop 2>&1 | Out-Null } | Should -Not -Throw
                 }
                 finally {
                     Pop-Location
@@ -1276,7 +1276,7 @@ Describe "P2: Execution Policy Awareness" -Tag "Security" {
             if ($currentPolicy -in @('AllSigned', 'RemoteSigned', 'Unrestricted', 'Bypass')) {
                 Push-Location (Join-Path $PSScriptRoot ".." "..")
                 try {
-                    { & ".\gosh.ps1" -ListTasks -ErrorAction Stop 2>&1 | Out-Null } | Should -Not -Throw
+                    { & ".\bolt.ps1" -ListTasks -ErrorAction Stop 2>&1 | Out-Null } | Should -Not -Throw
                 }
                 finally {
                     Pop-Location
@@ -1340,7 +1340,7 @@ Describe "P2: Execution Policy Awareness" -Tag "Security" {
             Push-Location (Join-Path $PSScriptRoot ".." "..")
             try {
                 # Run a simple command - should work regardless of policy check
-                $output = & ".\gosh.ps1" -Help 2>&1
+                $output = & ".\bolt.ps1" -Help 2>&1
                 $LASTEXITCODE | Should -Be 0
             }
             finally {
