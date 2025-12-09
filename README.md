@@ -1,6 +1,6 @@
 # Bolt! ⚡
 
-[![CI](https://github.com/motowilliams/bolt/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/bolt/actions/workflows/ci.yml)
+[![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
 
 > **Bolt** - Lightning-fast Build orchestration for PowerShell!
 
@@ -211,17 +211,17 @@ Bolt uses PowerShell parameter sets to provide a clean, validated interface with
 │       ├── Invoke-Format.ps1   # Formats Bicep files
 │       ├── Invoke-Lint.ps1     # Validates Bicep syntax
 │       └── tests/              # Bicep-specific tests
-│           ├── Tasks.Tests.ps1 # Task validation tests (12 tests)
-│           ├── Integration.Tests.ps1 # End-to-end tests (4 tests)
+│           ├── Tasks.Tests.ps1 # Task validation tests
+│           ├── Integration.Tests.ps1 # End-to-end tests
 │           └── iac/            # Test infrastructure
 ├── tests/                      # Core Bolt tests
 │   ├── fixtures/               # Mock tasks for testing
-│   ├── bolt.Tests.ps1          # Core orchestration tests (28 tests)
+│   ├── bolt.Tests.ps1          # Core orchestration tests
 │   ├── security/
-│   │   ├── Security.Tests.ps1  # Security validation tests (87 tests)
-│   │   ├── SecurityTxt.Tests.ps1 # RFC 9116 compliance tests (20 tests)
-│   │   ├── SecurityLogging.Tests.ps1 # Audit logging tests (26 tests)
-│   │   └── OutputValidation.Tests.ps1 # Output sanitization tests (44 tests)
+│   │   ├── Security.Tests.ps1  # Security validation tests
+│   │   ├── SecurityTxt.Tests.ps1 # RFC 9116 compliance tests
+│   │   ├── SecurityLogging.Tests.ps1 # Audit logging tests
+│   │   └── OutputValidation.Tests.ps1 # Output sanitization tests
 │   └── Invoke-Test.ps1         # Test helper
 ├── .well-known/
 │   └── security.txt            # RFC 9116 security policy
@@ -561,37 +561,37 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 ### Test Structure
 
 **Core Tests** (`tests/` directory):
-- **`tests/bolt.Tests.ps1`** (28 tests) - Core orchestration tests
+- **`tests/bolt.Tests.ps1`** - Core orchestration tests
   - Script validation, task discovery, execution, dependency resolution
   - Uses mock fixtures from `tests/fixtures/` to test Bolt itself
   - Tag: `Core`
 
-- **`tests/security/Security.Tests.ps1`** (87 tests) - Security validation tests
+- **`tests/security/Security.Tests.ps1`** - Security validation tests
   - Input validation, path sanitization, injection prevention
   - Validates TaskDirectory, task names, and script paths
   - Tag: `Security`, `P0`
 
-- **`tests/security/SecurityTxt.Tests.ps1`** (20 tests) - RFC 9116 compliance
+- **`tests/security/SecurityTxt.Tests.ps1`** - RFC 9116 compliance
   - Validates .well-known/security.txt file format and content
   - Verifies required and recommended fields
   - Tag: `SecurityTxt`, `Operational`
 
-- **`tests/security/SecurityLogging.Tests.ps1`** (26 tests) - Security event logging
+- **`tests/security/SecurityLogging.Tests.ps1`** - Security event logging
   - Tests opt-in audit logging functionality
   - Validates log format, file management, and GitIgnore integration
   - Tag: `SecurityLogging`, `Operational`
 
-- **`tests/security/OutputValidation.Tests.ps1`** (44 tests) - Output sanitization
+- **`tests/security/OutputValidation.Tests.ps1`** - Output sanitization
   - Tests ANSI escape sequence removal and control character filtering
   - Validates length/line limits and malicious input handling
   - Tag: `OutputValidation`, `Security`
 
 **Bicep Module Tests** (`packages/.build-bicep/tests/` directory):
-- **`packages/.build-bicep/tests/Tasks.Tests.ps1`** (12 tests) - Task validation
+- **`packages/.build-bicep/tests/Tasks.Tests.ps1`** - Task validation
   - Validates structure and metadata of Bicep tasks
   - Tag: `Bicep-Tasks`
   
-- **`packages/.build-bicep/tests/Integration.Tests.ps1`** (4 tests) - Integration tests
+- **`packages/.build-bicep/tests/Integration.Tests.ps1`** - Integration tests
   - Executes actual Bicep operations against real infrastructure files
   - Requires Bicep CLI to be installed
   - Tag: `Bicep-Tasks`
@@ -748,6 +748,7 @@ The fixtures allow testing of:
 - **Bicep CLI** (optional): Required only for integration tests, other tests run without it
 - Tests run in isolated contexts with proper setup/teardown
 - Test results output to `TestResults.xml` (NUnit format for CI/CD)
+- All tests pass consistently across platforms (Windows, Linux, macOS)
 
 ### CI/CD Integration
 
@@ -777,12 +778,7 @@ Use Pester directly in CI pipelines:
 
 ### Test Results
 
-```
-Tests Passed: some_number
-Tests Failed: 0
-Skipped: 0
-Total Time: ~15 seconds
-```
+All tests pass consistently. Run `Invoke-Pester` to see current results.
 
 ## 🔧 Requirements
 
@@ -1153,7 +1149,7 @@ Bolt includes a GitHub Actions workflow that runs on Ubuntu and Windows:
 - **Pipeline**: Core tests → Tasks tests → Full build (format → lint → build)
 - **Dependencies**: Automatically installs PowerShell 7.0+ and Bicep CLI
 - **Test Reports**: NUnit XML artifacts uploaded for each platform
-- **Status**: [![CI](https://github.com/motowilliams/bolt/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/bolt/actions/workflows/ci.yml)
+- **Status**: [![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
 
 See `.github/workflows/ci.yml` for the complete workflow configuration.
 

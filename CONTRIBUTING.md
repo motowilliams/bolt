@@ -190,11 +190,11 @@ if ($success) {
 
 Before submitting changes:
 
-- **Run the test suite**: `Invoke-Pester` to ensure all tests pass (267 tests)
+- **Run the test suite**: `Invoke-Pester` to ensure all tests pass
 - **Use test tags for faster feedback**:
-  - `Invoke-Pester -Tag Core` - Quick orchestration tests (28 tests, ~1s)
-  - `Invoke-Pester -Tag Security` - Security validation tests (205 tests, ~10s)
-  - `Invoke-Pester -Tag Bicep-Tasks` - Bicep task validation tests (16 tests, ~22s)
+  - `Invoke-Pester -Tag Core` - Quick orchestration tests (fast, ~1s)
+  - `Invoke-Pester -Tag Security` - Security validation tests (moderate, ~10s)
+  - `Invoke-Pester -Tag Bicep-Tasks` - Bicep task validation tests (slower, ~22s)
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
 - **Test with custom directories**: Verify `-TaskDirectory` parameter works correctly
@@ -333,7 +333,7 @@ When updating documentation:
 Please **DO NOT** report security vulnerabilities through public GitHub issues.
 
 Instead, report them via:
-- **GitHub Security Advisories** (preferred): https://github.com/motowilliams/bolt/security/advisories/new
+- **GitHub Security Advisories** (preferred): https://github.com/motowilliams/gosh/security/advisories/new
 - **Security Policy**: See [SECURITY.md](SECURITY.md) for complete vulnerability disclosure process
 - **RFC 9116 Policy**: See [.well-known/security.txt](.well-known/security.txt)
 

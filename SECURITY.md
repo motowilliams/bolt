@@ -1254,11 +1254,11 @@ This section contains operational security, supply chain, and GitHub platform re
 
 **Key Contents:**
 ```
-Contact: https://github.com/motowilliams/bolt/security/advisories/new
+Contact: https://github.com/motowilliams/gosh/issues
 Expires: 2026-10-26T00:00:00.000Z
 Preferred-Languages: en
-Canonical: https://raw.githubusercontent.com/motowilliams/bolt/main/.well-known/security.txt
-Policy: https://github.com/motowilliams/bolt/blob/main/SECURITY.md
+Canonical: https://raw.githubusercontent.com/motowilliams/gosh/main/.well-known/security.txt
+Policy: https://github.com/motowilliams/gosh/blob/main/SECURITY.md
 ```
 
 **Documentation Updates:**
@@ -1268,9 +1268,9 @@ Policy: https://github.com/motowilliams/bolt/blob/main/SECURITY.md
 
 **How to Report Vulnerabilities:**
 Security researchers can now easily find our vulnerability disclosure policy at:
-- **Primary**: https://github.com/motowilliams/bolt/security/advisories/new (GitHub Security Advisories)
-- **Policy**: https://github.com/motowilliams/bolt/blob/main/SECURITY.md (detailed security documentation)
-- **RFC 9116**: https://raw.githubusercontent.com/motowilliams/bolt/main/.well-known/security.txt (machine-readable)
+- **Primary**: https://github.com/motowilliams/gosh/issues (GitHub Issues for public security discussions)
+- **Policy**: https://github.com/motowilliams/gosh/blob/main/SECURITY.md (detailed security documentation)
+- **RFC 9116**: https://raw.githubusercontent.com/motowilliams/gosh/main/.well-known/security.txt (machine-readable)
 
 **Original Action Items:**
 - [x] Create `.well-known/security.txt` file per RFC 9116
@@ -1297,11 +1297,11 @@ Invoke-Pester -Path "tests/security/SecurityTxt.Tests.ps1"
 
 **Implementation Details:**
 ```
-Contact: security@example.com
+Contact: https://github.com/motowilliams/gosh/issues
 Expires: 2026-10-25T00:00:00.000Z
 Preferred-Languages: en
-Canonical: https://github.com/motowilliams/bolt/security.txt
-Policy: https://github.com/motowilliams/bolt/blob/main/SECURITY.md
+Canonical: https://raw.githubusercontent.com/motowilliams/gosh/main/.well-known/security.txt
+Policy: https://github.com/motowilliams/gosh/blob/main/SECURITY.md
 ```
 
 **Acceptance Criteria:**
@@ -1322,7 +1322,7 @@ Requirements:
 3. Set expiration date 1 year from today
 4. Link to existing SECURITY.md for detailed policy
 5. Update README.md to reference the security.txt file
-6. Ensure the file is accessible at: https://github.com/motowilliams/bolt/.well-known/security.txt
+6. Ensure the file is accessible at: https://github.com/motowilliams/gosh/.well-known/security.txt
 
 Please implement this security policy file following RFC 9116 specifications and update relevant documentation.
 
@@ -2354,7 +2354,7 @@ Testing & Documentation Requirements:
 **Please do not report security vulnerabilities through public GitHub issues.**
 
 Instead, please report them via:
-1. GitHub Security Advisories (preferred): https://github.com/motowilliams/bolt/security/advisories/new
+1. GitHub Issues: https://github.com/motowilliams/gosh/issues
 2. Email: security@example.com
 
 You should receive a response within 48 hours. If not, please follow up via email.
@@ -2391,7 +2391,7 @@ Requirements:
    - Enable "Allow users to privately report potential security vulnerabilities"
 2. Update SECURITY.md with vulnerability reporting section:
    - Add GitHub Security Advisories as preferred reporting method
-   - Provide link: https://github.com/motowilliams/bolt/security/advisories/new
+   - Provide link: https://github.com/motowilliams/gosh/issues
    - Include alternative contact method (email)
    - Define response SLAs:
      * Initial response: Within 48 hours

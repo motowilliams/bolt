@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Project Rename: Gosh → Bolt**: Complete rebranding of the project from "Gosh" to "Bolt"
+  - Renamed main script from `gosh.ps1` to `bolt.ps1`
+  - Renamed module script from `New-GoshModule.ps1` to `New-BoltModule.ps1`
+  - Updated all function names, variables, and aliases (e.g., `Invoke-Gosh` → `Invoke-Bolt`)
+  - Updated all documentation files (README.md, IMPLEMENTATION.md, CONTRIBUTING.md, SECURITY.md)
+  - Updated all test files to use new naming conventions
+  - Fixed `.gitignore` to use `.bolt/` instead of `.gosh/`
+  - Updated security.txt URLs to reflect new project name
+  - Updated copilot instructions and prompts with new naming
+  - Repository URL remains `motowilliams/gosh` (GitHub repository name unchanged)
+- **Git Worktree Instructions**: Added comprehensive git worktree workflow documentation
+  - New instruction file: `.github/instructions/feature-branches.instructions.md`
+  - Preferred workflow for feature branch development
+  - Naming convention: `../<repo-name>-wt-<branch-name>`
+  - Cross-platform PowerShell syntax examples
+  - Better than traditional `git checkout` for parallel work
+- **Module Installation Refactor**: Separated module installation into dedicated script
+  - Moved all module installation code from `bolt.ps1` to `New-BoltModule.ps1`
+  - Cleaner separation of concerns: orchestration vs. installation
+  - New test file: `tests/New-BoltModule.Tests.ps1` with comprehensive coverage
+  - Updated documentation to reference external script for module management
+  - CI pipeline updated to use new script for testing
+- **Documentation Cleanup**: Removed test counts from user-facing documentation
+  - Test counts change frequently and don't add value for users
+  - Focus on test quality and coverage categories instead
+  - Updated prompt to prevent test counts in documentation
+  - Security documentation retains test counts (verification status)
+
+### Fixed
+- **Git Ignore Rules**: Enhanced `.gitignore` organization and coverage
+  - Clear section headers for different file categories
+  - Better coverage of OS-specific files (Windows, macOS, Linux)
+  - Proper exclusion of `.bolt/` directory (audit logs)
+  - Improved module and build artifact exclusions
+- **Test Cleanup**: Removed skipped test requiring user interaction
+  - Module installation tests no longer require manual confirmation
+  - All tests can run fully automated in CI/CD pipelines
+
 ### Added
 - **Filename Fallback Warning System**: Tasks using filename-based task names (no `# TASK:` metadata) now display a warning
   - Warning message explains the fallback behavior and encourages explicit metadata
@@ -173,7 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core tasks: `check-index` (git status validation)
 - Example Azure Bicep tasks: `format`, `lint`, `build`
 - Example Azure infrastructure (App Service + SQL Database)
-- Comprehensive test suite with Pester (267 tests)
+- Comprehensive test suite with Pester
   - Core orchestration tests (28 tests, fast)
   - Security validation tests (205 tests)
   - Bicep task tests (16 tests)
@@ -199,5 +238,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - EditorConfig for consistent code formatting
 
-[Unreleased]: https://github.com/motowilliams/bolt/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/motowilliams/bolt/releases/tag/v1.0.0
+[Unreleased]: https://github.com/motowilliams/gosh/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/motowilliams/gosh/releases/tag/v1.0.0

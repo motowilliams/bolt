@@ -753,7 +753,7 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
 
 **Status Badge**:
 ```markdown
-[![CI](https://github.com/motowilliams/bolt/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/bolt/actions/workflows/ci.yml)
+[![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
 ```
 
 **Example for other CI platforms**:
@@ -1132,9 +1132,9 @@ When creating a new release:
 
 3. **Add version comparison links** at bottom:
    ```markdown
-   [Unreleased]: https://github.com/motowilliams/bolt/compare/v1.1.0...HEAD
-   [1.1.0]: https://github.com/motowilliams/bolt/compare/v1.0.0...v1.1.0
-   [1.0.0]: https://github.com/motowilliams/bolt/releases/tag/v1.0.0
+   [Unreleased]: https://github.com/motowilliams/gosh/compare/v1.1.0...HEAD
+   [1.1.0]: https://github.com/motowilliams/gosh/compare/v1.0.0...v1.1.0
+   [1.0.0]: https://github.com/motowilliams/gosh/releases/tag/v1.0.0
    ```
 
 4. **Create empty `[Unreleased]` section** for next changes
@@ -1266,10 +1266,10 @@ Add a **`### Technical Notes`** subsection within relevant changelog entries to 
 .\bolt.ps1 format lint build -Only # Multiple tasks without deps
 
 # Testing with Pester
-Invoke-Pester                      # Run all tests (267 tests, ~15s)
-Invoke-Pester -Tag Core            # Only orchestration tests (28 tests, ~1s)
-Invoke-Pester -Tag Security        # Only security tests (205 tests, ~10s)
-Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (16 tests, ~22s)
+Invoke-Pester                      # Run all tests (~15s)
+Invoke-Pester -Tag Core            # Only orchestration tests (~1s)
+Invoke-Pester -Tag Security        # Only security tests (~10s)
+Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (~22s)
 Invoke-Pester -Output Detailed     # With detailed output
 
 # Creating new tasks
@@ -1313,13 +1313,13 @@ Ctrl+Shift+P > Tasks: Run Test Task # Select test task
 - `packages/.build-bicep/Invoke-*.ps1` - Bicep task implementations (format, lint, build)
 
 ### Testing
-- `tests/bolt.Tests.ps1` - Core Bolt orchestration tests (28 tests, uses mock fixtures, tag: `Core`)
-- `tests/security/Security.Tests.ps1` - Security validation tests (87 tests, P0 fixes, tag: `Security`)
-- `tests/security/SecurityTxt.Tests.ps1` - RFC 9116 compliance tests (20 tests, tag: `SecurityTxt`, `Operational`)
-- `tests/security/SecurityLogging.Tests.ps1` - Security event logging tests (26 tests, tag: `SecurityLogging`, `Operational`)
-- `tests/security/OutputValidation.Tests.ps1` - Output sanitization tests (44 tests, tag: `OutputValidation`, `Security`)
-- `packages/.build-bicep/tests/Tasks.Tests.ps1` - Bicep task validation tests (12 tests, tag: `Bicep-Tasks`)
-- `packages/.build-bicep/tests/Integration.Tests.ps1` - End-to-end Bicep integration tests (4 tests, tag: `Bicep-Tasks`)
+- `tests/bolt.Tests.ps1` - Core Bolt orchestration tests (uses mock fixtures, tag: `Core`)
+- `tests/security/Security.Tests.ps1` - Security validation tests (P0 fixes, tag: `Security`)
+- `tests/security/SecurityTxt.Tests.ps1` - RFC 9116 compliance tests (tag: `SecurityTxt`, `Operational`)
+- `tests/security/SecurityLogging.Tests.ps1` - Security event logging tests (tag: `SecurityLogging`, `Operational`)
+- `tests/security/OutputValidation.Tests.ps1` - Output sanitization tests (tag: `OutputValidation`, `Security`)
+- `packages/.build-bicep/tests/Tasks.Tests.ps1` - Bicep task validation tests (tag: `Bicep-Tasks`)
+- `packages/.build-bicep/tests/Integration.Tests.ps1` - End-to-end Bicep integration tests (tag: `Bicep-Tasks`)
 - `tests/fixtures/Invoke-Mock*.ps1` - Mock tasks for testing Bolt without external dependencies
 
 ### Infrastructure
