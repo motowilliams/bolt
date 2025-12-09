@@ -1,6 +1,6 @@
 # Security Analysis Report
 
-**Project:** Gosh! PowerShell Build System  
+**Project:** Bolt! PowerShell Build System  
 **Analysis Date:** October 20, 2025  
 **Analyst:** Security Review  
 **Version:** Current (feature/add-embedded-function-support branch)
@@ -200,8 +200,8 @@ try {
         throw "Script path is outside project directory: $scriptPath"
     }
 
-    # Get utility functions from Gosh
-    $utilities = Get-GoshUtilities
+    # Get utility functions from Bolt
+    $utilities = Get-BoltUtilities
     # ... rest of existing code
 ```
 
@@ -233,8 +233,8 @@ try {
         throw "Script path is outside project directory: $scriptPath"
     }
     
-    # Get utility functions from Gosh
-    $utilities = Get-GoshUtilities
+    # Get utility functions from Bolt
+    $utilities = Get-BoltUtilities
     # ... rest of existing code
 ```
 
@@ -1043,7 +1043,7 @@ if (-not $resolvedPath.StartsWith($PSScriptRoot, [StringComparison]::OrdinalIgno
 
 **Code:**
 ```powershell
-$utilities = Get-GoshUtilities
+$utilities = Get-BoltUtilities
 
 $utilityDefinitions = @()
 foreach ($util in $utilities.GetEnumerator()) {
@@ -1257,7 +1257,7 @@ This section contains operational security, supply chain, and GitHub platform re
 Contact: https://github.com/motowilliams/bolt/security/advisories/new
 Expires: 2026-10-26T00:00:00.000Z
 Preferred-Languages: en
-Canonical: https://raw.githubusercontent.com/motowilliams/gosh/main/.well-known/security.txt
+Canonical: https://raw.githubusercontent.com/motowilliams/bolt/main/.well-known/security.txt
 Policy: https://github.com/motowilliams/bolt/blob/main/SECURITY.md
 ```
 
@@ -1270,7 +1270,7 @@ Policy: https://github.com/motowilliams/bolt/blob/main/SECURITY.md
 Security researchers can now easily find our vulnerability disclosure policy at:
 - **Primary**: https://github.com/motowilliams/bolt/security/advisories/new (GitHub Security Advisories)
 - **Policy**: https://github.com/motowilliams/bolt/blob/main/SECURITY.md (detailed security documentation)
-- **RFC 9116**: https://raw.githubusercontent.com/motowilliams/gosh/main/.well-known/security.txt (machine-readable)
+- **RFC 9116**: https://raw.githubusercontent.com/motowilliams/bolt/main/.well-known/security.txt (machine-readable)
 
 **Original Action Items:**
 - [x] Create `.well-known/security.txt` file per RFC 9116
@@ -1569,7 +1569,7 @@ Write-Host $sanitizedOutput
 **Implementation:**
 ```json
 {
-  "name": "gosh",
+  "name": "bolt",
   "version": "1.0.0",
   "dependencies": {
     "powershell": ">=7.2.0",
@@ -1607,7 +1607,7 @@ function Test-Dependencies {
 
 **LLM Prompt for Resolution:**
 ```
-Task: Implement dependency pinning and version checking in Gosh
+Task: Implement dependency pinning and version checking in Bolt
 
 Context: The project needs to track and verify versions of external dependencies (PowerShell, Git, Pester, Bicep) for supply chain security and reproducible builds.
 
@@ -2072,28 +2072,28 @@ The following items have been evaluated and marked as **Won't Implement** based 
 #### [x] L1 (Won't Implement): Implement Multi-Factor Authentication for Critical Tasks
 **Category:** Access Control
 
-> **Note:** This feature will not be added to Gosh. The project is designed as a lightweight build orchestrator for trusted development environments. Multi-factor authentication is beyond the scope of this tool.
+> **Note:** This feature will not be added to Bolt. The project is designed as a lightweight build orchestrator for trusted development environments. Multi-factor authentication is beyond the scope of this tool.
 
 ---
 
 #### [x] L2 (Won't Implement): Add Sandbox Mode for Untrusted Tasks
 **Category:** Isolation
 
-> **Note:** This feature will not be added to Gosh. The project operates in trusted development environments where task scripts are under developer control. Sandboxing would limit legitimate use cases without significant security benefit in the intended usage context.
+> **Note:** This feature will not be added to Bolt. The project operates in trusted development environments where task scripts are under developer control. Sandboxing would limit legitimate use cases without significant security benefit in the intended usage context.
 
 ---
 
 #### [x] L3 (Won't Implement): Implement License Compliance Scanning
 **Category:** Legal Compliance
 
-> **Note:** This feature will not be added to Gosh. License compliance scanning is not applicable to this build orchestrator project. Dependencies are managed at the system level (PowerShell modules, Bicep CLI, Git) and are the responsibility of the development environment, not the build script.
+> **Note:** This feature will not be added to Bolt. License compliance scanning is not applicable to this build orchestrator project. Dependencies are managed at the system level (PowerShell modules, Bicep CLI, Git) and are the responsibility of the development environment, not the build script.
 
 ---
 
 #### [x] L4 (Won't Implement): Add Security Headers for Web-Based Task Outputs
 **Category:** Web Security
 
-> **Note:** This feature will not be added to Gosh. The project outputs to terminal/console, not web interfaces. Web security headers are not applicable to a command-line build orchestrator.
+> **Note:** This feature will not be added to Bolt. The project outputs to terminal/console, not web interfaces. Web security headers are not applicable to a command-line build orchestrator.
 
 ---
 
@@ -2730,7 +2730,7 @@ if ($PSBoundParameters.ContainsKey('StrictMode')) {
 
 ### Design Philosophy
 
-Gosh is designed as a **local development tool** for **trusted environments**. Important contextual factors:
+Bolt is designed as a **local development tool** for **trusted environments**. Important contextual factors:
 
 #### ✅ Acceptable Risk (By Design)
 
@@ -2800,7 +2800,7 @@ icacls .build /inheritance:r /grant:r "$env:USERNAME:(OI)(CI)F"
 
 ## 📋 Security Checklist
 
-### For Developers Using Gosh
+### For Developers Using Bolt
 
 - [ ] Only run Bolt in directories you control
 - [ ] Review task scripts before first execution
@@ -2824,7 +2824,7 @@ icacls .build /inheritance:r /grant:r "$env:USERNAME:(OI)(CI)F"
 - [ ] Add SECURITY.md to repository
 - [ ] Set up security scanning in CI/CD
 
-### For Organizations Deploying Gosh
+### For Organizations Deploying Bolt
 
 - [ ] Establish approved task repository
 - [ ] Implement task signing requirements

@@ -388,7 +388,7 @@ Register-ArgumentCompleter -CommandName 'bolt' -ParameterName 'Task' -ScriptBloc
     Write-Host ""
     Write-Host "Module location: $userModulePath" -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host "To update the module after modifying bolt.ps1, run: .\New-GoshModule.ps1 -Install" -ForegroundColor DarkGray
+    Write-Host "To update the module after modifying bolt.ps1, run: .\New-BoltModule.ps1 -Install" -ForegroundColor DarkGray
 
     return $true
 }
@@ -435,9 +435,9 @@ function Invoke-UninstallBoltModule {
     # Check for installed module in PSModulePath
     $modulePaths = $env:PSModulePath -split [System.IO.Path]::PathSeparator
     foreach ($modulePath in $modulePaths) {
-        $goshModulePath = Join-Path $modulePath $moduleName
-        if ((Test-Path $goshModulePath) -and $goshModulePath -notin $installLocations) {
-            $installLocations += $goshModulePath
+        $boltModulePath = Join-Path $modulePath $moduleName
+        if ((Test-Path $boltModulePath) -and $boltModulePath -notin $installLocations) {
+            $installLocations += $boltModulePath
         }
     }
 
@@ -475,15 +475,15 @@ function Invoke-UninstallBoltModule {
     }
 
     Write-Host ""
-    Write-Host "Uninstalling Gosh..." -ForegroundColor Cyan
+    Write-Host "Uninstalling Bolt..." -ForegroundColor Cyan
 
     # Track removal status
     $successCount = 0
     $failureLocations = @()
 
     # Remove module from memory if currently imported
-    $goshModule = Get-Module -Name $moduleName -ErrorAction SilentlyContinue
-    if ($goshModule) {
+    $boltModule = Get-Module -Name $moduleName -ErrorAction SilentlyContinue
+    if ($boltModule) {
         Write-Host "Removing Bolt module from current session..." -ForegroundColor Gray
         Remove-Module -Name $moduleName -Force -ErrorAction SilentlyContinue
     }
@@ -524,9 +524,9 @@ function Invoke-UninstallBoltModule {
         Write-Host ""
 
         # Create recovery instruction file
-        $recoveryPath = Join-Path $env:TEMP "Gosh-Uninstall-Manual.txt"
+        $recoveryPath = Join-Path $env:TEMP "Bolt-Uninstall-Manual.txt"
         $recoveryContent = @"
-GOSH UNINSTALLATION - MANUAL CLEANUP REQUIRED
+BOLT UNINSTALLATION - MANUAL CLEANUP REQUIRED
 ==============================================
 
 Automatic uninstallation failed for the following locations.
@@ -540,7 +540,7 @@ Please remove them manually:
             $recoveryContent += [Environment]::NewLine
             $recoveryContent += "To remove manually:$([Environment]::NewLine)"
             $recoveryContent += "  - Use your file manager to navigate to: $(Split-Path $failure.Path)$([Environment]::NewLine)"
-            $recoveryContent += "  - Delete the 'Gosh' folder at that location.$([Environment]::NewLine)"
+            $recoveryContent += "  - Delete the 'Bolt' folder at that location.$([Environment]::NewLine)"
             $recoveryContent += [Environment]::NewLine
         }
 
@@ -551,7 +551,7 @@ Please remove them manually:
         $recoveryContent += "  - Clear the module cache by running:$([Environment]::NewLine)"
         $recoveryContent += "    Remove-Item -Path (Join-Path `$env:TEMP 'PowerShellModuleCache') -Force -Recurse$([Environment]::NewLine)"
         $recoveryContent += [Environment]::NewLine
-        $recoveryContent += "For more help, visit: https://github.com/motowilliams/gosh$([Environment]::NewLine)"
+        $recoveryContent += "For more help, visit: https://github.com/motowilliams/bolt$([Environment]::NewLine)"
 
         try {
             $recoveryContent | Out-File -FilePath $recoveryPath -Encoding UTF8 -Force

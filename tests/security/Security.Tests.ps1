@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    Security tests for Gosh build system.
+    Security tests for Bolt build system.
 
 .DESCRIPTION
     Tests for security vulnerabilities and input validation in bolt.ps1.
@@ -10,7 +10,7 @@
 #>
 
 BeforeAll {
-    $GoshScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
+    $BoltScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
 
     # Helper function to safely remove directory with retry logic
     function Remove-TestDirectory {
@@ -49,29 +49,29 @@ BeforeAll {
         }
     }
 
-    # Helper function to invoke Gosh with parameters
-    function Invoke-Gosh {
+    # Helper function to invoke Bolt with parameters
+    function Invoke-Bolt {
         param(
             [string[]]$Tasks = @(),
             [hashtable]$Parameters = @{}
         )
 
         # Build splatting hashtable for proper parameter binding
-        $goshParams = @{}
+        $boltParams = @{}
 
         # Add tasks if provided
         if ($Tasks.Count -gt 0) {
-            $goshParams['Task'] = $Tasks
+            $boltParams['Task'] = $Tasks
         }
 
         # Merge additional parameters
         foreach ($key in $Parameters.Keys) {
-            $goshParams[$key] = $Parameters[$key]
+            $boltParams[$key] = $Parameters[$key]
         }
 
         # Use splatting for proper PowerShell parameter binding
         try {
-            $output = & $GoshScript @goshParams 2>&1
+            $output = & $BoltScript @boltParams 2>&1
             $exitCode = $LASTEXITCODE
         } catch {
             $output = $_.Exception.Message
@@ -90,7 +90,7 @@ Describe "Security Tests" -Tag "Security", "P0" {
     Context "TaskDirectory Parameter Validation (P0 - Action Item #1)" {
 
         It "Should accept valid directory names with alphanumeric characters" {
-            $result = Invoke-Gosh -Parameters @{
+            $result = Invoke-Bolt -Parameters @{
                 TaskDirectory = "tests-fixtures"
                 ListTasks = $true
             }
@@ -99,7 +99,7 @@ Describe "Security Tests" -Tag "Security", "P0" {
         }
 
         It "Should accept valid directory names with dashes" {
-            $result = Invoke-Gosh -Parameters @{
+            $result = Invoke-Bolt -Parameters @{
                 TaskDirectory = "build-tasks"
                 ListTasks = $true
             }
@@ -107,7 +107,7 @@ Describe "Security Tests" -Tag "Security", "P0" {
         }
 
         It "Should accept valid directory names with underscores" {
-            $result = Invoke-Gosh -Parameters @{
+            $result = Invoke-Bolt -Parameters @{
                 TaskDirectory = "build_tasks"
                 ListTasks = $true
             }
@@ -117,31 +117,31 @@ Describe "Security Tests" -Tag "Security", "P0" {
         It "Should reject path traversal attempts with .." {
             # Call bolt.ps1 directly to catch parameter validation exception
             {
-                & $GoshScript -TaskDirectory "../etc" -ListTasks
+                & $BoltScript -TaskDirectory "../etc" -ListTasks
             } | Should -Throw "*TaskDirectory*"
         }
 
         It "Should reject absolute paths on Windows" {
             {
-                & $GoshScript -TaskDirectory "C:\Windows\System32" -ListTasks
+                & $BoltScript -TaskDirectory "C:\Windows\System32" -ListTasks
             } | Should -Throw "*TaskDirectory*"
         }
 
         It "Should reject absolute paths on Unix" {
             {
-                & $GoshScript -TaskDirectory "/etc/passwd" -ListTasks
+                & $BoltScript -TaskDirectory "/etc/passwd" -ListTasks
             } | Should -Throw "*TaskDirectory*"
         }
 
         It "Should reject directory names with special characters" {
             {
-                & $GoshScript -TaskDirectory "tasks;rm -rf /" -ListTasks
+                & $BoltScript -TaskDirectory "tasks;rm -rf /" -ListTasks
             } | Should -Throw "*TaskDirectory*"
         }
 
         It "Should reject directory names with backticks" {
             {
-                & $GoshScript -TaskDirectory "tasks`$(Get-Process)" -ListTasks
+                & $BoltScript -TaskDirectory "tasks`$(Get-Process)" -ListTasks
             } | Should -Throw "*TaskDirectory*"
         }
     }
@@ -168,22 +168,22 @@ exit 0
             # We can't easily inject a malicious path, but we can verify the validation logic
 
             # Read the bolt.ps1 file and verify path sanitization code exists
-            $goshContent = Get-Content $GoshScript -Raw
-            $goshContent | Should -Match 'if \(\$scriptPath -match ''\[\`\$\(\);{}\\\[\\\]\|&<>\]''\)'
-            $goshContent | Should -Match 'throw "Script path contains potentially dangerous characters'
+            $boltContent = Get-Content $BoltScript -Raw
+            $boltContent | Should -Match 'if \(\$scriptPath -match ''\[\`\$\(\);{}\\\[\\\]\|&<>\]''\)'
+            $boltContent | Should -Match 'throw "Script path contains potentially dangerous characters'
         }
 
         It "Should reject script paths outside project directory" {
             # Verify validation code exists for path boundary checks
-            $goshContent = Get-Content $GoshScript -Raw
-            $goshContent | Should -Match '\$fullScriptPath = \[System\.IO\.Path\]::GetFullPath\(\$scriptPath\)'
-            $goshContent | Should -Match 'if \(-not \$fullScriptPath\.StartsWith\(\$projectRoot'
-            $goshContent | Should -Match 'throw "Script path is outside project directory'
+            $boltContent = Get-Content $BoltScript -Raw
+            $boltContent | Should -Match '\$fullScriptPath = \[System\.IO\.Path\]::GetFullPath\(\$scriptPath\)'
+            $boltContent | Should -Match 'if \(-not \$fullScriptPath\.StartsWith\(\$projectRoot'
+            $boltContent | Should -Match 'throw "Script path is outside project directory'
         }
 
         It "Should accept valid script paths within project directory" {
             # Test with actual fixtures that should work
-            $result = Invoke-Gosh -Tasks @("mock-simple") -Parameters @{
+            $result = Invoke-Bolt -Tasks @("mock-simple") -Parameters @{
                 TaskDirectory = "tests/fixtures"
                 Only = $true
             }
@@ -197,11 +197,11 @@ exit 0
     Context "ScriptBlock Creation Safety (Defense in Depth)" {
 
         It "Should validate paths before ScriptBlock.Create()" {
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Verify validation happens BEFORE ScriptBlock.Create
-            $validationIndex = $goshContent.IndexOf('# SECURITY: Validate script path')
-            $scriptBlockIndex = $goshContent.IndexOf('$scriptBlock = [ScriptBlock]::Create($scriptContent)')
+            $validationIndex = $boltContent.IndexOf('# SECURITY: Validate script path')
+            $scriptBlockIndex = $boltContent.IndexOf('$scriptBlock = [ScriptBlock]::Create($scriptContent)')
 
             $validationIndex | Should -BeGreaterThan 0
             $scriptBlockIndex | Should -BeGreaterThan 0
@@ -215,7 +215,7 @@ exit 0
             # This is a defense-in-depth test: even if one validation fails, the other should catch it
             # Call bolt.ps1 directly to catch parameter validation exception
             {
-                & $GoshScript -Task "malicious" -TaskDirectory "../../../Windows/System32" -Only
+                & $BoltScript -Task "malicious" -TaskDirectory "../../../Windows/System32" -Only
             } | Should -Throw
         }
     }
@@ -223,7 +223,7 @@ exit 0
     Context "Task Name Validation (P0 - Action Item #3)" {
 
         It "Should accept valid lowercase task names" {
-            $result = Invoke-Gosh -Tasks @("build") -Parameters @{
+            $result = Invoke-Bolt -Tasks @("build") -Parameters @{
                 TaskDirectory = "tests/fixtures"
                 ListTasks = $true
             }
@@ -231,7 +231,7 @@ exit 0
         }
 
         It "Should accept task names with numbers" {
-            $result = Invoke-Gosh -Tasks @("test123") -Parameters @{
+            $result = Invoke-Bolt -Tasks @("test123") -Parameters @{
                 TaskDirectory = "tests/fixtures"
                 ListTasks = $true
             }
@@ -239,7 +239,7 @@ exit 0
         }
 
         It "Should accept task names with hyphens" {
-            $result = Invoke-Gosh -Tasks @("deploy-prod") -Parameters @{
+            $result = Invoke-Bolt -Tasks @("deploy-prod") -Parameters @{
                 TaskDirectory = "tests/fixtures"
                 ListTasks = $true
             }
@@ -248,44 +248,44 @@ exit 0
 
         It "Should reject task names with uppercase letters" {
             {
-                & $GoshScript -Task "Build" -ListTasks
+                & $BoltScript -Task "Build" -ListTasks
             } | Should -Throw "*Task*"
         }
 
         It "Should reject task names with spaces" {
             {
-                & $GoshScript -Task "my task" -ListTasks
+                & $BoltScript -Task "my task" -ListTasks
             } | Should -Throw "*Task*"
         }
 
         It "Should reject task names with semicolons (command injection attempt)" {
             {
-                & $GoshScript -Task "test;rm-rf" -ListTasks
+                & $BoltScript -Task "test;rm-rf" -ListTasks
             } | Should -Throw "*Task*"
         }
 
         It "Should reject task names with dollar signs (variable expansion attempt)" {
             {
-                & $GoshScript -Task "task`$(evil)" -ListTasks
+                & $BoltScript -Task "task`$(evil)" -ListTasks
             } | Should -Throw "*Task*"
         }
 
         It "Should reject task names with backticks (command substitution attempt)" {
             {
-                & $GoshScript -Task "task``ls" -ListTasks
+                & $BoltScript -Task "task``ls" -ListTasks
             } | Should -Throw "*Task*"
         }
 
         It "Should reject task names that are too long (> 50 chars)" {
             $longTaskName = "a" * 51
             {
-                & $GoshScript -Task $longTaskName -ListTasks
+                & $BoltScript -Task $longTaskName -ListTasks
             } | Should -Throw "*Task*"
         }
 
         It "Should accept task names at the maximum length (50 chars)" {
             $maxTaskName = "a" * 50
-            $result = Invoke-Gosh -Tasks @($maxTaskName) -Parameters @{
+            $result = Invoke-Bolt -Tasks @($maxTaskName) -Parameters @{
                 TaskDirectory = "tests/fixtures"
                 ListTasks = $true
             }
@@ -294,14 +294,14 @@ exit 0
 
         It "Should validate NewTask parameter format" {
             {
-                & $GoshScript -NewTask "Invalid-Task-Name-With-Uppercase"
+                & $BoltScript -NewTask "Invalid-Task-Name-With-Uppercase"
             } | Should -Throw "*NewTask*"
         }
 
         It "Should validate NewTask parameter length" {
             $longTaskName = "a" * 51
             {
-                & $GoshScript -NewTask $longTaskName
+                & $BoltScript -NewTask $longTaskName
             } | Should -Throw "*NewTask*"
         }
 
@@ -316,7 +316,7 @@ exit 0
                 Push-Location (Join-Path $PSScriptRoot ".." "..")
 
                 $relativePath = "tests/security/$(Split-Path $tempDir -Leaf)"
-                Invoke-Gosh -Parameters @{
+                Invoke-Bolt -Parameters @{
                     NewTask = "my-valid-task"
                     TaskDirectory = $relativePath
                 } | Out-Null
@@ -357,7 +357,7 @@ exit 0
             $relativeTaskDir = "tests/security/$(Split-Path $script:tempTaskDir -Leaf)"
 
             # Capture all output streams including warnings (3>&1 redirects warnings to stdout)
-            $allOutput = & $GoshScript -TaskDirectory $relativeTaskDir -ListTasks 3>&1 2>&1 | Out-String
+            $allOutput = & $BoltScript -TaskDirectory $relativeTaskDir -ListTasks 3>&1 2>&1 | Out-String
 
             # Should generate warnings for invalid names
             $allOutput | Should -Match "Invalid task name format.*INVALID-CAPS"
@@ -375,7 +375,7 @@ exit 0
             $relativeTaskDir = "tests/security/$(Split-Path $script:tempTaskDir -Leaf)"
 
             # Capture all output streams: stdout (1), stderr (2), warning (3), and information (6 - Write-Host)
-            $output = & $GoshScript -TaskDirectory $relativeTaskDir -ListTasks 6>&1 3>&1 2>&1
+            $output = & $BoltScript -TaskDirectory $relativeTaskDir -ListTasks 6>&1 3>&1 2>&1
             $allOutput = ($output | Out-String)
 
             # Should list valid tasks
@@ -398,7 +398,7 @@ exit 0
             $relativeTaskDir = "tests/security/$(Split-Path $script:tempTaskDir -Leaf)"
 
             # Capture all output streams (3>&1 redirects warnings to stdout)
-            $allOutput = & $GoshScript -TaskDirectory $relativeTaskDir -ListTasks 3>&1 2>&1 | Out-String
+            $allOutput = & $BoltScript -TaskDirectory $relativeTaskDir -ListTasks 3>&1 2>&1 | Out-String
 
             $allOutput | Should -Match "Task name too long"
         }
@@ -416,7 +416,7 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
             $script:inRepo = $LASTEXITCODE -eq 0
         }
 
-        $script:GoshScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
+        $script:BoltScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
     }
 
     Context "Git Status Output Safety (P1 - Git Output Sanitization)" {
@@ -428,12 +428,12 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
             }
 
             # Verify that git commands in Get-GitStatus use safe execution
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # Should use proper git command invocation (not Invoke-Expression or string evaluation)
-            $goshContent | Should -Match '\$status = git status --porcelain 2>\$null'
-            $goshContent | Should -Not -Match 'Invoke-Expression.*git'
-            $goshContent | Should -Not -Match 'iex.*git'
+            $boltContent | Should -Match '\$status = git status --porcelain 2>\$null'
+            $boltContent | Should -Not -Match 'Invoke-Expression.*git'
+            $boltContent | Should -Not -Match 'iex.*git'
         }
 
         It "Should safely display git status output without code execution" {
@@ -443,7 +443,7 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
             }
 
             # Get current git status
-            $result = & $script:GoshScript -Task "check-index" -Only 2>&1
+            $result = & $script:BoltScript -Task "check-index" -Only 2>&1
             $output = ($result | Out-String)
 
             # Output should not contain PowerShell variable expansion or command substitution markers
@@ -484,7 +484,7 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
                     git add . 2>$null
 
                     # Run check-index and capture output
-                    $result = & $script:GoshScript -Task "check-index" -Only 2>&1
+                    $result = & $script:BoltScript -Task "check-index" -Only 2>&1
                     $output = ($result | Out-String)
 
                     # The output should display filenames safely without code execution
@@ -510,7 +510,7 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
             }
 
             # Run check-index
-            $result = & $script:GoshScript -Task "check-index" -Only 2>&1
+            $result = & $script:BoltScript -Task "check-index" -Only 2>&1
             $output = ($result | Out-String)
 
             # Output should not contain:
@@ -523,11 +523,11 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
 
         It "Should safely invoke git commands with error redirection" {
             # Verify that error streams are redirected properly to prevent info leakage
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # Git commands should redirect stderr to prevent sensitive error messages
-            $goshContent | Should -Match 'git.*2>\$null'
-            $goshContent | Should -Match 'git rev-parse --git-dir 2>\$null'
+            $boltContent | Should -Match 'git.*2>\$null'
+            $boltContent | Should -Match 'git rev-parse --git-dir 2>\$null'
         }
 
         It "Should sanitize git status output display" {
@@ -537,12 +537,12 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
             }
 
             # Verify that the check-index function uses git status --short
-            $goshContent = Get-Content $script:GoshScript -Raw
-            $goshContent | Should -Match 'git status --short'
+            $boltContent = Get-Content $script:BoltScript -Raw
+            $boltContent | Should -Match 'git status --short'
 
             # The output should be displayed via Write-Host (safe) not Invoke-Expression
             # Find the check-index function and verify it uses Write-Host for output
-            if ($goshContent -match 'function Invoke-CheckGitIndex[\s\S]+?^}') {
+            if ($boltContent -match 'function Invoke-CheckGitIndex[\s\S]+?^}') {
                 $checkIndexFunction = $matches[0]
                 $checkIndexFunction | Should -Not -Match 'Invoke-Expression'
                 $checkIndexFunction | Should -Not -Match 'iex'
@@ -559,21 +559,21 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
             }
 
             # Verify Get-GitStatus returns PSCustomObject with safe properties
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # Should create PSCustomObject with defined properties
-            $goshContent | Should -Match 'function Get-GitStatus'
-            $goshContent | Should -Match '\[PSCustomObject\]@\{'
-            $goshContent | Should -Match 'IsClean\s*='
-            $goshContent | Should -Match 'Status\s*='
-            $goshContent | Should -Match 'HasGit\s*='
+            $boltContent | Should -Match 'function Get-GitStatus'
+            $boltContent | Should -Match '\[PSCustomObject\]@\{'
+            $boltContent | Should -Match 'IsClean\s*='
+            $boltContent | Should -Match 'Status\s*='
+            $boltContent | Should -Match 'HasGit\s*='
         }
 
         It "Should store git output in a variable, not execute it" {
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # Get-GitStatus should store output in $status variable
-            if ($goshContent -match 'function Get-GitStatus[\s\S]+?^}') {
+            if ($boltContent -match 'function Get-GitStatus[\s\S]+?^}') {
                 $getGitStatusFunction = $matches[0]
                 $getGitStatusFunction | Should -Match '\$status = git status --porcelain'
                 # Should not pass $status to Invoke-Expression
@@ -583,17 +583,17 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
         }
 
         It "Should use --porcelain flag for machine-readable output" {
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # --porcelain provides consistent, parseable output
-            $goshContent | Should -Match 'git status --porcelain'
+            $boltContent | Should -Match 'git status --porcelain'
         }
 
         It "Should check for null/whitespace safely" {
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # Should use [string]::IsNullOrWhiteSpace for safe null checking
-            if ($goshContent -match 'function Get-GitStatus[\s\S]+?^}') {
+            if ($boltContent -match 'function Get-GitStatus[\s\S]+?^}') {
                 $getGitStatusFunction = $matches[0]
                 $getGitStatusFunction | Should -Match '\[string\]::IsNullOrWhiteSpace\(\$status\)'
             }
@@ -603,51 +603,51 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
     Context "Git Command Execution Pattern (P1)" {
 
         It "Should not use Invoke-Expression with git output anywhere" {
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # Global check: no Invoke-Expression on git output
-            $goshContent | Should -Not -Match 'Invoke-Expression.*\$.*git'
-            $goshContent | Should -Not -Match 'iex.*\$.*git'
+            $boltContent | Should -Not -Match 'Invoke-Expression.*\$.*git'
+            $boltContent | Should -Not -Match 'iex.*\$.*git'
         }
 
         It "Should not use string interpolation with git output in commands" {
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # Should not have patterns like: & "$($gitOutput)"
-            $goshContent | Should -Not -Match '&\s*"\$\([^)]*git[^)]*\)"'
+            $boltContent | Should -Not -Match '&\s*"\$\([^)]*git[^)]*\)"'
         }
 
         It "Should not use eval-like patterns with git output" {
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # Should not use ScriptBlock.Create with git output
-            $goshContent | Should -Not -Match '\[ScriptBlock\]::Create.*\$status'
-            $goshContent | Should -Not -Match '\[ScriptBlock\]::Create.*git'
+            $boltContent | Should -Not -Match '\[ScriptBlock\]::Create.*\$status'
+            $boltContent | Should -Not -Match '\[ScriptBlock\]::Create.*git'
         }
     }
 
     Context "Defense Against Malicious Git Configurations (P1)" {
 
         It "Should use git with explicit arguments (not aliases)" {
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # Should call git with explicit command names, not rely on aliases
             # which could be configured maliciously in .gitconfig
-            $goshContent | Should -Match 'git status'
-            $goshContent | Should -Match 'git rev-parse'
+            $boltContent | Should -Match 'git status'
+            $boltContent | Should -Match 'git rev-parse'
 
             # Should not use short aliases that could be overridden
-            $goshContent | Should -Not -Match 'git st\b'
+            $boltContent | Should -Not -Match 'git st\b'
         }
 
         It "Should redirect git stderr to prevent error message attacks" {
-            $goshContent = Get-Content $script:GoshScript -Raw
+            $boltContent = Get-Content $script:BoltScript -Raw
 
             # All git commands should redirect stderr
             # This prevents attackers from injecting malicious content via error messages
             # Check that key git commands have stderr redirection
-            $goshContent | Should -Match 'git status --porcelain 2>\$null'
-            $goshContent | Should -Match 'git rev-parse --git-dir 2>\$null'
+            $boltContent | Should -Match 'git status --porcelain 2>\$null'
+            $boltContent | Should -Match 'git rev-parse --git-dir 2>\$null'
         }
     }
 }
@@ -658,18 +658,18 @@ Describe "Git Output Sanitization Tests" -Tag "Security", "P1" {
 
 Describe "P1: Runtime Path Validation" -Tag 'Security' {
     BeforeAll {
-        $GoshScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
+        $BoltScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
     }
 
     Context "Get-AllTasks Function Runtime Validation" {
         It "Should validate resolved paths at runtime" {
             # Read the Get-AllTasks function
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Should contain runtime path validation logic
-            $goshContent | Should -Match 'SECURITY: Runtime path validation'
-            $goshContent | Should -Match '\[System\.IO\.Path\]::GetFullPath'
-            $goshContent | Should -Match 'resolvedPath\.StartsWith\(\$projectRoot'
+            $boltContent | Should -Match 'SECURITY: Runtime path validation'
+            $boltContent | Should -Match '\[System\.IO\.Path\]::GetFullPath'
+            $boltContent | Should -Match 'resolvedPath\.StartsWith\(\$projectRoot'
         }
 
         It "Should reject paths that resolve outside project directory" {
@@ -681,16 +681,16 @@ Describe "P1: Runtime Path Validation" -Tag 'Security' {
 
             # Create a mock scenario by directly calling the script
             $output = & pwsh -NoProfile -Command {
-                param($GoshPath)
+                param($BoltPath)
 
                 # Try to execute with a path that would resolve outside
                 # This should fail at parameter validation OR runtime validation
                 try {
-                    & $GoshPath -TaskDirectory ".." -ListTasks 2>&1
+                    & $BoltPath -TaskDirectory ".." -ListTasks 2>&1
                 } catch {
                     $_.Exception.Message
                 }
-            } -Args $GoshScript
+            } -Args $BoltScript
 
             # Should fail with validation error (either parameter or runtime)
             $output -join "`n" | Should -Match '(invalid characters|outside project directory|TaskDirectory must)'
@@ -698,14 +698,14 @@ Describe "P1: Runtime Path Validation" -Tag 'Security' {
 
         It "Should accept valid relative paths within project" {
             # Valid paths should work normally
-            $result = & $GoshScript -TaskDirectory ".build" -ListTasks 2>&1
+            $result = & $BoltScript -TaskDirectory ".build" -ListTasks 2>&1
             $LASTEXITCODE | Should -Be 0
         }
 
         It "Should provide clear error messages when path is rejected" {
             # Test that error messages are helpful
             $output = & pwsh -NoProfile -Command {
-                param($GoshPath)
+                param($BoltPath)
                 try {
                     # Create a temporary script that bypasses parameter validation
                     # to test runtime validation specifically
@@ -731,7 +731,7 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
                 } catch {
                     $_
                 }
-            } -Args $GoshScript
+            } -Args $BoltScript
 
             $output = $output -join "`n"
             # Should contain helpful error messages
@@ -741,37 +741,37 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
 
     Context "Defense-in-Depth Path Validation" {
         It "Should validate paths at multiple layers" {
-            # Read the Gosh script to verify both layers exist
-            $goshContent = Get-Content $GoshScript -Raw
+            # Read the Bolt script to verify both layers exist
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Layer 1: Parameter validation
-            $goshContent | Should -Match '\[ValidateScript\(\{'
-            $goshContent | Should -Match 'TaskDirectory must be a relative path'
+            $boltContent | Should -Match '\[ValidateScript\(\{'
+            $boltContent | Should -Match 'TaskDirectory must be a relative path'
 
             # Layer 2: Runtime validation
-            $goshContent | Should -Match 'SECURITY: Runtime path validation'
-            $goshContent | Should -Match 'TaskDirectory must resolve to a path within'
+            $boltContent | Should -Match 'SECURITY: Runtime path validation'
+            $boltContent | Should -Match 'TaskDirectory must resolve to a path within'
         }
 
         It "Should handle symbolic links safely" {
             # Symbolic links should be resolved and validated
             # This is inherently tested by GetFullPath which resolves symlinks
 
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
             # Verify we use GetFullPath which resolves symlinks
-            $goshContent | Should -Match '\[System\.IO\.Path\]::GetFullPath'
+            $boltContent | Should -Match '\[System\.IO\.Path\]::GetFullPath'
         }
 
         It "Should handle relative path traversal attempts" {
             # Paths like ".build/../../../etc" should be rejected
             $output = & pwsh -NoProfile -Command {
-                param($GoshPath)
+                param($BoltPath)
                 try {
-                    & $GoshPath -TaskDirectory ".build/../../../etc" -ListTasks 2>&1
+                    & $BoltPath -TaskDirectory ".build/../../../etc" -ListTasks 2>&1
                 } catch {
                     $_.Exception.Message
                 }
-            } -Args $GoshScript
+            } -Args $BoltScript
 
             # Should fail with validation error
             $output -join "`n" | Should -Match '(invalid characters|outside project|must be a relative path)'
@@ -779,38 +779,38 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
 
         It "Should compare paths case-insensitively on Windows" {
             # Path comparison should use OrdinalIgnoreCase
-            $goshContent = Get-Content $GoshScript -Raw
-            $goshContent | Should -Match 'StartsWith.*StringComparison.*OrdinalIgnoreCase'
+            $boltContent = Get-Content $BoltScript -Raw
+            $boltContent | Should -Match 'StartsWith.*StringComparison.*OrdinalIgnoreCase'
         }
     }
 
     Context "TaskDirectory Resolution Security" {
         It "Should resolve TaskDirectory before validation" {
             # Ensure paths are fully resolved (no relative components left)
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Should get full path before comparison
-            $goshContent | Should -Match 'resolvedPath.*GetFullPath.*buildPath'
-            $goshContent | Should -Match 'projectRoot.*GetFullPath.*ScriptRoot'
+            $boltContent | Should -Match 'resolvedPath.*GetFullPath.*buildPath'
+            $boltContent | Should -Match 'projectRoot.*GetFullPath.*ScriptRoot'
         }
 
         It "Should validate against project root directory" {
             # Should compare resolved path against project root
-            $goshContent = Get-Content $GoshScript -Raw
-            $goshContent | Should -Match 'projectRoot.*PSScriptRoot'
-            $goshContent | Should -Match 'resolvedPath\.StartsWith\(\$projectRoot'
+            $boltContent = Get-Content $BoltScript -Raw
+            $boltContent | Should -Match 'projectRoot.*PSScriptRoot'
+            $boltContent | Should -Match 'resolvedPath\.StartsWith\(\$projectRoot'
         }
 
         It "Should provide detailed warning messages" {
             # Should output warning with all relevant paths
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Should warn with TaskDirectory value
-            $goshContent | Should -Match 'Write-Warning.*TaskDirectory resolves outside'
+            $boltContent | Should -Match 'Write-Warning.*TaskDirectory resolves outside'
             # Should warn with project root
-            $goshContent | Should -Match 'Write-Warning.*Project root'
+            $boltContent | Should -Match 'Write-Warning.*Project root'
             # Should warn with resolved path
-            $goshContent | Should -Match 'Write-Warning.*Resolved path'
+            $boltContent | Should -Match 'Write-Warning.*Resolved path'
         }
     }
 
@@ -819,13 +819,13 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
             # Absolute paths should fail parameter validation first
             if ($IsWindows) {
                 $output = & pwsh -NoProfile -Command {
-                    param($GoshPath)
+                    param($BoltPath)
                     try {
-                        & $GoshPath -TaskDirectory "C:\Windows\System32" -ListTasks 2>&1
+                        & $BoltPath -TaskDirectory "C:\Windows\System32" -ListTasks 2>&1
                     } catch {
                         $_.Exception.Message
                     }
-                } -Args $GoshScript
+                } -Args $BoltScript
 
                 $output -join "`n" | Should -Match '(absolute path|invalid characters)'
             }
@@ -835,13 +835,13 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
             # UNC paths should be rejected
             if ($IsWindows) {
                 $output = & pwsh -NoProfile -Command {
-                    param($GoshPath)
+                    param($BoltPath)
                     try {
-                        & $GoshPath -TaskDirectory "\\server\share" -ListTasks 2>&1
+                        & $BoltPath -TaskDirectory "\\server\share" -ListTasks 2>&1
                     } catch {
                         $_.Exception.Message
                     }
-                } -Args $GoshScript
+                } -Args $BoltScript
 
                 $output -join "`n" | Should -Match '(absolute path|invalid characters|relative path)'
             }
@@ -851,13 +851,13 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
             # Very long paths should be handled without errors
             $longPath = "a" * 200
             $output = & pwsh -NoProfile -Command {
-                param($GoshPath, $LongPath)
+                param($BoltPath, $LongPath)
                 try {
-                    & $GoshPath -TaskDirectory $LongPath -ListTasks 2>&1
+                    & $BoltPath -TaskDirectory $LongPath -ListTasks 2>&1
                 } catch {
                     $_.Exception.Message
                 }
-            } -Args $GoshScript, $longPath
+            } -Args $BoltScript, $longPath
 
             # Should either work or fail gracefully (no crashes)
             $LASTEXITCODE | Should -BeIn @(0, 1)
@@ -871,7 +871,7 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
 
 Describe "P2: Atomic File Creation" -Tag 'Security' {
     BeforeAll {
-        $GoshScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
+        $BoltScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
         # Use simple directory name compatible with TaskDirectory validation
         $testBuildDir = "temp-atomic-test"
         $testBuildPath = Join-Path $PSScriptRoot $testBuildDir
@@ -938,24 +938,24 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
 
         It "Should use NoClobber parameter for atomic operation" {
             # Verify the bolt.ps1 code uses -NoClobber
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Should contain -NoClobber parameter with Out-File
-            $goshContent | Should -Match 'Out-File.*-NoClobber'
+            $boltContent | Should -Match 'Out-File.*-NoClobber'
 
             # Should have proper error handling
-            $goshContent | Should -Match '\[System\.IO\.IOException\]'
+            $boltContent | Should -Match '\[System\.IO\.IOException\]'
         }
 
         It "Should handle IOException for existing files" {
             # Verify error handling code exists
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Should catch IOException specifically
-            $goshContent | Should -Match 'catch \[System\.IO\.IOException\]'
+            $boltContent | Should -Match 'catch \[System\.IO\.IOException\]'
 
             # Should provide clear error message
-            $goshContent | Should -Match 'Task file already exists'
+            $boltContent | Should -Match 'Task file already exists'
         }
 
         It "Should not create partial files on error" {
@@ -994,19 +994,19 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
     Context "Race Condition Prevention" {
         It "Should eliminate TOCTOU vulnerability window" {
             # Verify the atomic operation pattern
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Should NOT have separate Test-Path and Out-File
             # (old vulnerable pattern was: if (Test-Path) then Out-File)
             # New pattern: Out-File with -NoClobber in try-catch
 
             # Should use atomic operation (Out-File with NoClobber in try-catch)
-            $goshContent | Should -Match 'Out-File.*-NoClobber'
-            $goshContent | Should -Match 'catch \[System\.IO\.IOException\]'
+            $boltContent | Should -Match 'Out-File.*-NoClobber'
+            $boltContent | Should -Match 'catch \[System\.IO\.IOException\]'
 
             # Verify TOCTOU vulnerability is eliminated (no Test-Path before file creation in NewTask)
             # Extract NewTask section
-            if ($goshContent -match '(?s)if \(\$NewTask\).*?^\}') {
+            if ($boltContent -match '(?s)if \(\$NewTask\).*?^\}') {
                 $newTaskSection = $matches[0]
                 # Should not have Test-Path followed by Out-File pattern
                 $newTaskSection | Should -Not -Match 'Test-Path.*Out-File'
@@ -1047,10 +1047,10 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
 
         It "Should use ErrorAction Stop for immediate failure" {
             # Verify ErrorAction Stop is used
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Should have ErrorAction Stop to immediately jump to catch block
-            $goshContent | Should -Match 'Out-File.*-ErrorAction Stop'
+            $boltContent | Should -Match 'Out-File.*-ErrorAction Stop'
         }
     }
 
@@ -1081,10 +1081,10 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
 
         It "Should handle general file creation errors" {
             # Verify generic catch block exists
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Should have generic catch for other errors
-            $goshContent | Should -Match 'catch \{[^}]*Failed to create task file'
+            $boltContent | Should -Match 'catch \{[^}]*Failed to create task file'
         }
 
         It "Should exit with error code on failure" {
@@ -1189,64 +1189,64 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
 
 Describe "P2: Execution Policy Awareness" -Tag "Security" {
     BeforeAll {
-        $GoshScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
+        $BoltScript = Join-Path $PSScriptRoot ".." ".." "bolt.ps1"
     }
 
     Context "Execution Policy Detection" {
         It "Should check execution policy on script start" {
             # Verify the code contains execution policy check
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
-            $goshContent | Should -Match 'Get-ExecutionPolicy'
-            $goshContent | Should -Match 'SECURITY.*Execution policy awareness'
+            $boltContent | Should -Match 'Get-ExecutionPolicy'
+            $boltContent | Should -Match 'SECURITY.*Execution policy awareness'
         }
 
         It "Should detect Unrestricted policy" {
             # Verify code handles Unrestricted
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
-            $goshContent | Should -Match "Unrestricted.*Bypass"
-            $goshContent | Should -Match "permissive execution policy"
+            $boltContent | Should -Match "Unrestricted.*Bypass"
+            $boltContent | Should -Match "permissive execution policy"
         }
 
         It "Should detect Bypass policy" {
             # Verify code handles Bypass
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
-            $goshContent | Should -Match "Bypass"
+            $boltContent | Should -Match "Bypass"
         }
 
         It "Should detect Restricted policy" {
             # Verify code handles Restricted
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
-            $goshContent | Should -Match "Restricted"
-            $goshContent | Should -Match "Set-ExecutionPolicy RemoteSigned"
+            $boltContent | Should -Match "Restricted"
+            $boltContent | Should -Match "Set-ExecutionPolicy RemoteSigned"
         }
     }
 
     Context "Warning Messages" {
         It "Should provide warning for permissive policies" {
             # Verify verbose message exists for permissive policies
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
-            $goshContent | Should -Match "Write-Verbose.*permissive execution policy"
-            $goshContent | Should -Match "Consider using RemoteSigned or AllSigned"
+            $boltContent | Should -Match "Write-Verbose.*permissive execution policy"
+            $boltContent | Should -Match "Consider using RemoteSigned or AllSigned"
         }
 
         It "Should provide warning for Restricted policy" {
             # Verify warning message exists for Restricted policy
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
-            $goshContent | Should -Match "Write-Warning.*execution policy is set to Restricted"
-            $goshContent | Should -Match "You may need to change it"
+            $boltContent | Should -Match "Write-Warning.*execution policy is set to Restricted"
+            $boltContent | Should -Match "You may need to change it"
         }
 
         It "Should suggest remediation for Restricted policy" {
             # Verify remediation suggestion exists
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
-            $goshContent | Should -Match "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser"
+            $boltContent | Should -Match "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser"
         }
     }
 
@@ -1290,10 +1290,10 @@ Describe "P2: Execution Policy Awareness" -Tag "Security" {
         It "Should provide clear guidance without blocking legitimate use" {
             # The check should inform but not prevent execution
             # (except when system policy like Restricted is in place)
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Should not contain throw statements in policy check section
-            $policySection = ($goshContent -split 'SECURITY.*Execution policy awareness')[1]
+            $policySection = ($boltContent -split 'SECURITY.*Execution policy awareness')[1]
             $policySection = ($policySection -split 'Main script logic')[0]
 
             $policySection | Should -Not -Match 'throw.*execution policy'
@@ -1303,34 +1303,34 @@ Describe "P2: Execution Policy Awareness" -Tag "Security" {
     Context "Security Best Practices" {
         It "Should recommend RemoteSigned or AllSigned policies" {
             # Verify recommendations for secure policies
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
-            $goshContent | Should -Match "RemoteSigned or AllSigned"
+            $boltContent | Should -Match "RemoteSigned or AllSigned"
         }
 
         It "Should use Write-Verbose for informational messages" {
             # Verbose messages don't interrupt normal workflow
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
-            $goshContent | Should -Match "Write-Verbose.*permissive"
+            $boltContent | Should -Match "Write-Verbose.*permissive"
         }
 
         It "Should use Write-Warning for actionable concerns" {
             # Warnings are appropriate for Restricted policy
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
-            $goshContent | Should -Match "Write-Warning.*Restricted"
+            $boltContent | Should -Match "Write-Warning.*Restricted"
         }
     }
 
     Context "Integration with Script Flow" {
         It "Should check policy before main logic" {
             # Policy check should be early in script
-            $goshContent = Get-Content $GoshScript -Raw
+            $boltContent = Get-Content $BoltScript -Raw
 
             # Get positions
-            $policyPos = $goshContent.IndexOf('Get-ExecutionPolicy')
-            $mainLogicPos = $goshContent.IndexOf('Main script logic')
+            $policyPos = $boltContent.IndexOf('Get-ExecutionPolicy')
+            $mainLogicPos = $boltContent.IndexOf('Main script logic')
 
             $policyPos | Should -BeLessThan $mainLogicPos
         }

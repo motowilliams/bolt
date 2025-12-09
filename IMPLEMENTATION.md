@@ -340,7 +340,7 @@ Bolt can be installed as a PowerShell module for global command-line usage:
 
 # Output:
 # Installing Bolt as a PowerShell module...
-# Using default module path: C:\Users\username\Documents\PowerShell\Modules\Gosh
+# Using default module path: C:\Users\username\Documents\PowerShell\Modules\Bolt
 # ✓ Bolt module installed successfully!
 # You can now use 'bolt' command from any directory.
 ```
@@ -369,7 +369,7 @@ bolt format lint build -Only
 ```
 
 **Cross-Platform Support:**
-- Windows: `~\Documents\PowerShell\Modules\Gosh\`
+- Windows: `~\Documents\PowerShell\Modules\Bolt\`
 - Linux/macOS: `~/.local/share/powershell/Modules/Bolt/`
 
 ### Uninstallation
@@ -386,12 +386,12 @@ Remove Bolt from all module installation locations:
 #
 # Found 1 Bolt installation(s):
 #
-#   - C:\Users\username\Documents\PowerShell\Modules\Gosh
+#   - C:\Users\username\Documents\PowerShell\Modules\Bolt
 #
 # Uninstall Bolt from all locations? (y/n): y
 #
 # Uninstalling Bolt...
-# Removing: C:\Users\username\Documents\PowerShell\Modules\Gosh
+# Removing: C:\Users\username\Documents\PowerShell\Modules\Bolt
 #   ✓ Successfully removed
 #
 # ✓ Bolt module uninstalled successfully!

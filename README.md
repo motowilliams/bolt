@@ -900,12 +900,12 @@ cd ~/projects/bolt
 #
 # Found 1 Bolt installation(s):
 #
-#   - C:\Users\username\Documents\PowerShell\Modules\Gosh
+#   - C:\Users\username\Documents\PowerShell\Modules\Bolt
 #
 # Uninstall Bolt from all locations? (y/n): y
 #
 # Uninstalling Bolt...
-# Removing: C:\Users\username\Documents\PowerShell\Modules\Gosh
+# Removing: C:\Users\username\Documents\PowerShell\Modules\Bolt
 #   ✓ Successfully removed
 #
 # ✓ Bolt module uninstalled successfully!
@@ -947,7 +947,7 @@ The `generate-manifest.ps1` script analyzes existing PowerShell modules and crea
 .\generate-manifest.ps1 -ModulePath "MyModule/" -ModuleVersion "2.1.0" -Tags "Infrastructure,Azure"
 
 # With additional metadata
-.\generate-manifest.ps1 -ModulePath "Gosh/Bolt.psm1" -ModuleVersion "3.0.0" -Tags "Build,Task,Orchestration" -ProjectUri "https://github.com/owner/repo" -LicenseUri "https://github.com/owner/repo/blob/main/LICENSE"
+.\generate-manifest.ps1 -ModulePath "Bolt/Bolt.psm1" -ModuleVersion "3.0.0" -Tags "Build,Task,Orchestration" -ProjectUri "https://github.com/owner/repo" -LicenseUri "https://github.com/owner/repo/blob/main/LICENSE"
 ```
 
 **Features:**
@@ -963,7 +963,7 @@ For isolated execution, use the Docker wrapper:
 
 ```powershell
 # Generate manifest in PowerShell container (no host pollution)
-.\generate-manifest-docker.ps1 -ModulePath "Gosh/Bolt.psm1" -ModuleVersion "3.0.0" -Tags "Build,DevOps,Docker"
+.\generate-manifest-docker.ps1 -ModulePath "Bolt/Bolt.psm1" -ModuleVersion "3.0.0" -Tags "Build,DevOps,Docker"
 ```
 
 **Docker Benefits:**
@@ -995,10 +995,10 @@ For isolated execution, use the Docker wrapper:
 .\bolt.ps1 -AsModule -ModuleOutputPath ".\dist" -NoImport
 
 # 2. Generate manifest
-.\generate-manifest.ps1 -ModulePath ".\dist\Gosh\Bolt.psm1" -ModuleVersion "2.0.0" -Tags "Build,PowerShell,Bicep"
+.\generate-manifest.ps1 -ModulePath ".\dist\Bolt\Bolt.psm1" -ModuleVersion "2.0.0" -Tags "Build,PowerShell,Bicep"
 
 # 3. Publish to PowerShell Gallery
-Publish-Module -Path ".\dist\Gosh" -NuGetApiKey $apiKey
+Publish-Module -Path ".\dist\Bolt" -NuGetApiKey $apiKey
 ```
 
 ### Parameters
@@ -1023,12 +1023,12 @@ The scripts generate:
 
 **Example output:**
 ```
-✅ Found module file: ./Gosh/Bolt.psm1
+✅ Found module file: ./Bolt/Bolt.psm1
 ✅ Successfully imported module: Bolt
 Exported Functions (1): Invoke-Bolt
 Exported Aliases (1): bolt
 ✅ Inferred ProjectUri from git: https://github.com/motowilliams/bolt
-✅ Module manifest created: ./Gosh/Bolt.psd1
+✅ Module manifest created: ./Bolt/Bolt.psd1
 ✅ Manifest is valid!
   Module Name: Bolt
   Version: 3.0.0

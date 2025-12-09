@@ -28,30 +28,30 @@ using namespace System.Management.Automation
 .PARAMETER Arguments
     Additional arguments to pass to the task scripts.
 .EXAMPLE
-    .\gosh.ps1 build
+    .\bolt.ps1 build
     Executes the build task and its dependencies (format, lint).
 .EXAMPLE
-    .\gosh.ps1 format lint build -Only
+    .\bolt.ps1 format lint build -Only
     Executes format, lint, and build tasks without their dependencies.
 .EXAMPLE
-    .\gosh.ps1 -TaskDirectory "custom-tasks"
+    .\bolt.ps1 -TaskDirectory "custom-tasks"
     Lists and executes tasks from the custom-tasks directory instead of .build.
 .EXAMPLE
-    .\gosh.ps1 -ListTasks
+    .\bolt.ps1 -ListTasks
     Shows all available tasks.
 .EXAMPLE
-    .\gosh.ps1 build -Outline
+    .\bolt.ps1 build -Outline
     Shows the dependency tree and execution order for the build task without executing it.
 .EXAMPLE
-    .\gosh.ps1 -NewTask clean
+    .\bolt.ps1 -NewTask clean
     Creates a new task file named Invoke-Clean.ps1 in the task directory.
 .EXAMPLE
-    .\gosh.ps1 format,lint,build -ErrorAction Continue
+    .\bolt.ps1 format,lint,build -ErrorAction Continue
     Runs all tasks even if one fails (useful for seeing all errors at once).
 .NOTES
-    For module installation, use the New-GoshModule.ps1 script:
-    - Install: .\New-GoshModule.ps1 -Install
-    - Uninstall: .\New-GoshModule.ps1 -Uninstall
+    For module installation, use the New-BoltModule.ps1 script:
+    - Install: .\New-BoltModule.ps1 -Install
+    - Uninstall: .\New-BoltModule.ps1 -Uninstall
 #>
 [CmdletBinding(DefaultParameterSetName = 'Help')]
 param(
@@ -200,7 +200,7 @@ $taskCompleter = {
     }
 }
 
-Register-ArgumentCompleter -CommandName 'gosh.ps1' -ParameterName 'Task' -ScriptBlock $taskCompleter
+Register-ArgumentCompleter -CommandName 'bolt.ps1' -ParameterName 'Task' -ScriptBlock $taskCompleter
 
 #region Security Event Logging
 function Write-SecurityLog {
@@ -208,7 +208,7 @@ function Write-SecurityLog {
     .SYNOPSIS
         Writes security-relevant events to audit log
     .DESCRIPTION
-        Logs security events to .gosh/audit.log when $env:GOSH_AUDIT_LOG is set to 1.
+        Logs security events to .bolt/audit.log when $env:BOLT_AUDIT_LOG is set to 1.
         Captures timestamp, severity, user context, event type, and details.
     .PARAMETER Event
         The type of security event (e.g., TaskExecution, FileCreation, CommandExecution)
@@ -233,7 +233,7 @@ function Write-SecurityLog {
     )
 
     # Only log if audit logging is enabled
-    if ($env:GOSH_AUDIT_LOG -ne '1') {
+    if ($env:BOLT_AUDIT_LOG -ne '1') {
         return
     }
 
@@ -243,18 +243,18 @@ function Write-SecurityLog {
         $machine = [Environment]::MachineName
         $entry = "$timestamp | $Severity | $user@$machine | $Event | $Details"
 
-        $logDir = Join-Path $PSScriptRoot '.gosh'
+        $logDir = Join-Path $PSScriptRoot '.bolt'
         $logPath = Join-Path $logDir 'audit.log'
 
-        # Ensure .gosh directory exists and is actually a directory (robust approach)
+        # Ensure .bolt directory exists and is actually a directory (robust approach)
         if (Test-Path $logDir) {
-            # If .gosh exists but is not a directory, remove it first
+            # If .bolt exists but is not a directory, remove it first
             if (-not (Test-Path -PathType Container $logDir)) {
                 Remove-Item $logDir -Force -ErrorAction SilentlyContinue
             }
         }
 
-        # Create .gosh directory if it doesn't exist (more robust approach)
+        # Create .bolt directory if it doesn't exist (more robust approach)
         if (-not (Test-Path -PathType Container $logDir)) {
             try {
                 $null = New-Item -Path $logDir -ItemType Directory -Force -ErrorAction Stop
@@ -497,7 +497,7 @@ function Get-GitStatus {
     }
 }
 
-function Get-GoshUtilities {
+function Get-BoltUtilities {
     <#
     .SYNOPSIS
         Returns a hashtable of utility functions available to tasks
@@ -644,9 +644,9 @@ function Get-ProjectTasks {
             $metadata.UsedFilenameFallback = $true
 
             # Warn about filename fallback unless disabled via environment variable
-            if (-not $env:GOSH_NO_FALLBACK_WARNINGS) {
+            if (-not $env:BOLT_NO_FALLBACK_WARNINGS) {
                 $fileName = Split-Path $FilePath -Leaf
-                Write-Warning "Task file '$fileName' does not have a # TASK: metadata tag. Using filename fallback to derive task name '$taskName'. To disable this warning, set: `$env:GOSH_NO_FALLBACK_WARNINGS = 1"
+                Write-Warning "Task file '$fileName' does not have a # TASK: metadata tag. Using filename fallback to derive task name '$taskName'. To disable this warning, set: `$env:BOLT_NO_FALLBACK_WARNINGS = 1"
             }
         }
 
@@ -958,8 +958,8 @@ function Invoke-Task {
                 throw "Script path is outside project directory: $scriptPath"
             }
 
-            # Get utility functions from Gosh
-            $utilities = Get-GoshUtilities
+            # Get utility functions from Bolt
+            $utilities = Get-BoltUtilities
 
             # Build function definitions for injection
             $utilityDefinitions = @()
@@ -973,7 +973,7 @@ function Invoke-Task {
             # 2. Sets up task context variables
             # 3. Executes the original task script
             $scriptContent = @"
-# Injected Gosh utility functions
+# Injected Bolt utility functions
 $($utilityDefinitions -join "`n")
 
 # Set task context variables
@@ -1034,11 +1034,11 @@ switch ($PSCmdlet.ParameterSetName) {
 }
 
 # Determine the effective script root
-# When running as a module, use GOSH_PROJECT_ROOT environment variable
+# When running as a module, use BOLT_PROJECT_ROOT environment variable
 # When running as a script, use $PSScriptRoot
-$script:EffectiveScriptRoot = if ($env:GOSH_PROJECT_ROOT) {
-    Write-Verbose "Running in module mode, using project root: $env:GOSH_PROJECT_ROOT"
-    $env:GOSH_PROJECT_ROOT
+$script:EffectiveScriptRoot = if ($env:BOLT_PROJECT_ROOT) {
+    Write-Verbose "Running in module mode, using project root: $env:BOLT_PROJECT_ROOT"
+    $env:BOLT_PROJECT_ROOT
 } else {
     Write-Verbose "Running in script mode, using PSScriptRoot: $PSScriptRoot"
     $PSScriptRoot
@@ -1106,7 +1106,7 @@ exit 0
     Write-Host "Next steps:" -ForegroundColor Yellow
     Write-Host "  1. Edit $fileName to implement your task logic" -ForegroundColor Gray
     Write-Host "  2. Update the DESCRIPTION and DEPENDS metadata as needed" -ForegroundColor Gray
-    Write-Host "  3. Run '.\gosh.ps1 $($NewTask.ToLower())' to execute your task" -ForegroundColor Gray
+    Write-Host "  3. Run '.\bolt.ps1 $($NewTask.ToLower())' to execute your task" -ForegroundColor Gray
     Write-Host "  4. Restart PowerShell to enable tab completion for the new task" -ForegroundColor Gray
 
     exit 0
