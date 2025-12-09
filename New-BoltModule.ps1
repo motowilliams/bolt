@@ -58,14 +58,14 @@ param(
     [switch]$Force
 )
 
-function Install-GoshModule {
+function Install-BoltModule {
     <#
     .SYNOPSIS
         Installs Bolt as a PowerShell module for the current user
     .DESCRIPTION
         Creates a PowerShell module in the user module path:
-        - Windows: ~/Documents/PowerShell/Modules/Gosh/
-        - Linux/macOS: ~/.local/share/powershell/Modules/Gosh/
+        - Windows: ~/Documents/PowerShell/Modules/Bolt/
+        - Linux/macOS: ~/.local/share/powershell/Modules/Bolt/
 
         The module allows running 'bolt' commands from any directory and
         searches upward from the current directory for .build/ folders.
@@ -118,14 +118,14 @@ function Install-GoshModule {
     Write-Host "Created module directory: $userModulePath" -ForegroundColor Gray
 
     # Copy bolt.ps1 to the module directory (so it can be invoked as a script)
-    $goshScriptPath = Join-Path $PSScriptRoot "bolt.ps1"
-    if (-not (Test-Path $goshScriptPath)) {
-        Write-Error "Could not find bolt.ps1 at: $goshScriptPath"
+    $boltScriptPath = Join-Path $PSScriptRoot "bolt.ps1"
+    if (-not (Test-Path $boltScriptPath)) {
+        Write-Error "Could not find bolt.ps1 at: $boltScriptPath"
         return $false
     }
 
     $goshCorePath = Join-Path $userModulePath "bolt-core.ps1"
-    Copy-Item -Path $goshScriptPath -Destination $goshCorePath -Force
+    Copy-Item -Path $boltScriptPath -Destination $goshCorePath -Force
     Write-Host "Copied gosh core script to module" -ForegroundColor Gray
 
     # Generate module script (.psm1) that wraps bolt.ps1 with upward directory search
@@ -363,9 +363,9 @@ Register-ArgumentCompleter -CommandName 'bolt' -ParameterName 'Task' -ScriptBloc
             Write-Host ""
             Write-Host "You can now use 'bolt' command from any directory." -ForegroundColor Yellow
             Write-Host "Examples:" -ForegroundColor Gray
-            Write-Host "  gosh build" -ForegroundColor Gray
-            Write-Host "  gosh -ListTasks" -ForegroundColor Gray
-            Write-Host "  gosh format lint build -Only" -ForegroundColor Gray
+            Write-Host "  bolt build" -ForegroundColor Gray
+            Write-Host "  bolt -ListTasks" -ForegroundColor Gray
+            Write-Host "  bolt format lint build -Only" -ForegroundColor Gray
         }
         catch {
             Write-Host "⚠ Module installed but import failed. You may need to restart PowerShell." -ForegroundColor Yellow
@@ -377,14 +377,14 @@ Register-ArgumentCompleter -CommandName 'bolt' -ParameterName 'Task' -ScriptBloc
         Write-Host "To use the module, run: Import-Module '$userModulePath' -Force" -ForegroundColor Gray
         Write-Host ""
         Write-Host "Examples (after importing):" -ForegroundColor Gray
-        Write-Host "  gosh build" -ForegroundColor Gray
-        Write-Host "  gosh -ListTasks" -ForegroundColor Gray
-        Write-Host "  gosh format lint build -Only" -ForegroundColor Gray
+        Write-Host "  bolt build" -ForegroundColor Gray
+        Write-Host "  bolt -ListTasks" -ForegroundColor Gray
+        Write-Host "  bolt format lint build -Only" -ForegroundColor Gray
     }
 
     Write-Host ""
     Write-Host "The module searches upward from your current directory to find .build/ folders," -ForegroundColor Yellow
-    Write-Host "so you can run gosh from any subdirectory within your project!" -ForegroundColor Yellow
+    Write-Host "so you can run bolt from any subdirectory within your project!" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Module location: $userModulePath" -ForegroundColor DarkGray
     Write-Host ""

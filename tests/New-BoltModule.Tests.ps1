@@ -90,7 +90,7 @@ Describe 'Module Installation' -Tag 'Core' {
             
             # Check that required files exist
             Join-Path $modulePath "bolt-core.ps1" | Should -Exist
-            Join-Path $modulePath "Gosh.psm1" | Should -Exist
+            Join-Path $modulePath "Bolt.psm1" | Should -Exist
         }
         finally {
             Remove-TempModulePath -Path $tempPath
@@ -115,12 +115,12 @@ Describe 'Module Installation' -Tag 'Core' {
         }
     }
 
-    It 'Should create Gosh.psm1 module manifest' {
+    It 'Should create Bolt.psm1 module manifest' {
         $tempPath = Get-TempModulePath
         try {
             & $script:NewGoshModulePath -Install -ModuleOutputPath $tempPath -NoImport 2>&1 | Out-Null
             
-            $moduleManifestPath = Join-Path $tempPath "Bolt" "Gosh.psm1"
+            $moduleManifestPath = Join-Path $tempPath "Bolt" "Bolt.psm1"
             $moduleManifestPath | Should -Exist
             
             # Verify module manifest contains key components

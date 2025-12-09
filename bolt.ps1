@@ -3,13 +3,13 @@ using namespace System.Management.Automation
 
 <#
 .SYNOPSIS
-    Gosh! Build orchestration for PowerShell
+    Bolt! Build orchestration for PowerShell
 .DESCRIPTION
     A self-contained PowerShell build system with extensible task orchestration.
     Core build tasks are built into this script. Project-specific tasks can be
     added by placing PowerShell scripts in a .build directory.
 
-    "Go" + "powerShell" = Gosh! 🎉
+    "Bolt" - Lightning-fast PowerShell! ⚡
 .PARAMETER Task
     One or more task names to execute. Tasks are executed in sequence.
 .PARAMETER ListTasks
@@ -1014,18 +1014,18 @@ try {
 switch ($PSCmdlet.ParameterSetName) {
     'Help' {
         # Default behavior when no parameters - show available tasks
-        Write-Host "Gosh! Build orchestration for PowerShell" -ForegroundColor Cyan
+        Write-Host "Bolt! Build orchestration for PowerShell" -ForegroundColor Cyan
         Write-Host ""
         Write-Host "Usage:" -ForegroundColor Yellow
-        Write-Host "  .\gosh.ps1 <task> [task2 task3...] [arguments]" -ForegroundColor Gray
-        Write-Host "  .\gosh.ps1 <task>,<task2>,<task3> [arguments]  (comma-separated)" -ForegroundColor Gray
-        Write-Host "  .\gosh.ps1 <task> -Only [arguments]  (skip dependencies)" -ForegroundColor Gray
-        Write-Host "  .\gosh.ps1 -ListTasks  (or -Help)" -ForegroundColor Gray
-        Write-Host "  .\gosh.ps1 -NewTask <name>" -ForegroundColor Gray
+        Write-Host "  .\bolt.ps1 <task> [task2 task3...] [arguments]" -ForegroundColor Gray
+        Write-Host "  .\bolt.ps1 <task>,<task2>,<task3> [arguments]  (comma-separated)" -ForegroundColor Gray
+        Write-Host "  .\bolt.ps1 <task> -Only [arguments]  (skip dependencies)" -ForegroundColor Gray
+        Write-Host "  .\bolt.ps1 -ListTasks  (or -Help)" -ForegroundColor Gray
+        Write-Host "  .\bolt.ps1 -NewTask <name>" -ForegroundColor Gray
         Write-Host ""
-        Write-Host "For module installation, use New-GoshModule.ps1:" -ForegroundColor Yellow
-        Write-Host "  .\New-GoshModule.ps1 -Install" -ForegroundColor Gray
-        Write-Host "  .\New-GoshModule.ps1 -Uninstall" -ForegroundColor Gray
+        Write-Host "For module installation, use New-BoltModule.ps1:" -ForegroundColor Yellow
+        Write-Host "  .\New-BoltModule.ps1 -Install" -ForegroundColor Gray
+        Write-Host "  .\New-BoltModule.ps1 -Uninstall" -ForegroundColor Gray
         Write-Host ""
 
         # Show available tasks
