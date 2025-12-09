@@ -23,19 +23,19 @@ using namespace System.Management.Automation
 .PARAMETER Force
     Skip confirmation prompt before uninstalling. Used with -Uninstall parameter.
 .EXAMPLE
-    .\New-GoshModule.ps1 -Install
+    .\New-BoltModule.ps1 -Install
     Installs Bolt as a PowerShell module for the current user.
 .EXAMPLE
-    .\New-GoshModule.ps1 -Install -NoImport
+    .\New-BoltModule.ps1 -Install -NoImport
     Installs the module without importing it (useful for build scenarios).
 .EXAMPLE
-    .\New-GoshModule.ps1 -Install -ModuleOutputPath "C:\Custom\Path"
+    .\New-BoltModule.ps1 -Install -ModuleOutputPath "C:\Custom\Path"
     Installs the module to a custom path.
 .EXAMPLE
-    .\New-GoshModule.ps1 -Uninstall
+    .\New-BoltModule.ps1 -Uninstall
     Removes Bolt from all installed locations.
 .EXAMPLE
-    .\New-GoshModule.ps1 -Uninstall -Force
+    .\New-BoltModule.ps1 -Uninstall -Force
     Removes Bolt without confirmation prompt.
 #>
 [CmdletBinding(DefaultParameterSetName = 'Install')]
@@ -124,9 +124,9 @@ function Install-BoltModule {
         return $false
     }
 
-    $goshCorePath = Join-Path $userModulePath "bolt-core.ps1"
-    Copy-Item -Path $boltScriptPath -Destination $goshCorePath -Force
-    Write-Host "Copied gosh core script to module" -ForegroundColor Gray
+    $boltCorePath = Join-Path $userModulePath "bolt-core.ps1"
+    Copy-Item -Path $boltScriptPath -Destination $boltCorePath -Force
+    Write-Host "Copied bolt core script to module" -ForegroundColor Gray
 
     # Generate module script (.psm1) that wraps bolt.ps1 with upward directory search
     $moduleScriptPath = Join-Path $userModulePath "$moduleName.psm1"
@@ -250,17 +250,17 @@ function Invoke-Bolt {
     Write-Verbose "Build path: `$buildPath"
 
     # Get path to the bolt-core.ps1 script in this module
-    `$goshCorePath = Join-Path `$PSScriptRoot "bolt-core.ps1"
+    `$boltCorePath = Join-Path `$PSScriptRoot "bolt-core.ps1"
 
     # Build parameter hashtable for splatting
-    `$goshParams = @{}
-    if (`$Task) { `$goshParams['Task'] = `$Task }
-    if (`$ListTasks) { `$goshParams['ListTasks'] = `$true }
-    if (`$Only) { `$goshParams['Only'] = `$true }
-    if (`$Outline) { `$goshParams['Outline'] = `$true }
-    if (`$TaskDirectory -ne '.build') { `$goshParams['TaskDirectory'] = `$TaskDirectory }
-    if (`$NewTask) { `$goshParams['NewTask'] = `$NewTask }
-    if (`$Arguments) { `$goshParams['Arguments'] = `$Arguments }
+    `$boltParams = @{}
+    if (`$Task) { `$boltParams['Task'] = `$Task }
+    if (`$ListTasks) { `$boltParams['ListTasks'] = `$true }
+    if (`$Only) { `$boltParams['Only'] = `$true }
+    if (`$Outline) { `$boltParams['Outline'] = `$true }
+    if (`$TaskDirectory -ne '.build') { `$boltParams['TaskDirectory'] = `$TaskDirectory }
+    if (`$NewTask) { `$boltParams['NewTask'] = `$NewTask }
+    if (`$Arguments) { `$boltParams['Arguments'] = `$Arguments }
 
     # Execute bolt-core.ps1 from the project root directory
     # Set environment variable to signal module mode and pass the project root
@@ -271,7 +271,7 @@ function Invoke-Bolt {
         `$env:BOLT_PROJECT_ROOT = `$projectRoot
 
         # Execute bolt.ps1 with proper parameter splatting
-        & `$goshCorePath @goshParams
+        & `$boltCorePath @boltParams
 
         # Propagate exit code
         if (`$LASTEXITCODE -ne 0 -and `$null -ne `$LASTEXITCODE) {
@@ -286,8 +286,8 @@ function Invoke-Bolt {
 }
 
 # Create alias first, then export
-Set-Alias -Name gosh -Value Invoke-Bolt
-Export-ModuleMember -Function Invoke-Bolt -Alias gosh
+Set-Alias -Name bolt -Value Invoke-Bolt
+Export-ModuleMember -Function Invoke-Bolt -Alias bolt
 
 # Register argument completer for tab completion
 `$taskCompleter = {
@@ -393,7 +393,7 @@ Register-ArgumentCompleter -CommandName 'bolt' -ParameterName 'Task' -ScriptBloc
     return $true
 }
 
-function Invoke-UninstallGoshModule {
+function Invoke-UninstallBoltModule {
     <#
     .SYNOPSIS
         Removes Bolt from all installed module locations
@@ -578,11 +578,11 @@ Please remove them manually:
 # Main script execution
 switch ($PSCmdlet.ParameterSetName) {
     'Install' {
-        $result = Install-GoshModule -ModuleOutputPath $ModuleOutputPath -NoImport:$NoImport
+        $result = Install-BoltModule -ModuleOutputPath $ModuleOutputPath -NoImport:$NoImport
         exit $(if ($result) { 0 } else { 1 })
     }
     'Uninstall' {
-        $result = Invoke-UninstallGoshModule -Force:$Force
+        $result = Invoke-UninstallBoltModule -Force:$Force
         exit $(if ($result) { 0 } else { 1 })
     }
 }
