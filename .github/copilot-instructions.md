@@ -753,7 +753,7 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
 
 **Status Badge**:
 ```markdown
-[![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
+[![CI](https://github.com/motowilliams/bolt/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/bolt/actions/workflows/ci.yml)
 ```
 
 **Example for other CI platforms**:
@@ -1132,9 +1132,9 @@ When creating a new release:
 
 3. **Add version comparison links** at bottom:
    ```markdown
-   [Unreleased]: https://github.com/motowilliams/gosh/compare/v1.1.0...HEAD
-   [1.1.0]: https://github.com/motowilliams/gosh/compare/v1.0.0...v1.1.0
-   [1.0.0]: https://github.com/motowilliams/gosh/releases/tag/v1.0.0
+   [Unreleased]: https://github.com/motowilliams/bolt/compare/v1.1.0...HEAD
+   [1.1.0]: https://github.com/motowilliams/bolt/compare/v1.0.0...v1.1.0
+   [1.0.0]: https://github.com/motowilliams/bolt/releases/tag/v1.0.0
    ```
 
 4. **Create empty `[Unreleased]` section** for next changes

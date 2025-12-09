@@ -1,6 +1,6 @@
 # Bolt! ⚡
 
-[![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
+[![CI](https://github.com/motowilliams/bolt/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/bolt/actions/workflows/ci.yml)
 
 > **Bolt** - Lightning-fast Build orchestration for PowerShell!
 
@@ -1149,7 +1149,7 @@ Bolt includes a GitHub Actions workflow that runs on Ubuntu and Windows:
 - **Pipeline**: Core tests → Tasks tests → Full build (format → lint → build)
 - **Dependencies**: Automatically installs PowerShell 7.0+ and Bicep CLI
 - **Test Reports**: NUnit XML artifacts uploaded for each platform
-- **Status**: [![CI](https://github.com/motowilliams/gosh/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/gosh/actions/workflows/ci.yml)
+- **Status**: [![CI](https://github.com/motowilliams/bolt/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/bolt/actions/workflows/ci.yml)
 
 See `.github/workflows/ci.yml` for the complete workflow configuration.
 

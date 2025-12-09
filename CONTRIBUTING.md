@@ -333,7 +333,7 @@ When updating documentation:
 Please **DO NOT** report security vulnerabilities through public GitHub issues.
 
 Instead, report them via:
-- **GitHub Security Advisories** (preferred): https://github.com/motowilliams/gosh/security/advisories/new
+- **GitHub Security Advisories** (preferred): https://github.com/motowilliams/bolt/security/advisories/new
 - **Security Policy**: See [SECURITY.md](SECURITY.md) for complete vulnerability disclosure process
 - **RFC 9116 Policy**: See [.well-known/security.txt](.well-known/security.txt)
 
