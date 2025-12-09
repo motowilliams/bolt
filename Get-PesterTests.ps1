@@ -30,7 +30,7 @@
     Displays formatted report with colors and visual indicators.
 
 .EXAMPLE
-    .\Get-PesterTests.ps1 -Path "tests/gosh.Tests.ps1"
+    .\Get-PesterTests.ps1 -Path "tests/bolt.Tests.ps1"
     Returns test objects from a specific file.
 
 .EXAMPLE

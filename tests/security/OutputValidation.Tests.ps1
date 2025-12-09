@@ -16,10 +16,10 @@
 
 BeforeAll {
     $ProjectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-    $GoshScript = Join-Path $ProjectRoot "gosh.ps1"
+    $BoltScript = Join-Path $ProjectRoot "bolt.ps1"
 
-    # Dot-source the gosh script to access Test-CommandOutput function
-    . $GoshScript
+    # Dot-source the bolt script to access Test-CommandOutput function
+    . $BoltScript
 }
 
 Describe "Output Validation - Test-CommandOutput Function" -Tag "OutputValidation", "Operational" {
@@ -409,7 +409,7 @@ Describe "Output Validation Integration" -Tag "OutputValidation", "Integration" 
             }
 
             # Run check-index and capture output
-            $output = & $GoshScript check-index -Only 2>&1 | Out-String
+            $output = & $BoltScript check-index -Only 2>&1 | Out-String
 
             # Output should not contain ANSI escape sequences
             $output | Should -Not -Match '\x1b\['

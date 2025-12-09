@@ -51,13 +51,13 @@ When creating worktrees, automatically use the naming convention:
 **For existing branches:**
 
 ```powershell
-git worktree add ../<repo-name>-wt-<sanitized-branch-name> <branch-name>
+git worktree add --checkout ../<repo-name>-wt-<sanitized-branch-name> <branch-name>
 ```
 
 **For new branches:**
 
 ```powershell
-git worktree add -b <new-branch-name> ../<repo-name>-wt-<sanitized-branch-name> <base-branch>
+git worktree add -b <new-branch-name> ../<repo-name>-wt-<sanitized-branch-name> <base-branch> # where base-branch will likely be master or main
 ```
 
 **Note**: Branch names with slashes (e.g., `feature/new-login`) should be sanitized by replacing `/` with `-` for the directory name.
