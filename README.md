@@ -2,8 +2,7 @@
 
 [![CI](https://github.com/motowilliams/bolt/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/bolt/actions/workflows/ci.yml)
 
-> **Bolt** - Lightning-fast PowerShell!  
-> Build orchestration for PowerShell
+> **Bolt** - Lightning-fast Build orchestration for PowerShell!
 
 A self-contained, cross-platform PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by PSake, Make and Rake. Just PowerShell with no external dependencies - just PowerShell Core 7.0+.
 
