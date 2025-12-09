@@ -39,14 +39,14 @@ tests/*temp*/**                     # Any test temporary files
 *.psd1
 
 # Security logging directories (should only be directories, never files)
-.gosh/                              # Security audit log directory (opt-in logging)
-.gosh/**/*                          # All contents of .gosh directory
-.Gosh/                              # Case variations for cross-platform
-.Gosh/**/*
+.bolt/                              # Security audit log directory (opt-in logging)
+.bolt/**/*                          # All contents of .bolt directory
+.Bolt/                              # Case variations for cross-platform
+.Bolt/**/*
 
 # Module installation directories (created by -AsModule)
-gosh/**/*                           # Module directories (various cases)
-Gosh/**/*
+bolt/**/*                           # Module directories (various cases)
+Bolt/**/*
 
 # =============================================================================
 # Development and IDE Files
