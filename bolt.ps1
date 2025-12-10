@@ -148,6 +148,12 @@ param(
         }
         return $true
     })]
+    [ValidateScript({
+        if ($_.Length -gt 100) {
+            throw "Variable name '$_' is too long (max 100 characters)."
+        }
+        return $true
+    })]
     [string]$VariableName,
 
     # TaskExecution parameter set - additional arguments
