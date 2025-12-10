@@ -248,19 +248,19 @@ $BoltConfig.Azure.ResourceGroup    # From: { "Azure": { "ResourceGroup": "..." }
 **Add or update a variable:**
 ```powershell
 # Simple variable
-.\bolt.ps1 -AddVariable "IacPath" "infrastructure/bicep"
+.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
 
 # Nested variable (creates nested structure)
-.\bolt.ps1 -AddVariable "Azure.SubscriptionId" "00000000-0000-0000-0000-000000000000"
+.\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "00000000-0000-0000-0000-000000000000"
 ```
 
 **Remove a variable:**
 ```powershell
 # Remove simple variable
-.\bolt.ps1 -RemoveVariable "OldSetting"
+.\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
 
 # Remove nested variable
-.\bolt.ps1 -RemoveVariable "Azure.OldProperty"
+.\bolt.ps1 -RemoveVariable -VariableName "Azure.OldProperty"
 ```
 
 #### **Configuration File Format**

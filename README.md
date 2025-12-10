@@ -119,8 +119,8 @@ bolt build
 
 # Manage configuration variables
 .\bolt.ps1 -ListVariables
-.\bolt.ps1 -AddVariable "IacPath" "infrastructure/bicep"
-.\bolt.ps1 -RemoveVariable "OldSetting"
+.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
+.\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
 
 # Install as a module
 .\New-BoltModule.ps1 -Install
@@ -446,8 +446,8 @@ Tasks in a dependency chain do **NOT** pass pipeline objects to each other:
 echo '{ "IacPath": "tests/iac", "Environment": "dev" }' > bolt.config.json
 
 # Or use the CLI
-.\bolt.ps1 -AddVariable "IacPath" "tests/iac"
-.\bolt.ps1 -AddVariable "Environment" "dev"
+.\bolt.ps1 -AddVariable -Name "IacPath" -Value "tests/iac"
+.\bolt.ps1 -AddVariable -Name "Environment" -Value "dev"
 
 # View all variables
 .\bolt.ps1 -ListVariables
@@ -497,12 +497,12 @@ exit 0
 .\bolt.ps1 -ListVariables
 
 # Add or update a variable
-.\bolt.ps1 -AddVariable "VariableName" "value"
-.\bolt.ps1 -AddVariable "Nested.Value" "123"  # Creates nested structure
+.\bolt.ps1 -AddVariable -Name "VariableName" -Value "value"
+.\bolt.ps1 -AddVariable -Name "Nested.Value" -Value "123"  # Creates nested structure
 
 # Remove a variable
-.\bolt.ps1 -RemoveVariable "VariableName"
-.\bolt.ps1 -RemoveVariable "Nested.Value"  # Removes nested property
+.\bolt.ps1 -RemoveVariable -VariableName "VariableName"
+.\bolt.ps1 -RemoveVariable -VariableName "Nested.Value"  # Removes nested property
 ```
 
 **Example `bolt.config.json`**:

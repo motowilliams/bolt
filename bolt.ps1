@@ -142,6 +142,12 @@ param(
 
     [Parameter(Mandatory = $true, ParameterSetName = 'RemoveVariable')]
     [ValidatePattern('^[a-zA-Z0-9_\-\.]+$')]
+    [ValidateScript({
+        if ($_.Length -gt 100) {
+            throw "Variable name '$_' is too long (max 100 characters)."
+        }
+        return $true
+    })]
     [string]$VariableName,
 
     # TaskExecution parameter set - additional arguments
@@ -1081,7 +1087,8 @@ function Show-BoltVariables {
         else {
             $userVars[$key] = $value
         }
-    }    # Display built-in variables
+    }
+    # Display built-in variables
     Write-Host "Built-in Variables:" -ForegroundColor Yellow
     if ($builtInVars.Count -eq 0) {
         Write-Host "  (none)" -ForegroundColor Gray
