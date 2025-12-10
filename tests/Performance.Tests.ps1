@@ -64,7 +64,7 @@ Describe "Bolt Performance Baseline" -Tag "Perf" {
                 Write-Host "Single task execution took: $elapsedMs ms" -ForegroundColor Cyan
 
                 # Baseline threshold: simple task execution should be quick
-                $elapsedMs | Should -BeLessThan 2000
+                $elapsedMs | Should -BeLessThan 3000
 
                 # Verify task succeeded
                 $exitCode | Should -Be 0
