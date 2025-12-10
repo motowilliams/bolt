@@ -256,13 +256,13 @@ Three dedicated parameter sets for managing configuration:
 **Add/Update Variables:**
 ```powershell
 # Add a simple variable
-.\bolt.ps1 -AddVariable "IacPath" "infrastructure/bicep"
+.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
 
 # Add a nested variable (creates nested structure)
-.\bolt.ps1 -AddVariable "Azure.SubscriptionId" "00000000-0000-0000-0000-000000000000"
+.\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "00000000-0000-0000-0000-000000000000"
 
 # Update existing variable (same command)
-.\bolt.ps1 -AddVariable "Environment" "staging"
+.\bolt.ps1 -AddVariable -Name "Environment" -Value "staging"
 
 # Output:
 # Adding variable: IacPath = infrastructure/bicep
@@ -274,10 +274,10 @@ Three dedicated parameter sets for managing configuration:
 **Remove Variables:**
 ```powershell
 # Remove a variable
-.\bolt.ps1 -RemoveVariable "OldSetting"
+.\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
 
 # Remove a nested variable
-.\bolt.ps1 -RemoveVariable "Azure.OldProperty"
+.\bolt.ps1 -RemoveVariable -VariableName "Azure.OldProperty"
 
 # Output:
 # Removing variable: OldSetting
@@ -344,8 +344,8 @@ exit 0
 **Cache Invalidation:**
 ```powershell
 # Cache is automatically cleared after these operations:
-.\bolt.ps1 -AddVariable "Setting" "value"      # Cache invalidated
-.\bolt.ps1 -RemoveVariable "Setting"           # Cache invalidated
+.\bolt.ps1 -AddVariable -Name "Setting" -Value "value"      # Cache invalidated
+.\bolt.ps1 -RemoveVariable -VariableName "Setting"           # Cache invalidated
 
 # Fresh cache on each invocation:
 .\bolt.ps1 build                               # Loads config, caches it
@@ -380,9 +380,9 @@ This makes the tasks portable and reusable across different projects by simply c
 
 # Manage configuration variables
 .\bolt.ps1 -ListVariables
-.\bolt.ps1 -AddVariable "IacPath" "infrastructure/bicep"
-.\bolt.ps1 -AddVariable "Azure.SubscriptionId" "00000000-0000-0000-0000-000000000000"
-.\bolt.ps1 -RemoveVariable "OldSetting"
+.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
+.\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "00000000-0000-0000-0000-000000000000"
+.\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
 
 # Preview task execution plan (no execution)
 .\bolt.ps1 build -Outline

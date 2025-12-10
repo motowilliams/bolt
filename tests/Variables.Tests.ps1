@@ -131,9 +131,9 @@ Describe "Variable System - Cache Invalidation" -Tag "Variables" {
         # Check that Remove-BoltVariable also invalidates cache
         $scriptContent = Get-Content $script:BoltScript -Raw
 
-        # Find Remove-BoltVariable function and check it has cache invalidation
-        $removeFunction = $scriptContent -match '(?s)function Remove-BoltVariable \{.*?\n\}'
+        # Check that Remove-BoltVariable contains cache invalidation code
         $scriptContent | Should -Match 'function Remove-BoltVariable'
+        $scriptContent | Should -Match '\$script:CachedConfigJson\s*=\s*\$null'
     }
 
     It "Add-BoltVariable invalidates cache on success" {
