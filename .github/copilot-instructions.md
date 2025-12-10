@@ -409,6 +409,20 @@ The project is a **working example** that includes:
 
 **Ready to use**: The system is functional and can be adapted for any Azure Bicep project.
 
+### Parameter Sets
+
+Bolt uses PowerShell parameter sets for clean, validated interfaces:
+
+1. **Help** (default) - Shows usage when no parameters provided
+2. **TaskExecution** - For running tasks with `-Task`, `-Only`, `-Outline`, `-TaskDirectory`
+3. **ListTasks** - For listing tasks with `-ListTasks` (alias: `-Help`)
+4. **CreateTask** - For creating new tasks with `-NewTask`
+5. **ListVariables** - For viewing configuration variables with `-ListVariables`
+6. **AddVariable** - For adding/updating variables with `-AddVariable -Name <name> -Value <value>`
+7. **RemoveVariable** - For removing variables with `-RemoveVariable -VariableName <name>`
+
+**Module installation** uses separate script `New-BoltModule.ps1` with its own parameter sets (Install, Uninstall).
+
 ## Core Architecture
 
 ### Task System Design

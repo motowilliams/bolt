@@ -185,6 +185,22 @@ Bolt uses PowerShell parameter sets to provide a clean, validated interface with
    .\bolt.ps1 -NewTask validate -TaskDirectory "custom"  # Custom directory
    ```
 
+5. **ListVariables** - For viewing configuration variables:
+   ```powershell
+   .\bolt.ps1 -ListVariables           # Show all variables (built-in + user-defined)
+   ```
+
+6. **AddVariable** - For adding/updating configuration variables:
+   ```powershell
+   .\bolt.ps1 -AddVariable -Name "Environment" -Value "dev"
+   .\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "abc-123"
+   ```
+
+7. **RemoveVariable** - For removing configuration variables:
+   ```powershell
+   .\bolt.ps1 -RemoveVariable -VariableName "Environment"
+   ```
+
 **For module installation and uninstallation, use the separate `New-BoltModule.ps1` script:**
 
 ```powershell

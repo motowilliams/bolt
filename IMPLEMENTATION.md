@@ -17,7 +17,7 @@
   - `-ModuleOutputPath`: Custom installation path for build/release scenarios
   - `-NoImport`: Skip automatic importing for CI/CD pipelines
 - **Upward Directory Search**: Module mode finds `.build/` by searching parent directories (like git)
-- **Parameter Sets**: PowerShell parameter sets provide validated operation modes (Help, TaskExecution, ListTasks, CreateTask, VariableManagement)
+- **Parameter Sets**: PowerShell parameter sets provide validated operation modes (Help, TaskExecution, ListTasks, CreateTask, ListVariables, AddVariable, RemoveVariable)
 - **Configuration Variables**: Project-level variables via `bolt.config.json` auto-injected as `$BoltConfig` into all tasks
 - **Variable Management**: CLI commands to list, add, and remove variables:
   - `-ListVariables`: Display all built-in and user-defined variables
