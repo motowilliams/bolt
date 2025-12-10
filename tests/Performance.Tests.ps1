@@ -49,7 +49,7 @@ Describe "Bolt Performance Baseline" -Tag "Perf" {
     }
 
     Context "Single Task Execution Performance" {
-        It "Should execute a simple task in under 2 seconds" {
+        It "Should execute a simple task in under 3 seconds" {
             Push-Location $script:BoltRoot
             try {
                 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
