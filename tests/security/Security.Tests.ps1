@@ -1134,9 +1134,25 @@ Describe "P2: Atomic File Creation" -Tag 'Security' {
         }
 
         It "Should handle directory creation if needed" {
-            # Remove test directory if exists
+            # Remove test directory if exists (with retry for file locking)
             if (Test-Path $testBuildPath) {
-                Remove-Item $testBuildPath -Recurse -Force
+                $retryCount = 0
+                $maxRetries = 3
+                $retryDelay = 100 # milliseconds
+
+                while ($retryCount -lt $maxRetries) {
+                    try {
+                        Remove-Item $testBuildPath -Recurse -Force -ErrorAction Stop
+                        break
+                    }
+                    catch {
+                        $retryCount++
+                        if ($retryCount -ge $maxRetries) {
+                            throw "Failed to remove test directory after $maxRetries attempts: $_"
+                        }
+                        Start-Sleep -Milliseconds $retryDelay
+                    }
+                }
             }
 
             $taskName = "test-dir-create-$(Get-Random)"

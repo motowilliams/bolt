@@ -120,10 +120,31 @@ Tasks in a dependency chain do **NOT** pass pipeline objects to each other. Each
 **Why**: Bolt uses `Invoke-Task` recursively for dependencies. Each task's return value is boolean (success/failure), not pipeline objects. Dependencies execute for orchestration purposes (ensuring prerequisites run first), not for data flow.
 
 **If you need data sharing between tasks**:
+- **Use `bolt.config.json` (preferred)** - Type-safe, validated, auto-injected as `$BoltConfig`
 - Use files (write/read from disk)
 - Use environment variables (`$env:VARIABLE_NAME`)
-- Use module-level variables (if using advanced patterns)
 - Design tasks as independent operations, not pipelines
+
+**Configuration Variables:**
+
+The recommended way to pass data to tasks is through `bolt.config.json`:
+
+```powershell
+# Add configuration variables
+.\bolt.ps1 -AddVariable "IacPath" "infrastructure/bicep"
+.\bolt.ps1 -AddVariable "Azure.SubscriptionId" "00000000-0000-0000-0000-000000000000"
+
+# Then access in any task via $BoltConfig
+# .build/Invoke-YourTask.ps1
+$iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+$subscriptionId = $BoltConfig.Azure.SubscriptionId
+```
+
+All tasks automatically receive a `$BoltConfig` variable with:
+- **Built-in variables**: `ProjectRoot`, `TaskDirectory`, `TaskDirectoryPath`, `TaskName`, `TaskScriptRoot`, `GitRoot`, `GitBranch`, `Colors`
+- **User-defined variables**: Any variables from `bolt.config.json`
+
+See "Variable System" section below for full details.
 
 **Parameter Limitations:**
 
@@ -149,7 +170,10 @@ param(
 
 **Current limitation**: Bolt collects remaining arguments as an array and splats them to your task script. PowerShell array splatting only works for positional parameters, not named ones (hashtable splatting is required for named parameters, which would require parsing the argument structure).
 
-**Recommended pattern**: Use environment variables, configuration files, or `$env:` variables for dynamic task behavior rather than parameters.
+**Recommended patterns for dynamic behavior**:
+1. **Use `bolt.config.json` (preferred)** - Type-safe, validated, auto-injected as `$BoltConfig`
+2. **Use environment variables** - For CI/CD or system-level settings: `$env:VARIABLE_NAME`
+3. **Use configuration files** - Load from JSON/YAML/XML in your task as needed
 
 ### Example Task Template
 
@@ -165,6 +189,10 @@ param(
 
 Write-Host "Running your task..." -ForegroundColor Cyan
 
+# Access configuration variables via $BoltConfig
+$projectRoot = $BoltConfig.ProjectRoot
+$customSetting = $BoltConfig.CustomSetting  # From bolt.config.json
+
 # Your task logic here
 $success = $true
 
@@ -175,6 +203,140 @@ if ($success) {
     exit 0
 } else {
     Write-Host "✗ Task failed" -ForegroundColor Red
+    exit 1
+}
+```
+
+### Variable System
+
+Bolt provides a configuration variable system for managing project-level settings:
+
+#### **Using `$BoltConfig` in Tasks**
+
+All tasks automatically receive a `$BoltConfig` variable containing:
+
+**Built-in Variables** (always available):
+```powershell
+$BoltConfig.ProjectRoot        # Absolute path to project root
+$BoltConfig.TaskDirectory      # Name of task directory (e.g., ".build")
+$BoltConfig.TaskDirectoryPath  # Absolute path to task directory
+$BoltConfig.TaskName           # Current task name being executed
+$BoltConfig.TaskScriptRoot     # Directory containing current task script
+$BoltConfig.GitRoot            # Git repository root (if in a git repo)
+$BoltConfig.GitBranch          # Current git branch (if in a git repo)
+$BoltConfig.Colors             # Hashtable with color theme
+```
+
+**User-Defined Variables** (from `bolt.config.json`):
+```powershell
+# Simple values
+$BoltConfig.IacPath           # From: { "IacPath": "infrastructure/bicep" }
+$BoltConfig.Environment       # From: { "Environment": "dev" }
+
+# Nested values (dot notation in JSON becomes object properties)
+$BoltConfig.Azure.SubscriptionId   # From: { "Azure": { "SubscriptionId": "..." } }
+$BoltConfig.Azure.ResourceGroup    # From: { "Azure": { "ResourceGroup": "..." } }
+```
+
+#### **Managing Configuration Variables**
+
+**List all variables:**
+```powershell
+.\bolt.ps1 -ListVariables
+```
+
+**Add or update a variable:**
+```powershell
+# Simple variable
+.\bolt.ps1 -AddVariable "IacPath" "infrastructure/bicep"
+
+# Nested variable (creates nested structure)
+.\bolt.ps1 -AddVariable "Azure.SubscriptionId" "00000000-0000-0000-0000-000000000000"
+```
+
+**Remove a variable:**
+```powershell
+# Remove simple variable
+.\bolt.ps1 -RemoveVariable "OldSetting"
+
+# Remove nested variable
+.\bolt.ps1 -RemoveVariable "Azure.OldProperty"
+```
+
+#### **Configuration File Format**
+
+The `bolt.config.json` file uses standard JSON:
+
+```json
+{
+  "IacPath": "infrastructure/bicep",
+  "Environment": "dev",
+  "Azure": {
+    "SubscriptionId": "00000000-0000-0000-0000-000000000000",
+    "ResourceGroup": "rg-myapp-dev",
+    "Location": "eastus"
+  },
+  "DeploymentSettings": {
+    "RetryCount": 3,
+    "Timeout": 300
+  }
+}
+```
+
+**File Location:**
+- Placed in project root (same level as `.build/` directory)
+- Discovered via upward directory search
+- Created automatically when using `-AddVariable` if it doesn't exist
+
+**Schema Validation:**
+- Schema available in `bolt.config.schema.json` for IDE IntelliSense
+- Example configuration in `bolt.config.example.json`
+
+#### **Task Development Best Practices**
+
+**Use configuration variables instead of hardcoded values:**
+
+```powershell
+# ❌ BAD - Hardcoded paths
+$iacPath = "C:\projects\myapp\infrastructure\bicep"
+$resourceGroup = "rg-myapp-dev"
+
+# ✅ GOOD - Configuration-driven
+$iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+$resourceGroup = $BoltConfig.Azure.ResourceGroup
+
+# ✅ BETTER - With fallback to sensible default
+if ($BoltConfig.IacPath) {
+    $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+} else {
+    # Default for backward compatibility
+    $iacPath = Join-Path $BoltConfig.ProjectRoot "infrastructure" "bicep"
+}
+```
+
+**Access nested values safely:**
+
+```powershell
+# Check if nested property exists
+if ($BoltConfig.Azure -and $BoltConfig.Azure.SubscriptionId) {
+    $subscriptionId = $BoltConfig.Azure.SubscriptionId
+} else {
+    Write-Host "⚠ Azure.SubscriptionId not configured" -ForegroundColor Yellow
+    Write-Host "  Run: .\bolt.ps1 -AddVariable 'Azure.SubscriptionId' '<your-subscription-id>'" -ForegroundColor Gray
+    exit 1
+}
+```
+
+**Combine with environment variables for flexibility:**
+
+```powershell
+# Allow environment variable override for CI/CD
+$subscriptionId = if ($env:AZURE_SUBSCRIPTION_ID) {
+    $env:AZURE_SUBSCRIPTION_ID  # CI/CD override
+} elseif ($BoltConfig.Azure.SubscriptionId) {
+    $BoltConfig.Azure.SubscriptionId  # Local config
+} else {
+    Write-Host "✗ Subscription ID not configured" -ForegroundColor Red
     exit 1
 }
 ```

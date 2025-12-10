@@ -114,6 +114,36 @@ param(
     })]
     [string]$NewTask,
 
+    # ListVariables parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'ListVariables')]
+    [switch]$ListVariables,
+
+    # AddVariable parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'AddVariable')]
+    [switch]$AddVariable,
+
+    [Parameter(Mandatory = $true, ParameterSetName = 'AddVariable')]
+    [ValidatePattern('^[a-zA-Z0-9_\-\.]+$')]
+    [ValidateScript({
+        if ($_.Length -gt 100) {
+            throw "Variable name '$_' is too long (max 100 characters)."
+        }
+        return $true
+    })]
+    [string]$Name,
+
+    [Parameter(Mandatory = $true, ParameterSetName = 'AddVariable')]
+    [AllowEmptyString()]
+    [string]$Value,
+
+    # RemoveVariable parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'RemoveVariable')]
+    [switch]$RemoveVariable,
+
+    [Parameter(Mandatory = $true, ParameterSetName = 'RemoveVariable')]
+    [ValidatePattern('^[a-zA-Z0-9_\-\.]+$')]
+    [string]$VariableName,
+
     # TaskExecution parameter set - additional arguments
     [Parameter(ParameterSetName = 'TaskExecution', ValueFromRemainingArguments)]
     [string[]]$Arguments
@@ -508,6 +538,600 @@ function Get-BoltUtilities {
         'Get-ProjectRoot' = ${function:Get-ProjectRoot}
         'Get-GitStatus'   = ${function:Get-GitStatus}
     }
+}
+
+
+function Get-BoltConfigFile {
+    <#
+    .SYNOPSIS
+        Loads the bolt.config.json file from the project root
+    .DESCRIPTION
+        Searches for bolt.config.json starting from the configured .build directory,
+        searching upward until the first config file is found or reaching the project root.
+        Respects module mode ($env:BOLT_PROJECT_ROOT) and script mode ($PSScriptRoot).
+
+        Returns an empty hashtable if the config file doesn't exist.
+        Logs warnings for malformed JSON but doesn't fail.
+    .PARAMETER ScriptRoot
+        The effective script root (project root) to start searching from
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build) to start the search
+    .OUTPUTS
+        Hashtable containing user-defined variables from the config file
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build"
+    )
+
+    $configFileName = "bolt.config.json"
+
+    # Start searching from the task directory location
+    $searchPath = Join-Path $ScriptRoot $TaskDirectory
+
+    # If task directory doesn't exist, start from script root
+    if (-not (Test-Path $searchPath)) {
+        $searchPath = $ScriptRoot
+    }
+
+    # Search upward for bolt.config.json
+    $currentPath = $searchPath
+    $configPath = $null
+
+    while ($currentPath) {
+        $potentialConfig = Join-Path $currentPath $configFileName
+
+        if (Test-Path $potentialConfig) {
+            $configPath = $potentialConfig
+            Write-Verbose "Found config file: $configPath"
+            break
+        }
+
+        # Stop at project root (where ScriptRoot points)
+        if ($currentPath -eq $ScriptRoot) {
+            break
+        }
+
+        # Move up one directory
+        $parentPath = Split-Path $currentPath -Parent
+
+        # Stop if we can't go up further or reached root
+        if (-not $parentPath -or $parentPath -eq $currentPath) {
+            break
+        }
+
+        $currentPath = $parentPath
+    }
+
+    # If no config found, check at script root as fallback
+    if (-not $configPath) {
+        $fallbackConfig = Join-Path $ScriptRoot $configFileName
+        if (Test-Path $fallbackConfig) {
+            $configPath = $fallbackConfig
+            Write-Verbose "Found config file at script root: $configPath"
+        }
+    }
+
+    # Return empty hashtable if config doesn't exist
+    if (-not $configPath) {
+        Write-Verbose "No bolt.config.json found, using empty configuration"
+        return @{}
+    }
+
+    # Load and parse the config file
+    try {
+        $configContent = Get-Content -Path $configPath -Raw -ErrorAction Stop
+        $config = $configContent | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+
+        Write-Verbose "Loaded config from: $configPath"
+        return $config
+    }
+    catch {
+        Write-Warning "Failed to load bolt.config.json from '$configPath': $_"
+        Write-Warning "Using empty configuration. Please check the JSON syntax."
+        return @{}
+    }
+}
+
+
+function Save-BoltConfigFile {
+    <#
+    .SYNOPSIS
+        Saves the configuration hashtable to bolt.config.json
+    .DESCRIPTION
+        Persists the configuration hashtable to bolt.config.json in the project root.
+        Creates the file if it doesn't exist, overwrites if it does.
+        Uses ConvertTo-Json with -Depth 10 to handle nested objects.
+    .PARAMETER Config
+        The configuration hashtable to save
+    .PARAMETER ScriptRoot
+        The effective script root (project root) where config will be saved
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Config,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot
+    )
+
+    $configPath = Join-Path $ScriptRoot "bolt.config.json"
+
+    try {
+        $jsonContent = $Config | ConvertTo-Json -Depth 10
+        Set-Content -Path $configPath -Value $jsonContent -Encoding UTF8 -ErrorAction Stop
+
+        Write-Verbose "Saved config to: $configPath"
+        return $true
+    }
+    catch {
+        Write-Error "Failed to save bolt.config.json to '$configPath': $_"
+        return $false
+    }
+}
+
+
+function Add-BoltVariable {
+    <#
+    .SYNOPSIS
+        Adds or updates a variable in the Bolt configuration
+    .DESCRIPTION
+        Adds or updates a variable in bolt.config.json. Supports dot notation for nested properties
+        (e.g., "Colors.Header" to set a nested property). Validates parent object types and warns
+        when overriding built-in variables.
+
+        - Auto-creates parent objects when parent is undefined
+        - Throws error if parent is a primitive type (string, number, etc.)
+        - Warns when overriding built-in variables (ProjectRoot, TaskDirectory, etc.)
+    .PARAMETER Name
+        Variable name (supports dot notation for nested properties)
+    .PARAMETER Value
+        Variable value (string)
+    .PARAMETER ScriptRoot
+        The effective script root (project root)
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build)
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$Value,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build"
+    )
+
+    # Warn if overriding built-in variables
+    $builtInVars = @('ProjectRoot', 'TaskDirectory', 'TaskDirectoryPath', 'TaskScriptRoot', 'TaskName', 'Colors', 'GitRoot', 'GitBranch')
+    $rootVarName = ($Name -split '\.')[0]
+
+    if ($builtInVars -contains $rootVarName) {
+        Write-Warning "Variable '$Name' overrides a built-in variable. This may affect task behavior."
+    }
+
+    # Load current config
+    $config = Get-BoltConfigFile -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
+
+    # Handle dot notation for nested properties
+    if ($Name -match '\.') {
+        $parts = $Name -split '\.'
+        $current = $config
+
+        # Navigate/create parent objects
+        for ($i = 0; $i -lt ($parts.Count - 1); $i++) {
+            $part = $parts[$i]
+
+            if (-not $current.ContainsKey($part)) {
+                # Create parent object if it doesn't exist
+                $current[$part] = @{}
+                Write-Verbose "Created parent object: $part"
+            }
+            elseif ($current[$part] -isnot [hashtable] -and $current[$part] -isnot [System.Collections.IDictionary]) {
+                # Parent exists but is not an object - this is an error
+                $parentPath = ($parts[0..$i] -join '.')
+                throw "Cannot set '$Name': parent '$parentPath' is a primitive value ($(($current[$part]).GetType().Name)). Remove the parent variable first or use a different name."
+            }
+
+            $current = $current[$part]
+        }
+
+        # Set the final property
+        $finalKey = $parts[-1]
+        $current[$finalKey] = $Value
+        Write-Verbose "Set $Name = $Value"
+    }
+    else {
+        # Simple variable (no dot notation)
+        $config[$Name] = $Value
+        Write-Verbose "Set $Name = $Value"
+    }
+
+    # Save config
+    $saved = Save-BoltConfigFile -Config $config -ScriptRoot $ScriptRoot
+
+    if ($saved) {
+        # Invalidate cache so next task execution picks up new config
+        $script:CachedConfigJson = $null
+        Write-Verbose "Configuration cache invalidated"
+
+        Write-Host "Variable '$Name' set to '$Value'" -ForegroundColor Green
+        return $true
+    }
+    else {
+        return $false
+    }
+}
+
+
+function Remove-BoltVariable {
+    <#
+    .SYNOPSIS
+        Removes a variable from the Bolt configuration
+    .DESCRIPTION
+        Removes a variable from bolt.config.json. Supports dot notation for nested properties.
+        Cascade deletes empty parent objects after removing the variable.
+    .PARAMETER Name
+        Variable name (supports dot notation for nested properties)
+    .PARAMETER ScriptRoot
+        The effective script root (project root)
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build)
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build"
+    )
+
+    # Load current config
+    $config = Get-BoltConfigFile -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
+
+    # Handle dot notation for nested properties
+    if ($Name -match '\.') {
+        $parts = $Name -split '\.'
+        $current = $config
+        $parents = @()
+
+        # Navigate to the property
+        for ($i = 0; $i -lt ($parts.Count - 1); $i++) {
+            $part = $parts[$i]
+
+            if (-not $current.ContainsKey($part)) {
+                Write-Warning "Variable '$Name' does not exist in configuration"
+                return $false
+            }
+
+            $parents += @{ Object = $current; Key = $part }
+            $current = $current[$part]
+        }
+
+        # Remove the final property
+        $finalKey = $parts[-1]
+
+        if (-not $current.ContainsKey($finalKey)) {
+            Write-Warning "Variable '$Name' does not exist in configuration"
+            return $false
+        }
+
+        $current.Remove($finalKey)
+        Write-Verbose "Removed $Name"
+
+        # Cascade delete empty parents
+        for ($i = $parents.Count - 1; $i -ge 0; $i--) {
+            $parent = $parents[$i]
+            $childObj = $parent.Object[$parent.Key]
+
+            if ($childObj -is [hashtable] -and $childObj.Count -eq 0) {
+                $parent.Object.Remove($parent.Key)
+                Write-Verbose "Removed empty parent: $($parent.Key)"
+            }
+            else {
+                break  # Stop if parent is not empty
+            }
+        }
+    }
+    else {
+        # Simple variable (no dot notation)
+        if (-not $config.ContainsKey($Name)) {
+            Write-Warning "Variable '$Name' does not exist in configuration"
+            return $false
+        }
+
+        $config.Remove($Name)
+        Write-Verbose "Removed $Name"
+    }
+
+    # Save config
+    $saved = Save-BoltConfigFile -Config $config -ScriptRoot $ScriptRoot
+
+    if ($saved) {
+        # Invalidate cache so next task execution picks up updated config
+        $script:CachedConfigJson = $null
+        Write-Verbose "Configuration cache invalidated"
+
+        Write-Host "Variable '$Name' removed" -ForegroundColor Green
+        return $true
+    }
+    else {
+        return $false
+    }
+}
+
+
+# Script-level variable for caching serialized config JSON
+$script:CachedConfigJson = $null
+
+
+function Get-BoltConfig {
+    <#
+    .SYNOPSIS
+        Builds the complete Bolt configuration object
+    .DESCRIPTION
+        Returns a PSCustomObject containing built-in variables merged with user-defined
+        variables from bolt.config.json. Includes performance caching - the serialized
+        JSON is computed once per bolt.ps1 invocation and reused for all tasks.
+
+        Built-in variables:
+        - ProjectRoot: Absolute path to project root
+        - TaskDirectory: Name of task directory (e.g., ".build")
+        - TaskDirectoryPath: Absolute path to task directory
+        - TaskScriptRoot: Directory of current task script (runtime only)
+        - TaskName: Name of current task (runtime only)
+        - Colors: Standard color scheme (Header, Success, Error, Warning, Info)
+        - GitRoot: Git repository root (if in a repo)
+        - GitBranch: Current git branch (if in a repo)
+    .PARAMETER ScriptRoot
+        The effective script root (project root)
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build)
+    .PARAMETER TaskScriptRoot
+        The directory of the current task script (injected at runtime)
+    .PARAMETER TaskName
+        The name of the current task (injected at runtime)
+    .OUTPUTS
+        PSCustomObject with built-in and user-defined variables
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build",
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskScriptRoot = $null,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskName = $null
+    )
+
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+    # Load user-defined variables from config file
+    $userConfig = Get-BoltConfigFile -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
+
+    # Build configuration object with built-ins
+    $config = @{
+        # Project structure
+        ProjectRoot = $ScriptRoot
+        TaskDirectory = $TaskDirectory
+        TaskDirectoryPath = Join-Path $ScriptRoot $TaskDirectory
+
+        # Task context (runtime values, may be null during non-task operations)
+        TaskScriptRoot = $TaskScriptRoot
+        TaskName = $TaskName
+
+        # Standard color scheme
+        Colors = @{
+            Header = 'Cyan'
+            Success = 'Green'
+            Error = 'Red'
+            Warning = 'Yellow'
+            Info = 'Gray'
+        }
+    }
+
+    # Add Git information if available
+    try {
+        $gitRoot = git rev-parse --show-toplevel 2>$null
+        if ($LASTEXITCODE -eq 0 -and $gitRoot) {
+            $config['GitRoot'] = $gitRoot.Trim()
+        }
+
+        $gitBranch = git rev-parse --abbrev-ref HEAD 2>$null
+        if ($LASTEXITCODE -eq 0 -and $gitBranch) {
+            $config['GitBranch'] = $gitBranch.Trim()
+        }
+    }
+    catch {
+        # Git not available or not in a repo - skip git variables
+        Write-Verbose "Git information not available: $_"
+    }
+
+    # Merge user-defined variables (user config overrides built-ins if conflicts exist)
+    foreach ($key in $userConfig.Keys) {
+        if ($config.ContainsKey($key)) {
+            Write-Verbose "User config overrides built-in variable: $key"
+        }
+        $config[$key] = $userConfig[$key]
+    }
+
+    $stopwatch.Stop()
+    Write-Verbose "Configuration built in $($stopwatch.ElapsedMilliseconds)ms"
+
+    # Convert to PSCustomObject for clean JSON serialization
+    return [PSCustomObject]$config
+}
+
+
+function Get-CachedBoltConfigJson {
+    <#
+    .SYNOPSIS
+        Returns cached or newly serialized Bolt configuration JSON
+    .DESCRIPTION
+        Caches the serialized JSON string for performance. The config is computed once
+        per bolt.ps1 invocation and reused for all task executions.
+    .PARAMETER ScriptRoot
+        The effective script root (project root)
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build)
+    .OUTPUTS
+        JSON string representation of the configuration
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build"
+    )
+
+    # Return cached version if available
+    if ($script:CachedConfigJson) {
+        Write-Verbose "Using cached configuration JSON"
+        return $script:CachedConfigJson
+    }
+
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+    # Build config without task-specific context (will be injected per task)
+    $config = Get-BoltConfig -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
+
+    # Serialize to JSON
+    $script:CachedConfigJson = $config | ConvertTo-Json -Depth 10 -Compress
+
+    $stopwatch.Stop()
+    Write-Verbose "Configuration serialized and cached in $($stopwatch.ElapsedMilliseconds)ms"
+
+    return $script:CachedConfigJson
+}
+
+
+function Show-BoltVariables {
+    <#
+    .SYNOPSIS
+        Displays all Bolt configuration variables
+    .DESCRIPTION
+        Shows both built-in variables (provided by Bolt) and user-defined variables
+        (from bolt.config.json) in an organized format.
+    .PARAMETER ScriptRoot
+        The effective script root (project root)
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build)
+    .OUTPUTS
+        Formatted output showing categorized variables
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build"
+    )
+
+    Write-Host "`nBolt Configuration Variables`n" -ForegroundColor Cyan
+
+    # Get full config
+    $config = Get-BoltConfig -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
+
+    # Define built-in variable names
+    $builtInNames = @(
+        'ProjectRoot',
+        'TaskDirectory',
+        'TaskDirectoryPath',
+        'TaskScriptRoot',
+        'TaskName',
+        'Colors',
+        'GitRoot',
+        'GitBranch'
+    )
+
+    # Categorize variables (config is PSCustomObject, use PSObject.Properties)
+    $builtInVars = @{}
+    $userVars = @{}
+
+    foreach ($property in $config.PSObject.Properties) {
+        $key = $property.Name
+        $value = $property.Value
+
+        if ($builtInNames -contains $key) {
+            $builtInVars[$key] = $value
+        }
+        else {
+            $userVars[$key] = $value
+        }
+    }    # Display built-in variables
+    Write-Host "Built-in Variables:" -ForegroundColor Yellow
+    if ($builtInVars.Count -eq 0) {
+        Write-Host "  (none)" -ForegroundColor Gray
+    }
+    else {
+        foreach ($key in ($builtInVars.Keys | Sort-Object)) {
+            $value = $builtInVars[$key]
+            if ($null -eq $value) {
+                Write-Host "  $key = `$null" -ForegroundColor Gray
+            }
+            elseif ($value -is [hashtable]) {
+                Write-Host "  $key = @{" -ForegroundColor Gray
+                foreach ($subKey in ($value.Keys | Sort-Object)) {
+                    Write-Host "    $subKey = $($value[$subKey])" -ForegroundColor DarkGray
+                }
+                Write-Host "  }" -ForegroundColor Gray
+            }
+            else {
+                Write-Host "  $key = $value" -ForegroundColor Gray
+            }
+        }
+    }
+
+    Write-Host ""
+
+    # Display user-defined variables
+    Write-Host "User-Defined Variables:" -ForegroundColor Yellow
+    if ($userVars.Count -eq 0) {
+        Write-Host "  (none - create bolt.config.json to add variables)" -ForegroundColor Gray
+    }
+    else {
+        foreach ($key in ($userVars.Keys | Sort-Object)) {
+            $value = $userVars[$key]
+            if ($null -eq $value) {
+                Write-Host "  $key = `$null" -ForegroundColor Gray
+            }
+            elseif ($value -is [hashtable]) {
+                Write-Host "  $key = @{" -ForegroundColor Gray
+                foreach ($subKey in ($value.Keys | Sort-Object)) {
+                    Write-Host "    $subKey = $($value[$subKey])" -ForegroundColor DarkGray
+                }
+                Write-Host "  }" -ForegroundColor Gray
+            }
+            else {
+                Write-Host "  $key = $value" -ForegroundColor Gray
+            }
+        }
+    }
+
+    Write-Host ""
 }
 
 
@@ -968,16 +1592,33 @@ function Invoke-Task {
                 $utilityDefinitions += "function $($util.Key) { $funcDef }"
             }
 
+            # Get Bolt configuration with task context
+            $taskScriptRoot = [System.IO.Path]::GetDirectoryName($TaskInfo.ScriptPath)
+            $boltConfig = Get-BoltConfig -ScriptRoot $script:EffectiveScriptRoot -TaskDirectory $TaskDirectory -TaskScriptRoot $taskScriptRoot -TaskName $primaryName
+
+            # Serialize config to JSON for injection
+            $configJson = $boltConfig | ConvertTo-Json -Depth 10 -Compress
+
+            # Escape single quotes in JSON for PowerShell string literal
+            $configJsonEscaped = $configJson -replace "'", "''"
+
+            $stopwatchConfig = [System.Diagnostics.Stopwatch]::StartNew()
+            Write-Verbose "Configuration prepared for task '$primaryName' in $($stopwatchConfig.ElapsedMilliseconds)ms"
+
             # Create the complete script that:
-            # 1. Defines utility functions
-            # 2. Sets up task context variables
-            # 3. Executes the original task script
+            # 1. Injects BoltConfig object
+            # 2. Defines utility functions
+            # 3. Sets up task context variables
+            # 4. Executes the original task script
             $scriptContent = @"
+# Injected Bolt configuration
+`$BoltConfig = '$configJsonEscaped' | ConvertFrom-Json
+
 # Injected Bolt utility functions
 $($utilityDefinitions -join "`n")
 
 # Set task context variables
-`$TaskScriptRoot = '$([System.IO.Path]::GetDirectoryName($TaskInfo.ScriptPath))'
+`$TaskScriptRoot = '$taskScriptRoot'
 
 # Execute the original task script in the context of its directory
 Push-Location `$TaskScriptRoot
@@ -1110,6 +1751,44 @@ exit 0
     Write-Host "  4. Restart PowerShell to enable tab completion for the new task" -ForegroundColor Gray
 
     exit 0
+}
+
+# Handle ListVariables parameter set
+if ($PSCmdlet.ParameterSetName -eq 'ListVariables') {
+    Show-BoltVariables -ScriptRoot $EffectiveScriptRoot -TaskDirectory $TaskDirectory
+    exit 0
+}
+
+# Handle AddVariable parameter set
+if ($PSCmdlet.ParameterSetName -eq 'AddVariable') {
+    Write-Host "Adding variable: $Name = $Value" -ForegroundColor Cyan
+
+    try {
+        Add-BoltVariable -Name $Name -Value $Value -ScriptRoot $EffectiveScriptRoot -TaskDirectory $TaskDirectory
+        Write-Host "✓ Variable '$Name' added successfully" -ForegroundColor Green
+        Write-Host "  Run '.\bolt.ps1 -ListVariables' to see all variables" -ForegroundColor Gray
+        exit 0
+    }
+    catch {
+        Write-Error "Failed to add variable: $_"
+        exit 1
+    }
+}
+
+# Handle RemoveVariable parameter set
+if ($PSCmdlet.ParameterSetName -eq 'RemoveVariable') {
+    Write-Host "Removing variable: $VariableName" -ForegroundColor Cyan
+
+    try {
+        Remove-BoltVariable -Name $VariableName -ScriptRoot $EffectiveScriptRoot -TaskDirectory $TaskDirectory
+        Write-Host "✓ Variable '$VariableName' removed successfully" -ForegroundColor Green
+        Write-Host "  Run '.\bolt.ps1 -ListVariables' to see remaining variables" -ForegroundColor Gray
+        exit 0
+    }
+    catch {
+        Write-Error "Failed to remove variable: $_"
+        exit 1
+    }
 }
 
 # Handle ListTasks parameter set

@@ -1,0 +1,10 @@
+{
+  "IacPath": "tests/iac",
+  "TestVariable": "test value",
+  "Custom.NestedValue": "nested123",
+  "Colors": {
+    "Header": "Blue"
+  },
+  "CacheTest": "initial",
+  "CacheInvalidationTest1": "test1"
+}

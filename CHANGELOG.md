@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Configuration Variable System**: New project-level configuration management with `bolt.config.json`
+  - Create configuration file at project root with user-defined variables
+  - Automatic config injection into all tasks via `$BoltConfig` variable
+  - Built-in variables: `ProjectRoot`, `TaskDirectory`, `InvokedTask`, `ExecutedTasks`
+  - User-defined variables accessible via `$BoltConfig.UserVariables.YourVariableName`
+  - Supports nested objects and complex data structures
+  - Per-invocation configuration caching for performance (multiple tasks share same config)
+  - Automatic cache invalidation on add/remove operations
+  - New files: `bolt.config.json` (configuration), `bolt.config.schema.json` (JSON schema), `bolt.config.example.json` (template)
+- **Variable Management CLI**: New command-line interface for managing configuration variables
+  - `-ListVariables`: Display all configuration variables (built-in and user-defined) with values
+  - `-AddVariable`: Add or update user-defined variables interactively with `-Name` and `-Value` parameters
+  - `-RemoveVariable`: Remove user-defined variables by name with `-Name` parameter
+  - Works in both script mode (`.\bolt.ps1 -ListVariables`) and module mode (`bolt -ListVariables`)
+  - JSON schema validation on add/remove operations
+  - Human-readable output with syntax-highlighted JSON display
+- **Bicep Task Refactoring**: Refactored all Bicep tasks to use `$BoltConfig` for data access
+  - Format, Lint, and Build tasks now use `$BoltConfig.ProjectRoot` instead of environment variables
+  - Cleaner task implementation with safer nested value access patterns
+  - Example demonstrates best practices for accessing configuration in tasks
+  - Maintains backward compatibility (no breaking changes)
+
 ### Changed
 - **Project Rename: Gosh → Bolt**: Complete rebranding of the project from "Gosh" to "Bolt"
   - Renamed main script from `gosh.ps1` to `bolt.ps1`
