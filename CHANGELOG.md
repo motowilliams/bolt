@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Variable Management CLI**: New command-line interface for managing configuration variables
   - `-ListVariables`: Display all configuration variables (built-in and user-defined) with values
   - `-AddVariable`: Add or update user-defined variables interactively with `-Name` and `-Value` parameters
-  - `-RemoveVariable`: Remove user-defined variables by name with `-Name` parameter
+  - `-RemoveVariable`: Remove user-defined variables by name with `-VariableName` parameter
   - Works in both script mode (`.\bolt.ps1 -ListVariables`) and module mode (`bolt -ListVariables`)
   - JSON schema validation on add/remove operations
   - Human-readable output with syntax-highlighted JSON display
