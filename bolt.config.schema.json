@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Bolt Configuration",
+  "description": "Configuration file for Bolt build system variables",
+  "type": "object",
+  "properties": {
+    "IacPath": {
+      "type": "string",
+      "description": "Relative path to infrastructure-as-code files (e.g., Bicep, Terraform)",
+      "examples": ["infrastructure", "iac", "bicep"]
+    },
+    "Environment": {
+      "type": "string",
+      "description": "Target deployment environment",
+      "enum": ["dev", "test", "staging", "prod"],
+      "examples": ["dev"]
+    },
+    "Colors": {
+      "type": "object",
+      "description": "Custom color scheme for task output (overrides built-in colors)",
+      "properties": {
+        "Header": {
+          "type": "string",
+          "enum": ["Black", "DarkBlue", "DarkGreen", "DarkCyan", "DarkRed", "DarkMagenta", "DarkYellow", "Gray", "DarkGray", "Blue", "Green", "Cyan", "Red", "Magenta", "Yellow", "White"],
+          "default": "Cyan"
+        },
+        "Success": {
+          "type": "string",
+          "enum": ["Black", "DarkBlue", "DarkGreen", "DarkCyan", "DarkRed", "DarkMagenta", "DarkYellow", "Gray", "DarkGray", "Blue", "Green", "Cyan", "Red", "Magenta", "Yellow", "White"],
+          "default": "Green"
+        },
+        "Error": {
+          "type": "string",
+          "enum": ["Black", "DarkBlue", "DarkGreen", "DarkCyan", "DarkRed", "DarkMagenta", "DarkYellow", "Gray", "DarkGray", "Blue", "Green", "Cyan", "Red", "Magenta", "Yellow", "White"],
+          "default": "Red"
+        },
+        "Warning": {
+          "type": "string",
+          "enum": ["Black", "DarkBlue", "DarkGreen", "DarkCyan", "DarkRed", "DarkMagenta", "DarkYellow", "Gray", "DarkGray", "Blue", "Green", "Cyan", "Red", "Magenta", "Yellow", "White"],
+          "default": "Yellow"
+        },
+        "Info": {
+          "type": "string",
+          "enum": ["Black", "DarkBlue", "DarkGreen", "DarkCyan", "DarkRed", "DarkMagenta", "DarkYellow", "Gray", "DarkGray", "Blue", "Green", "Cyan", "Red", "Magenta", "Yellow", "White"],
+          "default": "Gray"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "IacPath": "infrastructure",
+      "Environment": "dev",
+      "DatabaseHost": "localhost",
+      "DatabasePort": 5432,
+      "Settings": {
+        "EnableLogging": true,
+        "LogLevel": "Debug"
+      }
+    }
+  ]
+}

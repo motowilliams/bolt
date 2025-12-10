@@ -26,6 +26,9 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
 - **⬆️ Upward Directory Search**: Module mode finds `.build/` by searching parent directories
 - **🔧 Parameter Sets**: PowerShell parameter sets prevent invalid combinations and improve UX
+- **📝 Configuration Variables**: Project-level variables via `bolt.config.json` auto-injected as `$BoltConfig`
+- **🔧 Variable Management**: CLI commands to list, add, and remove variables (`-ListVariables`, `-AddVariable`, `-RemoveVariable`)
+- **⚡ Config Caching**: Configuration cached per-invocation for fast multi-task execution
 - **🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
 
 ## 🚀 Quick Start
@@ -114,6 +117,11 @@ bolt build
 # Use a custom task directory
 .\bolt.ps1 -TaskDirectory "infra-tasks" -ListTasks
 
+# Manage configuration variables
+.\bolt.ps1 -ListVariables
+.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
+.\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
+
 # Install as a module
 .\New-BoltModule.ps1 -Install
 
@@ -175,6 +183,22 @@ Bolt uses PowerShell parameter sets to provide a clean, validated interface with
    ```powershell
    .\bolt.ps1 -NewTask deploy          # Create new task
    .\bolt.ps1 -NewTask validate -TaskDirectory "custom"  # Custom directory
+   ```
+
+5. **ListVariables** - For viewing configuration variables:
+   ```powershell
+   .\bolt.ps1 -ListVariables           # Show all variables (built-in + user-defined)
+   ```
+
+6. **AddVariable** - For adding/updating configuration variables:
+   ```powershell
+   .\bolt.ps1 -AddVariable -Name "Environment" -Value "dev"
+   .\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "abc-123"
+   ```
+
+7. **RemoveVariable** - For removing configuration variables:
+   ```powershell
+   .\bolt.ps1 -RemoveVariable -VariableName "Environment"
    ```
 
 **For module installation and uninstallation, use the separate `New-BoltModule.ps1` script:**
@@ -413,7 +437,90 @@ Tasks in a dependency chain do **NOT** pass pipeline objects to each other:
 - Use environment variables (`$env:VARIABLE_NAME`)
 - Design tasks as independent operations
 
-### Parameter Limitations
+### Configuration Management with `bolt.config.json`
+
+**The recommended way to manage project-level settings** is through `bolt.config.json`:
+
+```powershell
+# Create a configuration file (manually or via -AddVariable)
+echo '{ "IacPath": "tests/iac", "Environment": "dev" }' > bolt.config.json
+
+# Or use the CLI
+.\bolt.ps1 -AddVariable -Name "IacPath" -Value "tests/iac"
+.\bolt.ps1 -AddVariable -Name "Environment" -Value "dev"
+
+# View all variables
+.\bolt.ps1 -ListVariables
+```
+
+**All tasks automatically receive a `$BoltConfig` variable** with your settings:
+
+```powershell
+# .build/Invoke-Deploy.ps1
+# TASK: deploy
+# DESCRIPTION: Deploy infrastructure
+
+# Access configuration values
+$iacPath = $BoltConfig.IacPath
+$environment = $BoltConfig.Environment
+
+Write-Host "Deploying from: $iacPath" -ForegroundColor Cyan
+Write-Host "Environment: $environment" -ForegroundColor Gray
+
+exit 0
+```
+
+**Built-in variables** (always available in `$BoltConfig`):
+- `ProjectRoot` - Absolute path to project root directory
+- `TaskDirectory` - Name of task directory (e.g., ".build")
+- `TaskDirectoryPath` - Absolute path to task directory
+- `TaskName` - Current task name being executed
+- `TaskScriptRoot` - Directory containing the current task script
+- `GitRoot` - Git repository root (if in a git repo)
+- `GitBranch` - Current git branch (if in a git repo)
+- `Colors` - Hashtable with color theme (e.g., `$BoltConfig.Colors.Header`)
+
+**User-defined variables** (from `bolt.config.json`):
+- Any variables you add via `-AddVariable` or by editing the JSON file
+- Accessed via `$BoltConfig.YourVariableName`
+- Supports nested values with dot notation (e.g., `$BoltConfig.Azure.SubscriptionId`)
+
+**Configuration file location**:
+- Searches upward from current directory to find `bolt.config.json`
+- Same search behavior as `.build/` directory discovery
+- Create in your project root for project-wide settings
+
+**CLI Commands**:
+
+```powershell
+# List all variables (built-in and user-defined)
+.\bolt.ps1 -ListVariables
+
+# Add or update a variable
+.\bolt.ps1 -AddVariable -Name "VariableName" -Value "value"
+.\bolt.ps1 -AddVariable -Name "Nested.Value" -Value "123"  # Creates nested structure
+
+# Remove a variable
+.\bolt.ps1 -RemoveVariable -VariableName "VariableName"
+.\bolt.ps1 -RemoveVariable -VariableName "Nested.Value"  # Removes nested property
+```
+
+**Example `bolt.config.json`**:
+
+```json
+{
+  "IacPath": "infrastructure/bicep",
+  "Environment": "dev",
+  "Azure": {
+    "SubscriptionId": "00000000-0000-0000-0000-000000000000",
+    "ResourceGroup": "rg-myapp-dev"
+  }
+}
+```
+
+**Performance**: Configuration is cached per bolt.ps1 invocation and automatically invalidated when you add/remove variables, so multi-task executions are fast.
+
+### Task Parameter Limitations
 
 Task scripts CAN use `param()` blocks, but with limitations:
 
@@ -432,7 +539,10 @@ param(
 # Arguments are passed as an array using @Arguments splatting, which only supports positional parameters
 ```
 
-**Recommended pattern**: Use environment variables or configuration files for dynamic task behavior.
+**Recommended patterns for dynamic behavior**:
+1. **Use `bolt.config.json` (preferred)** - Type-safe, validated, auto-injected as `$BoltConfig`
+2. **Use environment variables** - For CI/CD or system-level settings: `$env:VARIABLE_NAME`
+3. **Use configuration files** - Load from JSON/YAML/XML in your task as needed
 
 ## 📊 Task Visualization with `-Outline`
 

@@ -17,7 +17,14 @@
   - `-ModuleOutputPath`: Custom installation path for build/release scenarios
   - `-NoImport`: Skip automatic importing for CI/CD pipelines
 - **Upward Directory Search**: Module mode finds `.build/` by searching parent directories (like git)
-- **Parameter Sets**: PowerShell parameter sets provide validated operation modes (Help, TaskExecution, ListTasks, CreateTask)
+- **Parameter Sets**: PowerShell parameter sets provide validated operation modes (Help, TaskExecution, ListTasks, CreateTask, ListVariables, AddVariable, RemoveVariable)
+- **Configuration Variables**: Project-level variables via `bolt.config.json` auto-injected as `$BoltConfig` into all tasks
+- **Variable Management**: CLI commands to list, add, and remove variables:
+  - `-ListVariables`: Display all built-in and user-defined variables
+  - `-AddVariable <Name> <Value>`: Add or update a configuration variable
+  - `-RemoveVariable <Name>`: Remove a configuration variable
+- **Config Caching**: Configuration cached per-invocation and invalidated on add/remove for fast multi-task execution
+- **Upward Config Search**: `bolt.config.json` discovered via upward directory search (same as `.build/`)
 
 ### 2. Build Tasks
 
@@ -195,12 +202,187 @@ Dedicated tooling for creating PowerShell module manifests from existing modules
 - **CI/CD Ready**: Docker wrapper provides consistent containerized execution
 - **Validation**: Multiple validation layers ensure manifest correctness
 
+### 6. Configuration Variable System
+
+Project-level configuration management with automatic injection into task contexts:
+
+#### **Configuration File** (`bolt.config.json`)
+- JSON-based configuration file in project root
+- Discovered via upward directory search (same as `.build/` folder)
+- Supports nested values with dot notation (e.g., `Azure.SubscriptionId`)
+- Auto-created when using `-AddVariable` if it doesn't exist
+- Schema available in `bolt.config.schema.json` for IDE validation
+- Example configuration in `bolt.config.example.json`
+
+**Example `bolt.config.json`:**
+```json
+{
+  "IacPath": "infrastructure/bicep",
+  "Environment": "dev",
+  "Azure": {
+    "SubscriptionId": "00000000-0000-0000-0000-000000000000",
+    "ResourceGroup": "rg-myapp-dev"
+  }
+}
+```
+
+#### **Variable Management CLI**
+Three dedicated parameter sets for managing configuration:
+
+**List Variables:**
+```powershell
+.\bolt.ps1 -ListVariables
+
+# Output:
+# Bolt Configuration Variables
+#
+# Built-in Variables:
+#   ProjectRoot = C:\projects\myapp
+#   TaskDirectory = .build
+#   TaskDirectoryPath = C:\projects\myapp\.build
+#   TaskName = 
+#   TaskScriptRoot = 
+#   GitRoot = C:/projects/myapp
+#   GitBranch = main
+#   Colors = @{ Header = Blue }
+#
+# User-Defined Variables:
+#   IacPath = infrastructure/bicep
+#   Environment = dev
+#   Azure.SubscriptionId = 00000000-0000-0000-0000-000000000000
+#   Azure.ResourceGroup = rg-myapp-dev
+```
+
+**Add/Update Variables:**
+```powershell
+# Add a simple variable
+.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
+
+# Add a nested variable (creates nested structure)
+.\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "00000000-0000-0000-0000-000000000000"
+
+# Update existing variable (same command)
+.\bolt.ps1 -AddVariable -Name "Environment" -Value "staging"
+
+# Output:
+# Adding variable: IacPath = infrastructure/bicep
+# Variable 'IacPath' set to 'infrastructure/bicep'
+# ✓ Variable 'IacPath' added successfully
+#   Run '.\bolt.ps1 -ListVariables' to see all variables
+```
+
+**Remove Variables:**
+```powershell
+# Remove a variable
+.\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
+
+# Remove a nested variable
+.\bolt.ps1 -RemoveVariable -VariableName "Azure.OldProperty"
+
+# Output:
+# Removing variable: OldSetting
+# Variable 'OldSetting' removed
+# ✓ Variable 'OldSetting' removed successfully
+#   Run '.\bolt.ps1 -ListVariables' to see remaining variables
+```
+
+#### **Automatic Config Injection**
+
+All tasks automatically receive a `$BoltConfig` variable containing:
+
+**Built-in Variables** (always available):
+- `ProjectRoot`: Absolute path to project root directory
+- `TaskDirectory`: Name of task directory (e.g., ".build")
+- `TaskDirectoryPath`: Absolute path to task directory
+- `TaskName`: Current task name being executed
+- `TaskScriptRoot`: Directory containing the current task script
+- `GitRoot`: Git repository root (if in a git repo)
+- `GitBranch`: Current git branch (if in a git repo)
+- `Colors`: Hashtable with color theme (e.g., `$BoltConfig.Colors.Header`)
+
+**User-Defined Variables** (from `bolt.config.json`):
+- All variables from configuration file
+- Accessed via property access: `$BoltConfig.YourVariable`
+- Nested values via dot notation: `$BoltConfig.Azure.SubscriptionId`
+
+**Task Usage Example:**
+```powershell
+# .build/Invoke-Deploy.ps1
+# TASK: deploy
+# DESCRIPTION: Deploy infrastructure to Azure
+
+# Access built-in variables
+Write-Host "Project Root: $($BoltConfig.ProjectRoot)" -ForegroundColor Cyan
+Write-Host "Task Directory: $($BoltConfig.TaskDirectory)" -ForegroundColor Gray
+
+# Access user-defined variables
+$iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+$subscriptionId = $BoltConfig.Azure.SubscriptionId
+$resourceGroup = $BoltConfig.Azure.ResourceGroup
+
+Write-Host "Deploying from: $iacPath" -ForegroundColor Cyan
+Write-Host "Subscription: $subscriptionId" -ForegroundColor Gray
+Write-Host "Resource Group: $resourceGroup" -ForegroundColor Gray
+
+# Your deployment logic here
+
+exit 0
+```
+
+#### **Configuration Caching**
+
+- Configuration is cached per bolt.ps1 invocation for performance
+- Cache automatically invalidated when using `-AddVariable` or `-RemoveVariable`
+- Multi-task executions in a single run share the cached config
+- Each new bolt.ps1 invocation starts with a fresh cache
+
+**Performance Benefits:**
+- Avoids repeated file I/O and JSON parsing
+- Enables fast multi-task execution (e.g., `.\bolt.ps1 format lint build`)
+- No performance penalty for tasks that don't use config
+
+**Cache Invalidation:**
+```powershell
+# Cache is automatically cleared after these operations:
+.\bolt.ps1 -AddVariable -Name "Setting" -Value "value"      # Cache invalidated
+.\bolt.ps1 -RemoveVariable -VariableName "Setting"           # Cache invalidated
+
+# Fresh cache on each invocation:
+.\bolt.ps1 build                               # Loads config, caches it
+.\bolt.ps1 format lint                         # New invocation, fresh cache
+```
+
+#### **Bicep Task Integration**
+
+All Bicep tasks (`format`, `lint`, `build`) have been refactored to use `$BoltConfig`:
+
+```powershell
+# Before: Hardcoded paths
+$iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+
+# After: Configuration-driven
+$iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+
+# Fallback to default if not configured
+if (-not $BoltConfig.IacPath) {
+    $iacPath = Join-Path $BoltConfig.ProjectRoot "tests" "iac"
+}
+```
+
+This makes the tasks portable and reusable across different projects by simply changing `bolt.config.json`.
+
 ## Usage Examples
 
 ```powershell
 # List all available tasks
 .\bolt.ps1 -ListTasks
 .\bolt.ps1 -Help
+
+# Manage configuration variables
+.\bolt.ps1 -ListVariables
+.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
+.\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "00000000-0000-0000-0000-000000000000"
+.\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
 
 # Preview task execution plan (no execution)
 .\bolt.ps1 build -Outline
@@ -223,6 +405,7 @@ Dedicated tooling for creating PowerShell module manifests from existing modules
 # Use global 'bolt' command (after module installation)
 bolt build
 bolt -ListTasks
+bolt -ListVariables
 bolt format lint build -Only
 
 # Uninstall Bolt module from all locations

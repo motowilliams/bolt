@@ -1,0 +1,19 @@
+{
+  "$schema": "./bolt.config.schema.json",
+  "IacPath": "infrastructure",
+  "Environment": "dev",
+  "DatabaseHost": "localhost",
+  "DatabasePort": 5432,
+  "ApiEndpoint": "https://api.example.com",
+  "Settings": {
+    "EnableLogging": true,
+    "LogLevel": "Debug",
+    "MaxRetries": 3
+  },
+  "Features": {
+    "Authentication": {
+      "Provider": "OAuth2",
+      "Timeout": 30
+    }
+  }
+}

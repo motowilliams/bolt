@@ -38,6 +38,9 @@ tests/*temp*/**                     # Any test temporary files
 # Generated module manifests (created by generate-manifest.ps1)
 *.psd1
 
+# Bolt configuration files (user-specific)
+bolt.config.json
+
 # Security logging directories (should only be directories, never files)
 .bolt/                              # Security audit log directory (opt-in logging)
 .bolt/**/*                          # All contents of .bolt directory
