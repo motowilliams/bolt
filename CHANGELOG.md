@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configuration Variable System**: New project-level configuration management with `bolt.config.json`
   - Create configuration file at project root with user-defined variables
   - Automatic config injection into all tasks via `$BoltConfig` variable
-  - Built-in variables: `ProjectRoot`, `TaskDirectory`
+  - Built-in variables: `ProjectRoot`, `TaskDirectory`, `TaskDirectoryPath`, `TaskScriptRoot`, `TaskName`, `GitRoot`, `GitBranch`, `Colors`
   - User-defined variables are merged at the root: access them via `$BoltConfig.YourVariableName`
   - Supports nested objects and complex data structures
   - Per-invocation configuration caching for performance (multiple tasks share same config)
