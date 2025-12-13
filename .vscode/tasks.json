@@ -18,7 +18,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Bolt: Format",
+      "label": "Bolt: Format Source",
       "type": "shell",
       "command": "pwsh",
       "args": ["-File", "${workspaceFolder}/bolt.ps1", "format"],
@@ -30,7 +30,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Bolt: Lint",
+      "label": "Bolt: Lint Source",
       "type": "shell",
       "command": "pwsh",
       "args": ["-File", "${workspaceFolder}/bolt.ps1", "lint"],

@@ -1661,7 +1661,7 @@ Write-Host $sanitizedOutput
 **Action Items:**
 - [ ] Create `dependencies.json` manifest
 - [ ] Pin PowerShell version (currently >= 7.0)
-- [ ] Document Bicep CLI version requirements
+- [ ] Document external tool version requirements for package starters
 - [ ] Add Git version requirements
 - [ ] Include Pester version for testing
 - [ ] Implement version checking at script startup
@@ -1677,7 +1677,7 @@ Write-Host $sanitizedOutput
     "git": ">=2.30.0"
   },
   "optionalDependencies": {
-    "bicep": ">=0.20.0",
+    "bicep": ">=0.20.0",  // Example for Bicep starter package
     "azure-cli": ">=2.50.0"
   }
 }
@@ -1709,14 +1709,14 @@ function Test-Dependencies {
 ```
 Task: Implement dependency pinning and version checking in Bolt
 
-Context: The project needs to track and verify versions of external dependencies (PowerShell, Git, Pester, Bicep) for supply chain security and reproducible builds.
+Context: The project needs to track and verify versions of external dependencies (PowerShell, Git, Pester, and tools required by package starters like Bicep CLI) for supply chain security and reproducible builds.
 
 Requirements:
 1. Create dependencies.json manifest file with:
    - PowerShell >= 7.2.0
    - Pester >= 5.0.0
    - Git >= 2.30.0
-   - Bicep >= 0.20.0 (optional)
+   - Bicep >= 0.20.0 (optional, for Bicep starter package)
    - Azure CLI >= 2.50.0 (optional)
 2. Implement Test-Dependencies function in bolt.ps1:
    - Load and parse dependencies.json
@@ -2186,7 +2186,7 @@ The following items have been evaluated and marked as **Won't Implement** based 
 #### [x] L3 (Won't Implement): Implement License Compliance Scanning
 **Category:** Legal Compliance
 
-> **Note:** This feature will not be added to Bolt. License compliance scanning is not applicable to this build orchestrator project. Dependencies are managed at the system level (PowerShell modules, Bicep CLI, Git) and are the responsibility of the development environment, not the build script.
+> **Note:** This feature will not be added to Bolt. License compliance scanning is not applicable to this build orchestrator project. Dependencies are managed at the system level (PowerShell modules, external tools like Bicep CLI, Git) and are the responsibility of the development environment, not the build script.
 
 ---
 

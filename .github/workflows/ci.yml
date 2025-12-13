@@ -75,6 +75,8 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: |
+          # NOTE: Bicep CLI installation is for testing the Bicep starter package
+          # The core Bolt orchestrator has no dependency on Bicep
           # Check if Bicep is already cached
           if command -v bicep &> /dev/null; then
             echo "✓ Using cached Bicep CLI"
@@ -90,6 +92,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          # NOTE: Bicep CLI installation is for testing the Bicep starter package
+          # The core Bolt orchestrator has no dependency on Bicep
           # Check if Bicep is already cached
           $bicepPath = "C:\Program Files\Bicep CLI\bicep.exe"
           if (Test-Path $bicepPath) {

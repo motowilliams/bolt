@@ -26,7 +26,9 @@
 - **Config Caching**: Configuration cached per-invocation and invalidated on add/remove for fast multi-task execution
 - **Upward Config Search**: `bolt.config.json` discovered via upward directory search (same as `.build/`)
 
-### 2. Build Tasks
+### 2. Bicep Starter Package Tasks
+
+The Bicep starter package (`packages/.build-bicep`) provides infrastructure-as-code tasks:
 
 #### **Format Task** (`.\bolt.ps1 format` or `.\bolt.ps1 fmt`)
 - Formats all Bicep files using `bicep format`
@@ -154,7 +156,7 @@ Created a complete Azure infrastructure setup for testing:
 The system properly detects and reports errors:
 
 ✅ **Syntax Errors**: Invalid Bicep syntax caught by linter
-✅ **Format Issues**: Unformatted files detected in check mode  
+✅ **Format Issues**: Unformatted files detected in check mode
 ✅ **Compilation Errors**: Failed builds return non-zero exit codes
 ✅ **Dependency Failures**: Build stops if lint/format fails
 
@@ -217,7 +219,7 @@ Project-level configuration management with automatic injection into task contex
 **Example `bolt.config.json`:**
 ```json
 {
-  "IacPath": "infrastructure/bicep",
+  "SourcePath": "src",
   "Environment": "dev",
   "Azure": {
     "SubscriptionId": "00000000-0000-0000-0000-000000000000",
@@ -240,14 +242,14 @@ Three dedicated parameter sets for managing configuration:
 #   ProjectRoot = C:\projects\myapp
 #   TaskDirectory = .build
 #   TaskDirectoryPath = C:\projects\myapp\.build
-#   TaskName = 
-#   TaskScriptRoot = 
+#   TaskName =
+#   TaskScriptRoot =
 #   GitRoot = C:/projects/myapp
 #   GitBranch = main
 #   Colors = @{ Header = Blue }
 #
 # User-Defined Variables:
-#   IacPath = infrastructure/bicep
+#   SourcePath = src
 #   Environment = dev
 #   Azure.SubscriptionId = 00000000-0000-0000-0000-000000000000
 #   Azure.ResourceGroup = rg-myapp-dev
@@ -256,7 +258,7 @@ Three dedicated parameter sets for managing configuration:
 **Add/Update Variables:**
 ```powershell
 # Add a simple variable
-.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
+.\bolt.ps1 -AddVariable -Name "SourcePath" -Value "src"
 
 # Add a nested variable (creates nested structure)
 .\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "00000000-0000-0000-0000-000000000000"
@@ -265,9 +267,9 @@ Three dedicated parameter sets for managing configuration:
 .\bolt.ps1 -AddVariable -Name "Environment" -Value "staging"
 
 # Output:
-# Adding variable: IacPath = infrastructure/bicep
-# Variable 'IacPath' set to 'infrastructure/bicep'
-# ✓ Variable 'IacPath' added successfully
+# Adding variable: SourcePath = src
+# Variable 'SourcePath' set to 'src'
+# ✓ Variable 'SourcePath' added successfully
 #   Run '.\bolt.ps1 -ListVariables' to see all variables
 ```
 
@@ -316,11 +318,11 @@ Write-Host "Project Root: $($BoltConfig.ProjectRoot)" -ForegroundColor Cyan
 Write-Host "Task Directory: $($BoltConfig.TaskDirectory)" -ForegroundColor Gray
 
 # Access user-defined variables
-$iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+$sourcePath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.SourcePath
 $subscriptionId = $BoltConfig.Azure.SubscriptionId
 $resourceGroup = $BoltConfig.Azure.ResourceGroup
 
-Write-Host "Deploying from: $iacPath" -ForegroundColor Cyan
+Write-Host "Deploying from: $sourcePath" -ForegroundColor Cyan
 Write-Host "Subscription: $subscriptionId" -ForegroundColor Gray
 Write-Host "Resource Group: $resourceGroup" -ForegroundColor Gray
 
@@ -352,9 +354,9 @@ exit 0
 .\bolt.ps1 format lint                         # New invocation, fresh cache
 ```
 
-#### **Bicep Task Integration**
+#### **Bicep Starter Package Integration**
 
-All Bicep tasks (`format`, `lint`, `build`) have been refactored to use `$BoltConfig`:
+All Bicep starter package tasks (`format`, `lint`, `build`) have been refactored to use `$BoltConfig`:
 
 ```powershell
 # Before: Hardcoded paths
@@ -380,17 +382,17 @@ This makes the tasks portable and reusable across different projects by simply c
 
 # Manage configuration variables
 .\bolt.ps1 -ListVariables
-.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
+.\bolt.ps1 -AddVariable -Name "SourcePath" -Value "src"
 .\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "00000000-0000-0000-0000-000000000000"
 .\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
 
 # Preview task execution plan (no execution)
 .\bolt.ps1 build -Outline
 
-# Format all Bicep files
+# Format source files
 .\bolt.ps1 format
 
-# Lint/validate Bicep files
+# Lint/validate source files
 .\bolt.ps1 lint
 
 # Full build (format → lint → compile)
@@ -445,9 +447,9 @@ PS> .\bolt.ps1 build -Outline
 
 Task execution plan for: build
 
-build (Compiles Bicep files to ARM JSON templates)
-├── format (Formats Bicep files using bicep format)
-└── lint (Validates Bicep syntax and runs linter)
+build (Compiles source files)
+├── format (Formats source files)
+└── lint (Validates source files)
 
 Execution order:
   1. format
@@ -462,7 +464,7 @@ PS> .\bolt.ps1 build -Only -Outline
 Task execution plan for: build
 (Dependencies will be skipped with -Only flag)
 
-build (Compiles Bicep files to ARM JSON templates)
+build (Compiles source files)
 (Dependencies skipped: format, lint)
 
 Execution order:
@@ -475,13 +477,13 @@ PS> .\bolt.ps1 format lint build -Outline
 
 Task execution plan for: format, lint, build
 
-format (Formats Bicep files using bicep format)
+format (Formats source files)
 
-lint (Validates Bicep syntax and runs linter)
+lint (Validates source files)
 
-build (Compiles Bicep files to ARM JSON templates)
-├── format (Formats Bicep files using bicep format)
-└── lint (Validates Bicep syntax and runs linter)
+build (Compiles source files)
+├── format (Formats source files)
+└── lint (Validates source files)
 
 Execution order:
   1. format
@@ -627,12 +629,12 @@ The project includes a comprehensive Pester test suite organized into three file
 - Tests input sanitization and validation
 - Ensures secure error handling
 
-**Bicep Tasks** (`packages/.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
-- Validates structure and metadata of Bicep tasks
+**Bicep Starter Package Tests** (`packages/.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
+- Validates structure and metadata of Bicep starter package tasks
 - Checks task existence, syntax, and proper metadata headers
 - Verifies dependency declarations
 
-**Bicep Integration** (`packages/.build-bicep/tests/Integration.Tests.ps1` - 4 tests):
+**Bicep Starter Package Integration** (`packages/.build-bicep/tests/Integration.Tests.ps1` - 4 tests):
 - End-to-end tests executing actual Bicep operations
 - Requires Bicep CLI to be installed
 - Tests format, lint, build, and full pipeline
@@ -700,7 +702,7 @@ The test suite uses Pester tags for flexible test execution:
 - Critical for security compliance
 
 **`Bicep-Tasks` Tag** (16 tests, ~22 seconds)
-- Tests Bicep task implementation in `packages/.build-bicep/` directory
+- Tests Bicep starter package implementation in `packages/.build-bicep/` directory
 - Includes `Tasks.Tests.ps1` (structure validation)
 - Includes `Integration.Tests.ps1` (actual Bicep execution)
 - Requires Bicep CLI to be installed
@@ -711,7 +713,7 @@ The test suite uses Pester tags for flexible test execution:
 # Quick feedback loop during core development
 Invoke-Pester -Tag Core
 
-# Validate Bicep tasks before committing changes
+# Validate Bicep starter package before committing changes
 Invoke-Pester -Tag Bicep-Tasks
 
 # Complete validation (default)
@@ -773,13 +775,13 @@ The build system is CI/CD ready with proper exit codes:
 steps:
   - name: Run build
     run: pwsh -File bolt.ps1 build
-    
+
   - name: Run tests
     run: |
       Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
       Invoke-Pester -Output Detailed -CI
     shell: pwsh
-    
+
   - name: Publish Test Results
     uses: EnricoMi/publish-unit-test-result-action@v2
     if: always()
