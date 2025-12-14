@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Works in both script mode (`.\bolt.ps1 -ListVariables`) and module mode (`bolt -ListVariables`)
   - JSON schema validation on add/remove operations
   - Human-readable output with syntax-highlighted JSON display
-- **Bicep Task Refactoring**: Refactored all Bicep tasks to use `$BoltConfig` for data access
+- **Bicep Starter Package Refactoring**: Refactored all Bicep starter package tasks to use `$BoltConfig` for data access
   - Format, Lint, and Build tasks now use `$BoltConfig.ProjectRoot` instead of environment variables
   - Cleaner task implementation with safer nested value access patterns
   - Example demonstrates best practices for accessing configuration in tasks
@@ -125,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Find-BuildDirectory` function for upward directory traversal
 - Cross-platform path detection using `$IsWindows`, `$IsLinux`, `$IsMacOS`
 - **Improved .gitignore**: Comprehensive reorganization with clear sections and comments
-  - Bicep Infrastructure: ARM templates, parameter files, configuration
+  - Bicep starter package infrastructure: ARM templates, parameter files, configuration
   - Test Results: Pester outputs, temporary directories
   - PowerShell Modules: Generated manifests, module installations
   - Development/IDE: Editor-specific files
@@ -233,12 +233,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `-NewTask` parameter to generate new task files with proper metadata
 - `-ListTasks` / `-Help` to display available tasks
 - Core tasks: `check-index` (git status validation)
-- Example Azure Bicep tasks: `format`, `lint`, `build`
+- Example Bicep starter package tasks: `format`, `lint`, `build`
 - Example Azure infrastructure (App Service + SQL Database)
 - Comprehensive test suite with Pester
   - Core orchestration tests (28 tests, fast)
   - Security validation tests (205 tests)
-  - Bicep task tests (16 tests)
+  - Bicep starter package tests (16 tests)
   - Test tags: `Core`, `Security`, `Bicep-Tasks`
 - VS Code integration:
   - Pre-configured tasks (build, format, lint, test)

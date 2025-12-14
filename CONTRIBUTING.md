@@ -10,14 +10,14 @@ Thank you for considering contributing to Bolt! 🎉
 
 ## Project Philosophy
 
-**Keep it simple, keep it self-contained.** Bolt is designed to have zero external dependencies beyond PowerShell 7.0+ and the tools your tasks use (Bicep, Git, etc.).
+**Keep it simple, keep it self-contained.** Bolt is designed to have zero external dependencies beyond PowerShell 7.0+ (tools like Bicep, Git, etc. are optional via package starters).
 
 ## Getting Started
 
 1. **Fork and clone** the repository
 2. **Install prerequisites**:
    - PowerShell 7.0+
-   - Azure Bicep CLI: `winget install Microsoft.Bicep`
+   - Azure Bicep CLI (optional, for testing Bicep starter package): `winget install Microsoft.Bicep`
 3. **Make your changes** following the guidelines below
 4. **Test locally**: Run `.\bolt.ps1 build` to ensure everything works
 5. **Submit a pull request**
@@ -131,7 +131,7 @@ The recommended way to pass data to tasks is through `bolt.config.json`:
 
 ```powershell
 # Add configuration variables
-.\bolt.ps1 -AddVariable "IacPath" "infrastructure/bicep"
+.\bolt.ps1 -AddVariable "SourcePath" "src"
 .\bolt.ps1 -AddVariable "Azure.SubscriptionId" "00000000-0000-0000-0000-000000000000"
 
 # Then access in any task via $BoltConfig
@@ -230,7 +230,7 @@ $BoltConfig.Colors             # Hashtable with color theme
 **User-Defined Variables** (from `bolt.config.json`):
 ```powershell
 # Simple values
-$BoltConfig.IacPath           # From: { "IacPath": "infrastructure/bicep" }
+$BoltConfig.SourcePath        # From: { "SourcePath": "src" }
 $BoltConfig.Environment       # From: { "Environment": "dev" }
 
 # Nested values (dot notation in JSON becomes object properties)
@@ -248,7 +248,7 @@ $BoltConfig.Azure.ResourceGroup    # From: { "Azure": { "ResourceGroup": "..." }
 **Add or update a variable:**
 ```powershell
 # Simple variable
-.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
+.\bolt.ps1 -AddVariable -Name "SourcePath" -Value "src"
 
 # Nested variable (creates nested structure)
 .\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "00000000-0000-0000-0000-000000000000"
@@ -269,7 +269,7 @@ The `bolt.config.json` file uses standard JSON:
 
 ```json
 {
-  "IacPath": "infrastructure/bicep",
+  "SourcePath": "src",
   "Environment": "dev",
   "Azure": {
     "SubscriptionId": "00000000-0000-0000-0000-000000000000",
@@ -298,7 +298,7 @@ The `bolt.config.json` file uses standard JSON:
 
 ```powershell
 # ❌ BAD - Hardcoded paths
-$iacPath = "C:\projects\myapp\infrastructure\bicep"
+$sourcePath = "C:\projects\myapp\src"
 $resourceGroup = "rg-myapp-dev"
 
 # ✅ GOOD - Configuration-driven
@@ -310,7 +310,7 @@ if ($BoltConfig.IacPath) {
     $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
 } else {
     # Default for backward compatibility
-    $iacPath = Join-Path $BoltConfig.ProjectRoot "infrastructure" "bicep"
+    $sourcePath = Join-Path $BoltConfig.ProjectRoot "src"
 }
 ```
 
@@ -356,7 +356,7 @@ Before submitting changes:
 - **Use test tags for faster feedback**:
   - `Invoke-Pester -Tag Core` - Quick orchestration tests (fast, ~1s)
   - `Invoke-Pester -Tag Security` - Security validation tests (moderate, ~10s)
-  - `Invoke-Pester -Tag Bicep-Tasks` - Bicep task validation tests (slower, ~22s)
+  - `Invoke-Pester -Tag Bicep-Tasks` - Bicep starter package validation tests (slower, ~22s)
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
 - **Test with custom directories**: Verify `-TaskDirectory` parameter works correctly
@@ -365,8 +365,8 @@ Before submitting changes:
 - **Add new tests**: Choose the appropriate test file:
   - **Core orchestration changes** → `tests/bolt.Tests.ps1` (uses mock fixtures, tag with `Core`)
   - **Security changes** → `tests/security/Security.Tests.ps1` (validates security fixes, tag with `Security`)
-  - **New Bicep tasks** → `packages/.build-bicep/tests/Tasks.Tests.ps1` (validates task structure, tag with `Bicep-Tasks`)
-  - **Bicep integrations** → `packages/.build-bicep/tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Bicep-Tasks`)
+  - **New Bicep starter package tasks** → `packages/.build-bicep/tests/Tasks.Tests.ps1` (validates task structure, tag with `Bicep-Tasks`)
+  - **Bicep starter package integrations** → `packages/.build-bicep/tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Bicep-Tasks`)
 
 ### Cross-Platform Guidelines
 
@@ -376,7 +376,7 @@ Bolt is **cross-platform by design**. Follow these patterns:
 ```powershell
 # ✅ GOOD - Use Join-Path
 $iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
-$mainFile = Join-Path $iacPath "main.bicep"
+$mainFile = Join-Path $sourcePath "main.ext"
 
 # ❌ BAD - Hardcoded path separators
 $iacPath = "$PSScriptRoot\..\tests\iac"      # Windows-only
@@ -386,10 +386,10 @@ $iacPath = "$PSScriptRoot/../tests/iac"      # Works, but inconsistent
 **File Discovery:**
 ```powershell
 # ✅ GOOD - Use -Force for consistent behavior across platforms
-$bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File -Force
+$sourceFiles = Get-ChildItem -Path $sourcePath -Filter "*.ext" -Recurse -File -Force
 
 # ❌ BAD - Missing -Force may behave differently on Linux
-$bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File
+$sourceFiles = Get-ChildItem -Path $sourcePath -Filter "*.ext" -Recurse -File
 ```
 
 **Key Principles:**
@@ -421,7 +421,7 @@ Describe "Your New Feature" -Tag 'Core' {
 - This achieves clean separation between production tasks and test infrastructure
 - No need to copy fixtures - they're referenced directly
 
-**For new Bicep tasks**:
+**For new tasks in Bicep starter package**:
 ```powershell
 # Add to packages/.build-bicep/tests/Tasks.Tests.ps1
 Describe "YourNewTask Task" -Tag 'Bicep-Tasks' {

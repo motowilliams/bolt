@@ -6,7 +6,7 @@
 
 A self-contained, cross-platform PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by PSake, Make and Rake. Just PowerShell with no external dependencies - just PowerShell Core 7.0+.
 
-**Perfect for Azure Bicep infrastructure projects**, but flexible enough for any PowerShell workflow. Runs on Windows, Linux, and macOS.
+**Perfect for any build workflow** - infrastructure-as-code, application builds, testing pipelines, deployment automation, and more. Runs on Windows, Linux, and macOS.
 
 ## ✨ Features
 
@@ -39,8 +39,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 
 1. Clone or download this repository
 2. Ensure PowerShell 7.0+ is installed
-3. Install Azure Bicep CLI: `winget install Microsoft.Bicep`
-4. Navigate to the project directory and run `.\bolt.ps1`
+3. Navigate to the project directory and run `.\bolt.ps1`
 
 **Option 2: Module Mode (Global Command)**
 
@@ -72,9 +71,9 @@ bolt build
 
 # Output:
 # Available tasks:
-#   build      - Compiles Bicep files to ARM JSON templates
-#   format     - Formats Bicep files using bicep format
-#   lint       - Validates Bicep files using bicep lint
+#   build      - Compiles source files
+#   format     - Formats source files
+#   lint       - Validates source files
 ```
 
 ### Run Your First Build
@@ -119,7 +118,7 @@ bolt build
 
 # Manage configuration variables
 .\bolt.ps1 -ListVariables
-.\bolt.ps1 -AddVariable -Name "IacPath" -Value "infrastructure/bicep"
+.\bolt.ps1 -AddVariable -Name "SourcePath" -Value "src"
 .\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
 
 # Install as a module
@@ -151,6 +150,47 @@ cd ~/projects/bolt
 # Uninstall the module
 .\New-BoltModule.ps1 -Uninstall
 ```
+
+## 📦 Package Starters
+
+**Package starters** are pre-built task collections for specific toolchains and workflows. They provide ready-to-use task templates that you can install into your project's `.build/` directory.
+
+### Available Package Starters
+
+#### Bicep Starter Package (`packages/.build-bicep`)
+
+Infrastructure-as-Code tasks for Azure Bicep workflows.
+
+**Included Tasks:**
+- **`format`** - Formats Bicep files using `bicep format`
+- **`lint`** - Validates Bicep syntax using `bicep lint`
+- **`build`** - Compiles Bicep files to ARM JSON templates
+
+**Requirements:** Azure Bicep CLI - `winget install Microsoft.Bicep` (Windows) or https://aka.ms/bicep-install
+
+**Installation:**
+```powershell
+# Copy tasks from package starter to your project
+Copy-Item -Path "packages/.build-bicep/Invoke-*.ps1" -Destination ".build/" -Force
+```
+
+**Usage:**
+```powershell
+.\bolt.ps1 format  # Format Bicep files
+.\bolt.ps1 lint    # Validate syntax
+.\bolt.ps1 build   # Full pipeline: format → lint → build
+```
+
+### More Package Starters Coming Soon
+
+We're working on additional package starters for popular toolchains:
+- **TypeScript** - Build, lint, and test TypeScript projects
+- **Python** - Format (black/ruff), lint (pylint/flake8), test (pytest)
+- **Node.js** - Build, lint (ESLint), test (Jest/Mocha)
+- **Docker** - Build, tag, push container images
+- **Terraform** - Format, validate, plan infrastructure
+
+See [`packages/README.md`](packages/README.md) for details on available package starters and how to create your own.
 
 ## ⚙️ Parameter Sets
 
@@ -225,16 +265,17 @@ Bolt uses PowerShell parameter sets to provide a clean, validated interface with
 ```
 .
 ├── bolt.ps1                    # Main orchestrator
-├── .build/                     # User-customizable task templates
+├── .build/                     # User-customizable task templates (placeholders)
 │   ├── Invoke-Build.ps1        # Build task template
 │   ├── Invoke-Format.ps1       # Format task template
 │   └── Invoke-Lint.ps1         # Lint task template
-├── packages/                   # External task packages
-│   └── .build-bicep/           # Bicep task implementation (separate package)
+├── packages/                   # Package starters (pre-built task collections)
+│   ├── README.md               # Package starter documentation
+│   └── .build-bicep/           # Bicep starter package (IaC tasks)
 │       ├── Invoke-Build.ps1    # Compiles Bicep to ARM JSON
 │       ├── Invoke-Format.ps1   # Formats Bicep files
 │       ├── Invoke-Lint.ps1     # Validates Bicep syntax
-│       └── tests/              # Bicep-specific tests
+│       └── tests/              # Bicep starter package tests
 │           ├── Tasks.Tests.ps1 # Task validation tests
 │           ├── Integration.Tests.ps1 # End-to-end tests
 │           └── iac/            # Test infrastructure
@@ -253,16 +294,24 @@ Bolt uses PowerShell parameter sets to provide a clean, validated interface with
     └── copilot-instructions.md # AI agent guidance
 ```
 
+### Package Starters vs. Project Tasks
+
+- **`.build/`** - Your project-specific tasks (starts with placeholder templates)
+- **`packages/`** - Pre-built task collections for specific toolchains
+  - Install by copying starter package tasks to `.build/`
+  - Each starter is self-contained with tests and documentation
+  - See [`packages/README.md`](packages/README.md) for details
+
 ### Example Infrastructure
 
-The project includes a complete Azure infrastructure example:
+The Bicep starter package (`packages/.build-bicep`) includes a complete Azure infrastructure example for testing:
 
 - **App Service Plan**: Hosting environment with configurable SKU
 - **Web App**: Azure App Service with managed identity
 - **SQL Server**: Azure SQL Server with firewall rules
 - **SQL Database**: Database with configurable DTU/storage
 
-All modules are parameterized and support multiple environments (dev, staging, prod).
+All modules are parameterized and support multiple environments (dev, staging, prod). These are example templates used for testing the Bicep starter package tasks.
 
 ## 🛠️ Creating Tasks
 
@@ -443,10 +492,10 @@ Tasks in a dependency chain do **NOT** pass pipeline objects to each other:
 
 ```powershell
 # Create a configuration file (manually or via -AddVariable)
-echo '{ "IacPath": "tests/iac", "Environment": "dev" }' > bolt.config.json
+echo '{ "SourcePath": "src", "Environment": "dev" }' > bolt.config.json
 
 # Or use the CLI
-.\bolt.ps1 -AddVariable -Name "IacPath" -Value "tests/iac"
+.\bolt.ps1 -AddVariable -Name "SourcePath" -Value "src"
 .\bolt.ps1 -AddVariable -Name "Environment" -Value "dev"
 
 # View all variables
@@ -461,10 +510,10 @@ echo '{ "IacPath": "tests/iac", "Environment": "dev" }' > bolt.config.json
 # DESCRIPTION: Deploy infrastructure
 
 # Access configuration values
-$iacPath = $BoltConfig.IacPath
+$sourcePath = $BoltConfig.SourcePath
 $environment = $BoltConfig.Environment
 
-Write-Host "Deploying from: $iacPath" -ForegroundColor Cyan
+Write-Host "Deploying from: $sourcePath" -ForegroundColor Cyan
 Write-Host "Environment: $environment" -ForegroundColor Gray
 
 exit 0
@@ -509,7 +558,7 @@ exit 0
 
 ```json
 {
-  "IacPath": "infrastructure/bicep",
+  "SourcePath": "src",
   "Environment": "dev",
   "Azure": {
     "SubscriptionId": "00000000-0000-0000-0000-000000000000",
@@ -555,9 +604,9 @@ The `-Outline` flag displays the task dependency tree and execution order **with
 # Output:
 # Task execution plan for: build
 #
-# build (Compiles Bicep files to ARM JSON templates)
-# ├── format (Formats Bicep files using bicep format)
-# └── lint (Validates Bicep syntax and runs linter)
+# build (Compiles source files)
+# ├── format (Formats source files)
+# └── lint (Validates source files)
 #
 # Execution order:
 #   1. format
@@ -1172,14 +1221,17 @@ exit
 # Then reopen and try again
 ```
 
-### Bicep CLI not found
+### External tool not found
 
 ```powershell
-# Install Bicep
+# Install the required tool for your tasks
+# Example for Bicep (if using Bicep starter package):
 winget install Microsoft.Bicep
 
 # Verify installation
 bicep --version
+
+# For other tools, see package starter documentation
 ```
 
 ### Task fails silently
@@ -1208,8 +1260,8 @@ Contributions welcome! This is a self-contained build system - keep it simple an
 
 1. **Keep `bolt.ps1`**: The orchestrator rarely needs modification
 2. **Modify tasks in `.build/`**: Edit existing tasks or add new ones
-3. **Update infrastructure in `tests/iac/`**: Replace with your own Bicep modules
-4. **Adjust parameters**: Edit `*.parameters.json` files for your environment
+3. **Install package starters**: Use pre-built task collections for your toolchain (see `packages/README.md`)
+4. **Update configuration**: Edit `bolt.config.json` for project-specific settings
 
 ### Adding a New Task
 
@@ -1256,8 +1308,8 @@ Bolt includes a GitHub Actions workflow that runs on Ubuntu and Windows:
   - Push builds run on all branches (including topic branches)
   - Duplicate builds prevented when PR is open (only PR build runs)
 - **Platforms**: Ubuntu (Linux) and Windows
-- **Pipeline**: Core tests → Tasks tests → Full build (format → lint → build)
-- **Dependencies**: Automatically installs PowerShell 7.0+ and Bicep CLI
+- **Pipeline**: Core tests → Starter package tests → Full build (format → lint → build)
+- **Dependencies**: Automatically installs PowerShell 7.0+ and tools required by starter packages (e.g., Bicep CLI for testing Bicep starter)
 - **Test Reports**: NUnit XML artifacts uploaded for each platform
 - **Status**: [![CI](https://github.com/motowilliams/bolt/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/bolt/actions/workflows/ci.yml)
 
@@ -1273,7 +1325,7 @@ Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
 
 # Run tests (same as CI)
 Invoke-Pester -Tag Core    # Fast tests (~1s)
-Invoke-Pester -Tag Tasks   # Bicep tests (~22s)
+Invoke-Pester -Tag Bicep-Tasks   # Bicep starter package tests (~22s)
 Invoke-Pester             # All tests
 
 # Run build pipeline (same as CI)
@@ -1343,7 +1395,7 @@ It's the perfect name for a build orchestration tool that runs fast and efficien
 
 ### Design Goals
 
-- **Zero external dependencies**: Just PowerShell 7.0+ and your tools (Bicep, Git, etc.)
+- **Zero external dependencies**: Just PowerShell 7.0+ (tools like Bicep, Git, etc. are optional via package starters)
 - **Self-contained**: Single `bolt.ps1` file orchestrates everything
 - **Convention over configuration**: Drop tasks in `.build/`, they're discovered automatically
 - **Developer-friendly**: Tab completion, colorized output, helpful error messages

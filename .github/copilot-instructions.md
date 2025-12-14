@@ -383,19 +383,19 @@ Before implementing any changes or answering requests:
 
 ## Project Overview
 
-This is **Bolt**, a self-contained PowerShell build system (`bolt.ps1`) designed for Azure Bicep infrastructure projects. It provides extensible task orchestration with automatic dependency resolution, similar to Make or Rake, but pure PowerShell with no external dependencies.
+This is **Bolt**, a self-contained PowerShell build system (`bolt.ps1`) designed for any PowerShell-based build workflow. It provides extensible task orchestration with automatic dependency resolution, similar to Make or Rake, but pure PowerShell with no external dependencies.
 
-**Architecture Pattern**: Monolithic orchestrator (`bolt.ps1`) + modular task scripts (`.build/*.ps1`)
+**Architecture Pattern**: Monolithic orchestrator (`bolt.ps1`) + modular task scripts (`.build/*.ps1`) + optional package starters (`packages/`)
 
-**Last Updated**: October 2025
+**Last Updated**: December 2025
 
 ### Current Project Status
 
 The project is a **working example** that includes:
 - ✅ Complete build orchestration system (`bolt.ps1`)
-- ✅ Three project tasks: `format`, `lint`, `build`
+- ✅ Bicep starter package with format, lint, build tasks (`packages/.build-bicep`)
 - ✅ Pester test suite with comprehensive coverage
-- ✅ Example Azure infrastructure (App Service + SQL)
+- ✅ Example Azure infrastructure (App Service + SQL) for testing Bicep starter
 - ✅ Multi-task execution with dependency resolution
 - ✅ Tab completion and help system (script and module mode)
 - ✅ Parameterized task directory (`-TaskDirectory`)
@@ -407,7 +407,7 @@ The project is a **working example** that includes:
 - ✅ MIT License
 - ✅ Comprehensive documentation (README.md, IMPLEMENTATION.md, CONTRIBUTING.md)
 
-**Ready to use**: The system is functional and can be adapted for any Azure Bicep project.
+**Ready to use**: The system is functional and can be adapted for any PowerShell-based build workflow. Package starters provide pre-built task collections for specific toolchains.
 
 ### Parameter Sets
 
@@ -431,7 +431,7 @@ Tasks are discovered via **comment-based metadata** in `.build/*.ps1` files (or 
 
 ```powershell
 # TASK: build, compile          # Task names (comma-separated for aliases)
-# DESCRIPTION: Compiles Bicep   # Human-readable description
+# DESCRIPTION: Compiles source files   # Human-readable description
 # DEPENDS: format, lint          # Dependencies (executed automatically)
 ```
 
@@ -573,12 +573,16 @@ else {
 $modulePath = Join-Path $HOME "Documents" "PowerShell" "Modules" $moduleName
 ```
 
-### Bicep File Conventions
+### Bicep Starter Package Conventions
 
-- **Only `main*.bicep` files are compiled** (e.g., `main.bicep`, `main.dev.bicep`) - see `Invoke-Build.ps1`
+The Bicep starter package (`packages/.build-bicep`) follows these conventions:
+
+- **Only `main*.bicep` files are compiled** (e.g., `main.bicep`, `main.dev.bicep`) - see `packages/.build-bicep/Invoke-Build.ps1`
 - **Module files in `tests/iac/modules/` are not compiled directly** - they're referenced by main files
 - **Compiled `.json` files live alongside `.bicep` sources** - gitignored via pattern in `.gitignore`
-- **Infrastructure is in `tests/iac/`** - example Bicep files used for testing build tasks
+- **Infrastructure is in `packages/.build-bicep/tests/iac/`** - example Bicep files used for testing the starter package
+
+These conventions are specific to the Bicep starter package. Other package starters will have their own tool-specific conventions.
 
 ### Error Handling Pattern
 
@@ -613,11 +617,26 @@ All tasks use consistent color coding:
 - **Yellow**: Warnings (`⚠` with yellow)
 - **Red**: Errors (`✗` with red)
 
-## Bicep-Specific Integration
+## Example Package Integration Pattern
 
-### Bicep CLI Commands
+### External Tool CLI Pattern
 
-The lint task uses `bicep lint` (not `bicep build --stdout`):
+Package starters should check for required external tools before executing. This pattern is demonstrated in the Bicep starter package:
+
+```powershell
+# Example: Check for external CLI tool (from Bicep starter package)
+$bicepCmd = Get-Command bicep -ErrorAction SilentlyContinue
+if (-not $bicepCmd) {
+    Write-Error "Bicep CLI not found. Please install: https://aka.ms/bicep-install"
+    exit 1
+}
+```
+
+This pattern applies to any external tool (TypeScript compiler, Python linters, Docker CLI, etc.). See `packages/.build-bicep/Invoke-Build.ps1` for a real-world implementation.
+
+### Bicep CLI Commands (Bicep Starter Package)
+
+The Bicep starter package lint task uses `bicep lint` (not `bicep build --stdout`):
 
 ```powershell
 # Correct pattern for capturing diagnostics
@@ -629,9 +648,9 @@ $diagnostics = $output | Where-Object { $_ -match '^\S+\(\d+,\d+\)\s*:\s*(Error|
 
 **Why this matters**: `bicep lint` outputs to stdout (not stderr), and format differs from `bicep build`. The `&` call operator is required for proper output capture.
 
-### Format Task Behavior
+### Format Task Behavior (Bicep Starter Package)
 
-The format task formats Bicep files in-place:
+The Bicep starter package format task formats files in-place:
 
 **In-place formatting**: `.\bolt.ps1 format`
 - Modifies files directly using `bicep format --outfile`
@@ -668,9 +687,20 @@ if (-not $azModule) {
 
 Install: `Install-Module -Name Az -Scope CurrentUser -Repository PSGallery -Force`
 
-### Azure Bicep CLI Dependency
+### External Tool Dependency Pattern
 
-All infrastructure tasks require `bicep` CLI:
+Package starters that require external tools should check for availability before executing. See the Bicep starter package for a real-world example:
+
+```powershell
+# Pattern for checking external tool availability
+$toolCmd = Get-Command <tool-name> -ErrorAction SilentlyContinue
+if (-not $toolCmd) {
+    Write-Error "<Tool> CLI not found. Please install: <installation-instructions>"
+    exit 1
+}
+```
+
+**Example from Bicep starter package:**
 ```powershell
 $bicepCmd = Get-Command bicep -ErrorAction SilentlyContinue
 if (-not $bicepCmd) {
@@ -680,6 +710,8 @@ if (-not $bicepCmd) {
 ```
 
 Install: `winget install Microsoft.Bicep` or https://aka.ms/bicep-install
+
+This pattern should be used by all package starters that depend on external CLI tools.
 
 ## Task Outline Feature
 
@@ -703,9 +735,9 @@ The `-Outline` flag provides task visualization without execution:
 # Output:
 # Task execution plan for: build
 #
-# build (Compiles Bicep files to ARM JSON templates)
-# ├── format (Formats Bicep files using bicep format)
-# └── lint (Validates Bicep syntax and runs linter)
+# build (Compiles source files)
+# ├── format (Formats source files)
+# └── lint (Validates source files)
 #
 # Execution order:
 #   1. format
@@ -733,7 +765,7 @@ The `-Outline` flag provides task visualization without execution:
 
 - **Same commands**: `.\bolt.ps1 build` works the same locally and in CI
 - **No special CI flags**: Avoid `if ($env:CI)` branches unless absolutely necessary
-- **Consistent tooling**: Use same Bicep CLI version, same PowerShell modules
+- **Consistent tooling**: Use same tool versions (e.g., Bicep CLI for Bicep starter), same PowerShell modules
 - **Deterministic behavior**: Tasks produce same results regardless of environment
 
 **Pipeline-agnostic design**: Tasks work with GitHub Actions, Azure DevOps, GitLab CI, etc.
@@ -751,11 +783,11 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
 
 **Pipeline Steps**:
 1. **Setup**: Checkout code, verify PowerShell 7.0+
-2. **Dependencies**: Install Pester 5.0+ and Bicep CLI
+2. **Dependencies**: Install Pester 5.0+ and Bicep CLI (for testing Bicep starter package)
    - Ubuntu: Azure CLI (includes Bicep) via `curl -sL https://aka.ms/InstallAzureCLIDeb`
    - Windows: Bicep via `winget install Microsoft.Bicep`
 3. **Core Tests**: Fast tests (~1s, no Bicep required) - `Invoke-Pester -Tag Core`
-4. **Bicep Tasks Tests**: Bicep-dependent tests (~22s) - `Invoke-Pester -Tag Bicep-Tasks`
+4. **Bicep Starter Package Tests**: Bicep-dependent tests (~22s) - `Invoke-Pester -Tag Bicep-Tasks`
 5. **Test Report**: Generate NUnit XML - `Invoke-Pester -Configuration $config`
 6. **Build Pipeline**: Run full pipeline - `pwsh -File bolt.ps1 build`
 7. **Verify Artifacts**: Check compiled ARM JSON templates exist
@@ -829,17 +861,20 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
    .build/deploy.ps1
    ```
 
-### Bicep CLI Not Found
+### External Tool Not Found
 
-**Problem**: Tasks fail with "Bicep CLI not found" error.
+**Problem**: Tasks fail with "Tool CLI not found" error (e.g., Bicep CLI for Bicep starter package).
 
-**Solution**: Install Bicep CLI
+**Solution**: Install the required tool for your package starter
 ```powershell
+# Example for Bicep starter package:
 # Windows
 winget install Microsoft.Bicep
 
 # Linux/macOS
 # See: https://aka.ms/bicep-install
+
+# For other package starters, see packages/README.md for tool requirements
 ```
 
 ### Tests Failing with Pester Errors

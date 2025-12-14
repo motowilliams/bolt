@@ -77,7 +77,8 @@ Describe "Bolt Performance Baseline" -Tag "Perf" {
 
     Context "Build Pipeline Performance" {
         BeforeAll {
-            # Check if Bicep CLI is available
+            # Check if external tool is available for starter package testing
+            # Example: Bicep CLI for Bicep starter package
             $script:BicepAvailable = $null -ne (Get-Command bicep -ErrorAction SilentlyContinue)
         }
 
@@ -96,7 +97,7 @@ Describe "Bolt Performance Baseline" -Tag "Perf" {
                 Write-Host "Full build pipeline took: $elapsedMs ms" -ForegroundColor Cyan
 
                 # Baseline threshold: full pipeline should complete reasonably fast
-                # Note: This includes Bicep CLI execution which may vary
+                # Note: This includes external tool execution (e.g., Bicep CLI) which may vary
                 $elapsedMs | Should -BeLessThan 5000
 
                 # Verify build succeeded
