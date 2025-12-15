@@ -45,7 +45,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **⚡ Config Caching**: Configuration cached per-invocation for fast multi-task execution
 - **🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 🚀 Quick Start
 
@@ -208,7 +208,7 @@ We're working on additional package starters for popular toolchains:
 
 See [`packages/README.md`](packages/README.md) for details on available package starters and how to create your own.
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## ⚙️ Parameter Sets
 
@@ -278,7 +278,7 @@ Bolt uses PowerShell parameter sets to provide a clean, validated interface with
 - **Clear Help**: `Get-Help .\bolt.ps1` shows all parameter sets distinctly
 - **No Hanging**: Running with no parameters automatically shows help instead of prompting
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 📁 Project Structure
 
@@ -333,7 +333,7 @@ The Bicep starter package (`packages/.build-bicep`) includes a complete Azure in
 
 All modules are parameterized and support multiple environments (dev, staging, prod). These are example templates used for testing the Bicep starter package tasks.
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 🛠️ Creating Tasks
 
@@ -428,7 +428,7 @@ $env:BOLT_NO_FALLBACK_WARNINGS = 1
 
 **Best Practice**: Always include explicit `# TASK:` metadata for clarity and to avoid file-rename surprises.
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## ⚠️ Important: Task Execution Behaviors
 
@@ -617,7 +617,7 @@ param(
 2. **Use environment variables** - For CI/CD or system-level settings: `$env:VARIABLE_NAME`
 3. **Use configuration files** - Load from JSON/YAML/XML in your task as needed
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 📊 Task Visualization with `-Outline`
 
@@ -660,7 +660,7 @@ The `-Outline` flag displays the task dependency tree and execution order **with
 .\bolt.ps1 -TaskDirectory "infra-tasks" deploy -Outline
 ```
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 🏗️ Example Workflows
 
@@ -706,7 +706,7 @@ The `-Outline` flag displays the task dependency tree and execution order **with
 .\bolt.ps1 build
 ```
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 📖 Philosophy
 
@@ -743,7 +743,7 @@ steps:
       pwsh: true
 ```
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 🧪 Testing
 
@@ -971,14 +971,14 @@ Use Pester directly in CI pipelines:
 
 All tests pass consistently. Run `Invoke-Pester` to see current results.
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 🔧 Requirements
 
 - **PowerShell 7.0+** (uses `#Requires -Version 7.0` and modern syntax)
 - **Git** (for `check-index` task)
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 🎨 Output Formatting
 
@@ -990,7 +990,7 @@ All tasks use consistent color coding:
 - **Yellow**: Warnings (⚠)
 - **Red**: Errors (✗)
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 📦 Module Installation
 
@@ -1123,7 +1123,7 @@ cd ~/projects/bolt
 - ✅ Works across Windows, Linux, and macOS
 - ✅ Proper exit codes for CI/CD integration (0=success, 1=failure)
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 📦 Module Manifest Generation
 
@@ -1229,7 +1229,7 @@ Exported Aliases (1): bolt
   GUID: 5ed0dd69-db75-4ee7-b0d3-e93922605317
 ```
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 🐛 Troubleshooting
 
@@ -1288,13 +1288,13 @@ bicep --version
 - Restart your PowerShell session after adding new tasks
 - Check that task scripts have proper `# TASK:` metadata
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 📝 License
 
 MIT License - See [LICENSE](LICENSE) file for details.
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 🤝 Contributing
 
@@ -1346,7 +1346,7 @@ Task is automatically discovered - no registration needed! Restart your shell to
 - Add metadata comments: `# TASK:`, `# DESCRIPTION:`, `# DEPENDS:`
 - Only include `param()` if your task accepts parameters
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 🔄 Continuous Integration
 
@@ -1382,7 +1382,7 @@ Invoke-Pester             # All tests
 
 This follows the **90/10 principle**: 90% of the workflow should be identical locally and in CI.
 
-[back to top](#-bolt!)
+[back to top](#bolt-)
 
 ## 🔒 Security
 
