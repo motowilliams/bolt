@@ -8,6 +8,20 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 
 **Perfect for any build workflow** - infrastructure-as-code, application builds, testing pipelines, deployment automation, and more. Runs on Windows, Linux, and macOS.
 
+## 📑 Table of Contents
+
+- [✨ Features](#-features)
+- [🚀 Quick Start](#-quick-start)
+- [📦 Package Starters](#-package-starters)
+- [⚙️ Parameter Sets](#️-parameter-sets)
+- [📁 Project Structure](#-project-structure)
+- [🛠️ Creating Tasks](#️-creating-tasks)
+- [⚠️ Important: Task Execution Behaviors](#️-important-task-execution-behaviors)
+- [📊 Task Visualization with `-Outline`](#-task-visualization-with--outline)
+- [🏗️ Example Workflows](#️-example-workflows)
+- [📖 Philosophy](#-philosophy)
+- [🧪 Testing](#-testing)
+
 ## ✨ Features
 
 - **🔍 Automatic Task Discovery**: Drop `.ps1` files in `.build/` with comment-based metadata
