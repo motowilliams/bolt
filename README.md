@@ -31,6 +31,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - [🤝 Contributing](#-contributing)
 - [🔄 Continuous Integration](#-continuous-integration)
 - [🔒 Security](#-security)
+- [🤔 Logic Flows](#-logic-flows)
 
 ## 💡 Why "Bolt"?
 
