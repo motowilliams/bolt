@@ -11,6 +11,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 ## 📑 Table of Contents
 
 - [✨ Features](#-features)
+- [💡 Why "Bolt"?](#-why-bolt)
 - [🚀 Quick Start](#-quick-start)
 - [📦 Package Starters](#-package-starters)
 - [⚙️ Parameter Sets](#️-parameter-sets)
@@ -21,6 +22,21 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - [🏗️ Example Workflows](#️-example-workflows)
 - [📖 Philosophy](#-philosophy)
 - [🧪 Testing](#-testing)
+- [🔧 Requirements](#-requirements)
+- [🎨 Output Formatting](#-output-formatting)
+- [📦 Module Installation](#-module-installation)
+- [📦 Module Manifest Generation](#-module-manifest-generation)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [📝 License](#-license)
+- [🤝 Contributing](#-contributing)
+- [🔄 Continuous Integration](#-continuous-integration)
+- [🔒 Security](#-security)
+
+## 💡 Why "Bolt"?
+
+**Bolt** represents lightning-fast task execution ⚡ - a quick, powerful strike that gets things done!
+
+It's the perfect name for a build orchestration tool that runs fast and efficiently! 🚀
 
 ## ✨ Features
 
@@ -1436,12 +1452,6 @@ For security best practices and vulnerability reporting, see:
 - **[.well-known/security.txt](.well-known/security.txt)** - RFC 9116 compliant security policy
 
 **Report security vulnerabilities** via [GitHub Security Advisories](https://github.com/motowilliams/bolt/security/advisories/new). Do not report vulnerabilities through public issues.
-
-## 💡 Why "Bolt"?
-
-**Bolt** represents lightning-fast task execution ⚡ - a quick, powerful strike that gets things done!
-
-It's the perfect name for a build orchestration tool that runs fast and efficiently! 🚀
 
 ### Design Goals
 
