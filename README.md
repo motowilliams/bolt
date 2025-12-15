@@ -1466,7 +1466,7 @@ For security best practices and vulnerability reporting, see:
 
 **Lightning fast builds with Bolt!** ⚡
 
-## Logic Flows
+## 🤔 Logic Flows
 
 ### Bolt Tab Completion Flow
 
