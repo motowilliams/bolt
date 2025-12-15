@@ -1462,9 +1462,7 @@ For security best practices and vulnerability reporting, see:
 - **Developer-friendly**: Tab completion, colorized output, helpful error messages
 - **CI/CD ready**: Exit codes, deterministic behavior, no special flags
 
----
-
-**Lightning fast builds with Bolt!** ⚡
+[toc](#-table-of-contents)
 
 ## 🤔 Logic Flows
 
@@ -1847,3 +1845,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "✓ Build succeeded" -ForegroundColor Green
 exit 0
 ```
+
+---
+
+**Lightning fast builds with Bolt!** ⚡
