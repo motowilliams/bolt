@@ -1523,12 +1523,12 @@ When tab completion is triggered:
     1. **Extract Context**: Get script directory and check for `-TaskDirectory` parameter
     2. **Scan Directory**: Look for `*.ps1` files in the task directory (default: `.build/`)
     3. **Parse Metadata**: Read first 20 lines of each file looking for:
-   - `### TASK: taskname` - Primary task name(s)
-   - `### DESCRIPTION: description` - Task description (not used in completion)
-   - `### DEPENDS: dep1, dep2` - Dependencies (not used in completion)
+      - `### TASK: taskname` - Primary task name(s)
+      - `### DESCRIPTION: description` - Task description (not used in completion)
+      - `### DEPENDS: dep1, dep2` - Dependencies (not used in completion)
     4. **Filename Fallback**: If no `### TASK:` metadata, derive name from filename
-   - `Invoke-TaskName.ps1` → `taskname`
-   - `Invoke-My-Custom-Task.ps1` → `my-custom-task`
+      - `Invoke-TaskName.ps1` → `taskname`
+      - `Invoke-My-Custom-Task.ps1` → `my-custom-task`
     5. **Combine Tasks**: Merge project tasks with core tasks (`check-index`, `check`)
     6. **Filter & Sort**: Remove duplicates, sort alphabetically, filter by typed prefix
 
