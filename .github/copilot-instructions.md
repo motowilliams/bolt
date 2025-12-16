@@ -908,6 +908,72 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
   shell: pwsh
 ```
 
+### ⚠️ CRITICAL: Workflow Documentation Synchronization
+
+**MANDATORY: When modifying any GitHub Actions workflow, the corresponding documentation MUST be updated.**
+
+**Rule**: Workflow files (`.github/workflows/*.yml`) and their documentation (`.github/workflows/*.md`) must stay in sync.
+
+**Required Actions When Modifying Workflows:**
+
+1. **ALWAYS check if documentation exists** - Before modifying any `.yml` workflow:
+   ```powershell
+   # Check for corresponding .md file
+   Test-Path -Path ".github/workflows/ci.md"  # For ci.yml
+   ```
+
+2. **ALWAYS remind the user to update documentation** - After making workflow changes:
+   ```
+   ⚠️ REMINDER: You modified .github/workflows/ci.yml
+   
+   Please update the documentation to keep it in sync:
+   - Run the documentation prompt: .github/prompts/document.ci.workflow.prompt.md
+   - Or manually update: .github/workflows/ci.md
+   
+   The CI validation will fail if documentation is not updated.
+   ```
+
+3. **ALWAYS offer to regenerate documentation** - After workflow changes, ask:
+   ```
+   Would you like me to regenerate the workflow documentation now using the prompt?
+   ```
+
+**Current Workflow Documentation Pairs:**
+- `.github/workflows/ci.yml` ↔ `.github/workflows/ci.md`
+  - Prompt: `.github/prompts/document.ci.workflow.prompt.md`
+
+**Future Workflows:**
+- When adding new workflows (e.g., `release.yml`, `deploy.yml`), create corresponding:
+  - Documentation: `.github/workflows/{workflow-name}.md`
+  - Prompt: `.github/prompts/document.{workflow-name}.workflow.prompt.md`
+
+**Why This Matters:**
+- New contributors rely on documentation to understand CI processes
+- Outdated docs lead to confusion and wasted time
+- Documentation should be a reliable source of truth
+- Automation can't help if the docs are wrong
+
+**Validation:**
+- CI includes a validation step that checks for workflow changes
+- If `.github/workflows/*.yml` changes without corresponding `.md` update, CI adds a PR comment
+- The comment reminds developers to update documentation
+
+**Example Reminder Format:**
+```markdown
+⚠️ **Workflow Documentation Out of Sync**
+
+Changes detected in `.github/workflows/ci.yml` without corresponding updates to `.github/workflows/ci.md`.
+
+**Action Required:**
+1. Review the workflow changes
+2. Update documentation using the prompt: `.github/prompts/document.ci.workflow.prompt.md`
+3. Commit both files together
+
+This ensures new contributors have accurate information about the CI process.
+```
+
+**Remember**: Documentation is code. Treat it with the same rigor as the workflow itself.
+
 ## Known Limitations & Quirks
 
 1. **PowerShell 7.0+ required** - uses modern syntax features
