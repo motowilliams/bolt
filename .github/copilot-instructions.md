@@ -912,52 +912,15 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
 
 This project includes a release workflow at `.github/workflows/release.yml`:
 
-**Configuration**:
-- **Platform**: Ubuntu (Linux) only for consistent release builds
-- **Triggers**: Git tag pushes matching `v*` pattern, manual dispatch via `workflow_dispatch`
+- **Triggers**: Git tag pushes matching `v*` pattern (e.g., `v0.1.0`, `v1.0.0-beta`), manual dispatch
   - Production releases: `v1.0.0`, `v2.1.3`, etc.
   - Pre-releases: `v1.0.0-beta`, `v2.0.0-rc1`, etc.
+- **Platform**: Ubuntu (Linux) only for consistent release builds
+- **Pipeline**: Version extraction → Changelog validation → Module building → Manifest generation → Documentation bundling → Archive creation → GitHub release
 - **Permissions**: `contents: write` (required for creating GitHub releases)
+- **Release Assets**: Module zip and SHA256 checksum
 
-**Pipeline Steps**:
-1. **Setup**: Checkout code with full history, verify PowerShell 7.0+
-2. **Version Extraction**: Parse version from git tag (e.g., `v0.1.0` → `0.1.0`)
-3. **Changelog Validation**: Verify changelog entry exists for the version being released
-4. **Module Building**: Use `New-BoltModule.ps1` to create module structure in `release/` directory
-5. **Manifest Generation**: Use `generate-manifest.ps1` to create `.psd1` with version and metadata
-6. **Documentation Bundling**: Copy README, LICENSE, CHANGELOG, and config schemas
-7. **Archive Creation**: Create `Bolt-{version}.zip` with SHA256 checksum
-8. **Release Notes Extraction**: Extract relevant section from CHANGELOG.md
-9. **GitHub Release**: Create release with assets (zip, checksum) using `softprops/action-gh-release@v2`
-
-**Release Assets**:
-- `Bolt-{version}.zip` - Module package with all files
-- `Bolt-{version}.zip.sha256` - SHA256 checksum for verification
-
-**Pre-release Detection**:
-- Versions containing `-` are marked as pre-releases (e.g., `v1.0.0-beta`, `v2.0.0-rc1`)
-- Production releases have no suffix (e.g., `v1.0.0`, `v2.1.0`)
-
-**Local Testing**:
-```powershell
-# Test module building locally
-pwsh -File infra/New-BoltModule.ps1 -Install -NoImport -ModuleOutputPath "./test-release"
-
-# Test manifest generation
-pwsh -File infra/generate-manifest.ps1 `
-  -ModulePath "./test-release/Bolt/Bolt.psm1" `
-  -ModuleVersion "0.1.0-test" `
-  -Tags "Build,Orchestration"
-
-# Verify manifest
-Test-ModuleManifest -Path "./test-release/Bolt/Bolt.psd1"
-```
-
-**Creating a Release**:
-1. Update CHANGELOG.md with new version entry
-2. Commit changes to main branch
-3. Create and push git tag: `git tag v0.1.0 && git push origin v0.1.0`
-4. Workflow automatically builds and publishes release
+See `.github/workflows/release.yml` and `.github/workflows/release.md` for complete workflow configuration and documentation.
 
 ### ⚠️ CRITICAL: Workflow Documentation Synchronization
 
