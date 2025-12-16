@@ -113,7 +113,7 @@ jobs:
             -Tags "Build,Orchestration,Tasks,PowerShell,Cross-Platform,DevOps" `
             -ProjectUri "https://github.com/motowilliams/bolt" `
             -LicenseUri "https://github.com/motowilliams/bolt/blob/main/LICENSE" `
-            -ReleaseNotes "See https://github.com/motowilliams/bolt/blob/main/CHANGELOG.md#$($version.Replace('.', '').Replace('-', ''))"
+            -ReleaseNotes "See https://github.com/motowilliams/bolt/blob/main/CHANGELOG.md for release notes"
           
           # Verify manifest was created
           $manifestPath = Join-Path $moduleDir "$moduleName.psd1"
