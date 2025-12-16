@@ -37,7 +37,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 
 **Bolt** represents lightning-fast task execution ⚡ - a quick, powerful strike that gets things done!
 
-It's the solid name for a build orchestration tool that runs fast and efficiently! 🚀
+It's the perfect name for a build orchestration tool that runs fast and efficiently! 🚀
 
 ## ✨ Features
 
@@ -1522,10 +1522,10 @@ When tab completion is triggered:
     1. **Extract Context**: Get script directory and check for `-TaskDirectory` parameter
     2. **Scan Directory**: Look for `*.ps1` files in the task directory (default: `.build/`)
     3. **Parse Metadata**: Read first 20 lines of each file looking for:
-      - `### TASK: taskname` - Primary task name(s)
-      - `### DESCRIPTION: description` - Task description (not used in completion)
-      - `### DEPENDS: dep1, dep2` - Dependencies (not used in completion)
-    4. **Filename Fallback**: If no `### TASK:` metadata, derive name from filename
+      - `# TASK: taskname` - Primary task name(s)
+      - `# DESCRIPTION: description` - Task description (not used in completion)
+      - `# DEPENDS: dep1, dep2` - Dependencies (not used in completion)
+    4. **Filename Fallback**: If no `# TASK:` metadata, derive name from filename
       - `Invoke-TaskName.ps1` → `taskname`
       - `Invoke-My-Custom-Task.ps1` → `my-custom-task`
     5. **Combine Tasks**: Merge project tasks with core tasks (`check-index`, `check`)
@@ -1550,7 +1550,7 @@ The completer respects this and scans the specified directory instead of `.build
 
 1. PowerShell invokes the completer with `wordToComplete = "b"`
 2. Completer scans `.build/` directory
-3. Finds `Invoke-Build.ps1` with `### TASK: build`
+3. Finds `Invoke-Build.ps1` with `# TASK: build`
 4. Adds core tasks (`check-index`, `check`)
 5. Filters for tasks starting with "b": `build`
 6. Returns `[CompletionResult]` for "build"
@@ -1590,23 +1590,23 @@ flowchart TD
     
     ParseMeta --> CheckTask{Has TASK comment?}
     
-    CheckTask -->|Yes| ExtractTask[Extract from: ### TASK: name1, name2]
+    CheckTask -->|Yes| ExtractTask[Extract from: # TASK: name1, name2]
     CheckTask -->|No| ExtractFile[Derive from filename fallback]
     
-    ExtractTask --> ValidateName[Validate task name regex: ^a-z0-9a-z0-9-*$]
+    ExtractTask --> ValidateName[Validate task name regex: ^[a-z0-9][a-z0-9\-]*$]
     ExtractFile --> ValidateName
     
     ValidateName --> ValidLength{Length <= 50?}
     ValidLength -->|No| WarnSkip[Warn and skip task]
     ValidLength -->|Yes| CheckDesc{Has DESCRIPTION comment?}
     
-    CheckDesc -->|Yes| ExtractDesc[Extract from: ### DESCRIPTION: text]
+    CheckDesc -->|Yes| ExtractDesc[Extract from: # DESCRIPTION: text]
     CheckDesc -->|No| NoDesc[Leave description empty]
     
     ExtractDesc --> CheckDeps{Has DEPENDS comment?}
     NoDesc --> CheckDeps
     
-    CheckDeps -->|Yes| ExtractDeps[Extract from: ### DEPENDS: dep1, dep2]
+    CheckDeps -->|Yes| ExtractDeps[Extract from: # DEPENDS: dep1, dep2]
     CheckDeps -->|No| NoDeps[Empty dependencies array]
     
     ExtractDeps --> BuildMeta[Build metadata object]
@@ -1727,32 +1727,32 @@ Script Locator
 - Absolute path validation (must be within project root)
 - Relative path enforcement
 
-######### Metadata Parser
+#### Metadata Parser
 
 **Purpose**: Extracts task configuration from script file comments.
 
 **Metadata Format**:
 ```powershell
-### TASK: build, compile          ### Task names (comma-separated for aliases)
-### DESCRIPTION: Compiles source  ### Human-readable description
-### DEPENDS: format, lint          ### Dependencies (comma-separated)
+# TASK: build, compile          # Task names (comma-separated for aliases)
+# DESCRIPTION: Compiles source  # Human-readable description
+# DEPENDS: format, lint          # Dependencies (comma-separated)
 ```
 
 **Parsing Logic**:
 1. Read first 30 lines of script file
 2. Use regex to match comment patterns:
-   - `(?m)^###\s*TASK:\s*(.+)$` - Extract task names
-   - `(?m)^###\s*DESCRIPTION:[ \t]*([^\r\n]*)` - Extract description
-   - `(?m)^###\s*DEPENDS:(.*)$` - Extract dependencies
+   - `(?m)^#\s*TASK:\s*(.+)$` - Extract task names
+   - `(?m)^#\s*DESCRIPTION:[ \t]*([^\r\n]*)` - Extract description
+   - `(?m)^#\s*DEPENDS:(.*)$` - Extract dependencies
 3. Validate task names (lowercase, alphanumeric, hyphens only, max 50 chars)
-4. Fallback: If no `### TASK:` found, derive from filename
+4. Fallback: If no `# TASK:` found, derive from filename
    - `Invoke-Build.ps1` → `build`
    - `Invoke-My-Task.ps1` → `my-task`
 
 **Metadata Object**:
 ```powershell
 @{
-    Names = @('build', 'compile')  ### Array of task names (first is primary)
+    Names = @('build', 'compile')  # Array of task names (first is primary)
     Description = 'Compiles source'
     Dependencies = @('format', 'lint')
     ScriptPath = 'C:\project\.build\Invoke-Build.ps1'
@@ -1824,17 +1824,17 @@ This allows tasks to access project settings and utilities without importing mod
 #### Example Task File
 
 ```powershell
-### .build/Invoke-Build.ps1
-### TASK: build, compile
-### DESCRIPTION: Compiles all Bicep files to ARM templates
-### DEPENDS: format, lint
+# .build/Invoke-Build.ps1
+# TASK: build, compile
+# DESCRIPTION: Compiles all Bicep files to ARM templates
+# DEPENDS: format, lint
 
 Write-Host "Building..." -ForegroundColor Cyan
 
-### Access injected configuration
+# Access injected configuration
 $outputDir = $BoltConfig.build.outputDirectory
 
-### Task logic here
+# Task logic here
 bicep build main.bicep --outdir $outputDir
 
 if ($LASTEXITCODE -ne 0) {
