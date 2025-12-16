@@ -33,12 +33,18 @@ jobs:
           # Extract version from tag (e.g., v0.1.0 -> 0.1.0)
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             # For manual runs, use a test version
-            VERSION="0.0.0-test"
+            FULL_VERSION="0.0.0"
+            MANIFEST_VERSION="0.0.0"
           else
-            VERSION="${GITHUB_REF#refs/tags/v}"
+            FULL_VERSION="${GITHUB_REF#refs/tags/v}"
+            # PowerShell module manifests don't support semantic versioning pre-release suffixes
+            # Strip any pre-release suffix (e.g., 1.0.0-beta -> 1.0.0) for manifest
+            MANIFEST_VERSION="${FULL_VERSION%%-*}"
           fi
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Module version: $VERSION"
+          echo "VERSION=$FULL_VERSION" >> $GITHUB_OUTPUT
+          echo "MANIFEST_VERSION=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
+          echo "Full version (for release): $FULL_VERSION"
+          echo "Manifest version (for .psd1): $MANIFEST_VERSION"
 
       - name: Validate changelog entry
         shell: pwsh
@@ -89,21 +95,25 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
+          $manifestVersion = "${{ steps.version.outputs.MANIFEST_VERSION }}"
           $releaseDir = "release"
           $moduleName = "Bolt"
           $moduleDir = Join-Path $releaseDir $moduleName
           $modulePath = Join-Path $moduleDir "$moduleName.psm1"
           
-          Write-Host "Generating module manifest for version: $version" -ForegroundColor Cyan
+          Write-Host "Generating module manifest..." -ForegroundColor Cyan
+          Write-Host "  Full version (for release): $version" -ForegroundColor Gray
+          Write-Host "  Manifest version (for .psd1): $manifestVersion" -ForegroundColor Gray
           
-          # Generate manifest using generate-manifest.ps1
+          # Generate manifest using generate-manifest.ps1 with manifest version
+          # PowerShell module manifests don't support semantic versioning pre-release suffixes
           pwsh -File infra/generate-manifest.ps1 `
             -ModulePath $modulePath `
-            -ModuleVersion $version `
+            -ModuleVersion $manifestVersion `
             -Tags "Build,Orchestration,Tasks,PowerShell,Cross-Platform,DevOps" `
             -ProjectUri "https://github.com/motowilliams/bolt" `
             -LicenseUri "https://github.com/motowilliams/bolt/blob/main/LICENSE" `
-            -ReleaseNotes "See https://github.com/motowilliams/bolt/blob/main/CHANGELOG.md#$($version.Replace('.', ''))"
+            -ReleaseNotes "See https://github.com/motowilliams/bolt/blob/main/CHANGELOG.md#$($version.Replace('.', '').Replace('-', ''))"
           
           # Verify manifest was created
           $manifestPath = Join-Path $moduleDir "$moduleName.psd1"
