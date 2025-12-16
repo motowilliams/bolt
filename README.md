@@ -1454,7 +1454,7 @@ For maintainers:
 1. Update `CHANGELOG.md` with version entry (e.g., `## [0.1.0] - 2025-12-16`)
 2. Commit changelog changes to `main` branch
 3. Create and push a git tag:
-   ```bash
+   ```powershell
    git tag v0.1.0
    git push origin v0.1.0
    ```

@@ -56,10 +56,10 @@ Displays environment information. Bolt requires PowerShell 7.0+.
 
 The workflow extracts two versions from the git tag:
 
-```bash
+```powershell
 # Tag: v1.0.0-beta
-FULL_VERSION="1.0.0-beta"         # For release tag and changelog
-MANIFEST_VERSION="1.0.0"          # For .psd1 file (no suffix)
+$fullVersion = "1.0.0-beta"         # For release tag and changelog
+$manifestVersion = "1.0.0"          # For .psd1 file (no suffix)
 ```
 
 **Why two versions?**
@@ -423,7 +423,7 @@ Add version comparison link at bottom:
 
 ### 2. Commit Changes
 
-```bash
+```powershell
 git add CHANGELOG.md
 git commit -m "chore: Prepare v0.2.0 release"
 git push origin main
@@ -431,7 +431,7 @@ git push origin main
 
 ### 3. Create and Push Tag
 
-```bash
+```powershell
 # Production release
 git tag v0.2.0
 git push origin v0.2.0

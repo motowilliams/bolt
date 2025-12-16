@@ -28,196 +28,49 @@ jobs:
 
       - name: Extract version from tag
         id: version
-        shell: bash
+        shell: pwsh
         run: |
-          # Extract version from tag (e.g., v0.1.0 -> 0.1.0)
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            # For manual runs, use a test version
-            FULL_VERSION="0.0.0"
-            MANIFEST_VERSION="0.0.0"
-          else
-            FULL_VERSION="${GITHUB_REF#refs/tags/v}"
-            # PowerShell module manifests don't support semantic versioning pre-release suffixes
-            # Strip any pre-release suffix (e.g., 1.0.0-beta -> 1.0.0) for manifest
-            MANIFEST_VERSION="${FULL_VERSION%%-*}"
-          fi
-          echo "VERSION=$FULL_VERSION" >> $GITHUB_OUTPUT
-          echo "MANIFEST_VERSION=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
-          echo "Full version (for release): $FULL_VERSION"
-          echo "Manifest version (for .psd1): $MANIFEST_VERSION"
+          & .scripts/release/Extract-Version.ps1 `
+            -EventName "${{ github.event_name }}" `
+            -GitRef "${{ github.ref }}" `
+            -OutputFile $env:GITHUB_OUTPUT
 
       - name: Validate changelog entry
         shell: pwsh
         run: |
-          $version = "${{ steps.version.outputs.VERSION }}"
-          Write-Host "Validating changelog entry for version: $version" -ForegroundColor Cyan
-          
-          # Read changelog
-          $changelogContent = Get-Content -Path "CHANGELOG.md" -Raw
-          
-          # Check if version exists in changelog
-          if ($changelogContent -match "## \[$version\]") {
-            Write-Host "✓ Found changelog entry for version $version" -ForegroundColor Green
-          } else {
-            Write-Error "❌ No changelog entry found for version $version"
-            Write-Host "Please add a changelog entry following the format:" -ForegroundColor Yellow
-            Write-Host "## [$version] - $(Get-Date -Format 'yyyy-MM-dd')" -ForegroundColor Yellow
-            exit 1
-          }
+          & .scripts/release/Validate-Changelog.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}"
 
       - name: Build module package
         shell: pwsh
         run: |
-          $version = "${{ steps.version.outputs.VERSION }}"
-          Write-Host "Building Bolt module package (version: $version)..." -ForegroundColor Cyan
-          
-          # Create release directory
-          $releaseDir = "release"
-          $moduleName = "Bolt"
-          $moduleDir = Join-Path $releaseDir $moduleName
-          
-          New-Item -Path $moduleDir -ItemType Directory -Force | Out-Null
-          Write-Host "Created module directory: $moduleDir" -ForegroundColor Gray
-          
-          # Install module using New-BoltModule.ps1 (to generate module structure)
-          Write-Host "Installing module to release directory..." -ForegroundColor Gray
-          pwsh -File infra/New-BoltModule.ps1 -Install -NoImport -ModuleOutputPath $releaseDir
-          
-          # Verify module was created
-          if (-not (Test-Path $moduleDir)) {
-            Write-Error "❌ Module directory not created at $moduleDir"
-            exit 1
-          }
-          
-          Write-Host "✓ Module structure created successfully" -ForegroundColor Green
+          & .scripts/release/Build-ModulePackage.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}"
 
       - name: Generate module manifest
         shell: pwsh
         run: |
-          $version = "${{ steps.version.outputs.VERSION }}"
-          $manifestVersion = "${{ steps.version.outputs.MANIFEST_VERSION }}"
-          $releaseDir = "release"
-          $moduleName = "Bolt"
-          $moduleDir = Join-Path $releaseDir $moduleName
-          $modulePath = Join-Path $moduleDir "$moduleName.psm1"
-          
-          Write-Host "Generating module manifest..." -ForegroundColor Cyan
-          Write-Host "  Full version (for release): $version" -ForegroundColor Gray
-          Write-Host "  Manifest version (for .psd1): $manifestVersion" -ForegroundColor Gray
-          
-          # Generate manifest using generate-manifest.ps1 with manifest version
-          # PowerShell module manifests don't support semantic versioning pre-release suffixes
-          pwsh -File infra/generate-manifest.ps1 `
-            -ModulePath $modulePath `
-            -ModuleVersion $manifestVersion `
-            -Tags "Build,Orchestration,Tasks,PowerShell,Cross-Platform,DevOps" `
-            -ProjectUri "https://github.com/motowilliams/bolt" `
-            -LicenseUri "https://github.com/motowilliams/bolt/blob/main/LICENSE" `
-            -ReleaseNotes "See https://github.com/motowilliams/bolt/blob/main/CHANGELOG.md for release notes"
-          
-          # Verify manifest was created
-          $manifestPath = Join-Path $moduleDir "$moduleName.psd1"
-          if (-not (Test-Path $manifestPath)) {
-            Write-Error "❌ Manifest file not created at $manifestPath"
-            exit 1
-          }
-          
-          Write-Host "✓ Manifest generated successfully" -ForegroundColor Green
-          
-          # Validate manifest
-          Write-Host "Validating module manifest..." -ForegroundColor Gray
-          $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
-          Write-Host "✓ Manifest validation passed: $($manifest.Name) v$($manifest.Version)" -ForegroundColor Green
+          & .scripts/release/Generate-Manifest.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}" `
+            -ManifestVersion "${{ steps.version.outputs.MANIFEST_VERSION }}"
 
       - name: Copy documentation files
         shell: pwsh
         run: |
-          $releaseDir = "release"
-          $moduleName = "Bolt"
-          $moduleDir = Join-Path $releaseDir $moduleName
-          
-          Write-Host "Copying documentation files to module..." -ForegroundColor Cyan
-          
-          # Copy essential documentation files
-          $docFiles = @(
-            "README.md",
-            "LICENSE",
-            "CHANGELOG.md",
-            "CONTRIBUTING.md",
-            "SECURITY.md",
-            "IMPLEMENTATION.md"
-          )
-          
-          foreach ($file in $docFiles) {
-            if (Test-Path $file) {
-              Copy-Item -Path $file -Destination $moduleDir -Force
-              Write-Host "  ✓ Copied: $file" -ForegroundColor Gray
-            } else {
-              Write-Host "  ⚠ Not found: $file" -ForegroundColor Yellow
-            }
-          }
-          
-          # Copy configuration schema files
-          Copy-Item -Path "bolt.config.schema.json" -Destination $moduleDir -Force -ErrorAction SilentlyContinue
-          Copy-Item -Path "bolt.config.example.json" -Destination $moduleDir -Force -ErrorAction SilentlyContinue
-          
-          Write-Host "✓ Documentation files copied" -ForegroundColor Green
+          & .scripts/release/Copy-Documentation.ps1
 
       - name: Create release archive
         shell: pwsh
         run: |
-          $version = "${{ steps.version.outputs.VERSION }}"
-          $releaseDir = "release"
-          $moduleName = "Bolt"
-          $moduleDir = Join-Path $releaseDir $moduleName
-          
-          Write-Host "Creating release archive..." -ForegroundColor Cyan
-          
-          # Create zip archive
-          $zipName = "Bolt-$version.zip"
-          $zipPath = Join-Path $releaseDir $zipName
-          
-          # Compress module directory
-          Compress-Archive -Path $moduleDir -DestinationPath $zipPath -Force
-          
-          if (-not (Test-Path $zipPath)) {
-            Write-Error "❌ Failed to create release archive at $zipPath"
-            exit 1
-          }
-          
-          $zipSize = (Get-Item $zipPath).Length / 1KB
-          Write-Host "✓ Created release archive: $zipName ($([math]::Round($zipSize, 2)) KB)" -ForegroundColor Green
-          
-          # Generate SHA256 checksum
-          $hash = Get-FileHash -Path $zipPath -Algorithm SHA256
-          $checksumFile = "$zipPath.sha256"
-          "$($hash.Hash)  $zipName" | Out-File -FilePath $checksumFile -Encoding UTF8
-          
-          Write-Host "✓ Generated checksum file: $checksumFile" -ForegroundColor Green
-          Write-Host "  SHA256: $($hash.Hash)" -ForegroundColor Gray
+          & .scripts/release/Create-Archive.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}"
 
       - name: Generate release notes
         id: release_notes
         shell: pwsh
         run: |
-          $version = "${{ steps.version.outputs.VERSION }}"
-          Write-Host "Generating release notes for version: $version" -ForegroundColor Cyan
-          
-          # Extract release notes from CHANGELOG.md
-          $changelogContent = Get-Content -Path "CHANGELOG.md" -Raw
-          
-          # Match the section for this version
-          $pattern = "(?s)## \[$version\].*?(?=## \[|\z)"
-          if ($changelogContent -match $pattern) {
-            $releaseNotes = $Matches[0]
-            
-            # Save to file
-            $releaseNotes | Out-File -FilePath "release-notes.md" -Encoding UTF8
-            Write-Host "✓ Release notes extracted from CHANGELOG.md" -ForegroundColor Green
-          } else {
-            Write-Host "⚠ Could not extract release notes from CHANGELOG.md, using default" -ForegroundColor Yellow
-            "See [CHANGELOG.md](https://github.com/motowilliams/bolt/blob/main/CHANGELOG.md) for details." | Out-File -FilePath "release-notes.md" -Encoding UTF8
-          }
+          & .scripts/release/Generate-ReleaseNotes.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
