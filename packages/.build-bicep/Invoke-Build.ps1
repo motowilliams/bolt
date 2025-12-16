@@ -4,9 +4,17 @@
 
 Write-Host "Building Bicep templates..." -ForegroundColor Cyan
 
-# Find all .bicep files (excluding modules in subdirectories for main builds)
-# Cross-platform path handling
-$iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+# Find all main*.bicep files (e.g., main.bicep, main.dev.bicep)
+# Modules are not compiled directly - they're referenced by main files
+# Using config or fallback to default path
+if ($BoltConfig.IacPath) {
+    # Use configured path (relative to project root)
+    $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+}
+else {
+    # Fallback to default location for backward compatibility
+    $iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+}
 $bicepFiles = Get-ChildItem -Path $iacPath -Filter "main*.bicep" -File -Force -ErrorAction SilentlyContinue
 
 if ($bicepFiles.Count -eq 0) {

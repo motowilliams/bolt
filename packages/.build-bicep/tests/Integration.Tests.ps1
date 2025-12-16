@@ -24,12 +24,12 @@ BeforeAll {
         }
         $currentPath = Split-Path -Parent $currentPath
     }
-    $script:GoshScriptPath = Join-Path $projectRoot 'gosh.ps1'
+    $script:BoltScriptPath = Join-Path $projectRoot 'bolt.ps1'
 
     $script:IacPath = Join-Path $PSScriptRoot 'iac'
 
-    # Helper function to invoke gosh with captured output
-    function Invoke-Gosh {
+    # Helper function to invoke bolt with captured output
+    function Invoke-Bolt {
         param(
             [Parameter()]
             [string[]]$Arguments = @(),
@@ -55,7 +55,7 @@ BeforeAll {
         }
 
         # Execute with splatting
-        $output = & $script:GoshScriptPath @splatParams 2>&1
+        $output = & $script:BoltScriptPath @splatParams 2>&1
         $exitCode = $LASTEXITCODE
 
         return @{
@@ -77,7 +77,7 @@ Describe 'Task Integration Tests' -Tag 'Bicep-Tasks' {
             }
 
             Test-Path $script:IacPath | Should -Be $true
-            $result = Invoke-Gosh -Arguments @('format') -Parameters @{ Only = $true }
+            $result = Invoke-Bolt -Arguments @('format') -Parameters @{ Only = $true }
             $result.ExitCode | Should -Be 0
         }
     }
@@ -92,7 +92,7 @@ Describe 'Task Integration Tests' -Tag 'Bicep-Tasks' {
             }
 
             Test-Path $script:IacPath | Should -Be $true
-            $result = Invoke-Gosh -Arguments @('lint') -Parameters @{ Only = $true }
+            $result = Invoke-Bolt -Arguments @('lint') -Parameters @{ Only = $true }
             $result.ExitCode | Should -Be 0
         }
     }
@@ -107,7 +107,7 @@ Describe 'Task Integration Tests' -Tag 'Bicep-Tasks' {
             }
 
             Test-Path $script:IacPath | Should -Be $true
-            $result = Invoke-Gosh -Arguments @('build') -Parameters @{ Only = $true }
+            $result = Invoke-Bolt -Arguments @('build') -Parameters @{ Only = $true }
             $result.ExitCode | Should -Be 0
         }
     }
@@ -123,7 +123,7 @@ Describe 'Task Integration Tests' -Tag 'Bicep-Tasks' {
 
             Test-Path $script:IacPath | Should -Be $true
             # Run build without -Only flag to test full dependency chain
-            $result = Invoke-Gosh -Arguments @('build')
+            $result = Invoke-Bolt -Arguments @('build')
             $result.ExitCode | Should -Be 0
         }
     }

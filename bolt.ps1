@@ -3,13 +3,13 @@ using namespace System.Management.Automation
 
 <#
 .SYNOPSIS
-    Gosh! Build orchestration for PowerShell
+    Bolt! Build orchestration for PowerShell
 .DESCRIPTION
     A self-contained PowerShell build system with extensible task orchestration.
     Core build tasks are built into this script. Project-specific tasks can be
     added by placing PowerShell scripts in a .build directory.
 
-    "Go" + "powerShell" = Gosh! 🎉
+    "Bolt" - Lightning-fast PowerShell! ⚡
 .PARAMETER Task
     One or more task names to execute. Tasks are executed in sequence.
 .PARAMETER ListTasks
@@ -25,56 +25,33 @@ using namespace System.Management.Automation
 .PARAMETER NewTask
     Create a new task file with the specified name. Creates a stubbed file in
     the task directory with proper metadata structure.
-.PARAMETER AsModule
-    Install Gosh as a PowerShell module for the current user. This enables the
-    'gosh' command to be used globally from any directory. The module will search
-    upward from the current directory to find the .build folder.
-.PARAMETER ModuleOutputPath
-    Specify a custom path where the module should be installed. If not provided,
-    uses the default user module path. Used with -AsModule parameter.
-.PARAMETER NoImport
-    Do not automatically import the module after installation. Used with -AsModule
-    parameter for build and release scenarios where you only want to generate the
-    module files without importing them into the current session.
-.PARAMETER UninstallModule
-    Remove Gosh from the PowerShell module installation. Automatically detects all
-    installed versions (default user path and custom paths) and removes them.
-    If automatic removal fails, creates a recovery instruction file with manual
-    removal steps.
-.PARAMETER Force
-    Skip confirmation prompt before uninstalling. Used with -UninstallModule parameter.
 .PARAMETER Arguments
     Additional arguments to pass to the task scripts.
 .EXAMPLE
-    .\gosh.ps1 build
+    .\bolt.ps1 build
     Executes the build task and its dependencies (format, lint).
 .EXAMPLE
-    .\gosh.ps1 format lint build -Only
+    .\bolt.ps1 format lint build -Only
     Executes format, lint, and build tasks without their dependencies.
 .EXAMPLE
-    .\gosh.ps1 -TaskDirectory "custom-tasks"
+    .\bolt.ps1 -TaskDirectory "custom-tasks"
     Lists and executes tasks from the custom-tasks directory instead of .build.
 .EXAMPLE
-    .\gosh.ps1 -ListTasks
+    .\bolt.ps1 -ListTasks
     Shows all available tasks.
 .EXAMPLE
-    .\gosh.ps1 build -Outline
+    .\bolt.ps1 build -Outline
     Shows the dependency tree and execution order for the build task without executing it.
 .EXAMPLE
-    .\gosh.ps1 -NewTask clean
+    .\bolt.ps1 -NewTask clean
     Creates a new task file named Invoke-Clean.ps1 in the task directory.
 .EXAMPLE
-    .\gosh.ps1 format,lint,build -ErrorAction Continue
+    .\bolt.ps1 format,lint,build -ErrorAction Continue
     Runs all tasks even if one fails (useful for seeing all errors at once).
-.EXAMPLE
-    .\gosh.ps1 -AsModule
-    Installs Gosh as a PowerShell module for the current user, enabling the 'gosh' command.
-.EXAMPLE
-    .\gosh.ps1 -UninstallModule
-    Removes Gosh from all installed locations.
-.EXAMPLE
-    .\gosh.ps1 -UninstallModule -Force
-    Removes Gosh from all installed locations without confirmation prompt.
+.NOTES
+    For module installation, use the New-BoltModule.ps1 script:
+    - Install: .\New-BoltModule.ps1 -Install
+    - Uninstall: .\New-BoltModule.ps1 -Uninstall
 #>
 [CmdletBinding(DefaultParameterSetName = 'Help')]
 param(
@@ -137,22 +114,41 @@ param(
     })]
     [string]$NewTask,
 
-    # InstallModule parameter set
-    [Parameter(Mandatory = $true, ParameterSetName = 'InstallModule')]
-    [switch]$AsModule,
+    # ListVariables parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'ListVariables')]
+    [switch]$ListVariables,
 
-    [Parameter(ParameterSetName = 'InstallModule')]
-    [string]$ModuleOutputPath,
+    # AddVariable parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'AddVariable')]
+    [switch]$AddVariable,
 
-    [Parameter(ParameterSetName = 'InstallModule')]
-    [switch]$NoImport,
+    [Parameter(Mandatory = $true, ParameterSetName = 'AddVariable')]
+    [ValidatePattern('^[a-zA-Z0-9_\-\.]+$')]
+    [ValidateScript({
+        if ($_.Length -gt 100) {
+            throw "Variable name '$_' is too long (max 100 characters)."
+        }
+        return $true
+    })]
+    [string]$Name,
 
-    # UninstallModule parameter set
-    [Parameter(Mandatory = $true, ParameterSetName = 'UninstallModule')]
-    [switch]$UninstallModule,
+    [Parameter(Mandatory = $true, ParameterSetName = 'AddVariable')]
+    [AllowEmptyString()]
+    [string]$Value,
 
-    [Parameter(ParameterSetName = 'UninstallModule')]
-    [switch]$Force,
+    # RemoveVariable parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'RemoveVariable')]
+    [switch]$RemoveVariable,
+
+    [Parameter(Mandatory = $true, ParameterSetName = 'RemoveVariable')]
+    [ValidatePattern('^[a-zA-Z0-9_\-\.]+$')]
+    [ValidateScript({
+        if ($_.Length -gt 100) {
+            throw "Variable name '$_' is too long (max 100 characters)."
+        }
+        return $true
+    })]
+    [string]$VariableName,
 
     # TaskExecution parameter set - additional arguments
     [Parameter(ParameterSetName = 'TaskExecution', ValueFromRemainingArguments)]
@@ -240,7 +236,7 @@ $taskCompleter = {
     }
 }
 
-Register-ArgumentCompleter -CommandName 'gosh.ps1' -ParameterName 'Task' -ScriptBlock $taskCompleter
+Register-ArgumentCompleter -CommandName 'bolt.ps1' -ParameterName 'Task' -ScriptBlock $taskCompleter
 
 #region Security Event Logging
 function Write-SecurityLog {
@@ -248,7 +244,7 @@ function Write-SecurityLog {
     .SYNOPSIS
         Writes security-relevant events to audit log
     .DESCRIPTION
-        Logs security events to .gosh/audit.log when $env:GOSH_AUDIT_LOG is set to 1.
+        Logs security events to .bolt/audit.log when $env:BOLT_AUDIT_LOG is set to 1.
         Captures timestamp, severity, user context, event type, and details.
     .PARAMETER Event
         The type of security event (e.g., TaskExecution, FileCreation, CommandExecution)
@@ -273,7 +269,7 @@ function Write-SecurityLog {
     )
 
     # Only log if audit logging is enabled
-    if ($env:GOSH_AUDIT_LOG -ne '1') {
+    if ($env:BOLT_AUDIT_LOG -ne '1') {
         return
     }
 
@@ -283,18 +279,18 @@ function Write-SecurityLog {
         $machine = [Environment]::MachineName
         $entry = "$timestamp | $Severity | $user@$machine | $Event | $Details"
 
-        $logDir = Join-Path $PSScriptRoot '.gosh'
+        $logDir = Join-Path $PSScriptRoot '.bolt'
         $logPath = Join-Path $logDir 'audit.log'
 
-        # Ensure .gosh directory exists and is actually a directory (robust approach)
+        # Ensure .bolt directory exists and is actually a directory (robust approach)
         if (Test-Path $logDir) {
-            # If .gosh exists but is not a directory, remove it first
+            # If .bolt exists but is not a directory, remove it first
             if (-not (Test-Path -PathType Container $logDir)) {
                 Remove-Item $logDir -Force -ErrorAction SilentlyContinue
             }
         }
 
-        # Create .gosh directory if it doesn't exist (more robust approach)
+        # Create .bolt directory if it doesn't exist (more robust approach)
         if (-not (Test-Path -PathType Container $logDir)) {
             try {
                 $null = New-Item -Path $logDir -ItemType Directory -Force -ErrorAction Stop
@@ -537,7 +533,7 @@ function Get-GitStatus {
     }
 }
 
-function Get-GoshUtilities {
+function Get-BoltUtilities {
     <#
     .SYNOPSIS
         Returns a hashtable of utility functions available to tasks
@@ -550,531 +546,601 @@ function Get-GoshUtilities {
     }
 }
 
-function Install-GoshModule {
+
+function Get-BoltConfigFile {
     <#
     .SYNOPSIS
-        Installs Gosh as a PowerShell module for the current user
+        Loads the bolt.config.json file from the project root
     .DESCRIPTION
-        Creates a PowerShell module in the user module path:
-        - Windows: ~/Documents/PowerShell/Modules/Gosh/
-        - Linux/macOS: ~/.local/share/powershell/Modules/Gosh/
+        Searches for bolt.config.json starting from the configured .build directory,
+        searching upward until the first config file is found or reaching the project root.
+        Respects module mode ($env:BOLT_PROJECT_ROOT) and script mode ($PSScriptRoot).
 
-        The module allows running 'gosh' commands from any directory and
-        searches upward from the current directory for .build/ folders.
-    .PARAMETER ModuleOutputPath
-        Custom path where the module should be installed. If not provided,
-        uses the default user module path.
-    .PARAMETER NoImport
-        Do not automatically import the module after installation. Used for
-        build and release scenarios.
-    #>
-    [CmdletBinding()]
-    param(
-        [string]$ModuleOutputPath,
-        [switch]$NoImport
-    )
-
-    Write-Host "Installing Gosh as a PowerShell module..." -ForegroundColor Cyan
-    Write-Host ""
-
-    # Determine module installation path (cross-platform)
-    $moduleName = "Gosh"
-
-    if ($ModuleOutputPath) {
-        # Use custom path
-        $userModulePath = Join-Path $ModuleOutputPath $moduleName
-        Write-Host "Using custom module path: $userModulePath" -ForegroundColor Gray
-    }
-    else {
-        # Use the first user-writable path from $env:PSModulePath
-        # Windows: ~/Documents/PowerShell/Modules (via MyDocuments)
-        # Linux/macOS: ~/.local/share/powershell/Modules (via LocalApplicationData)
-        if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
-            # Windows
-            $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
-        }
-        else {
-            # Linux/macOS
-            $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "powershell" "Modules" $moduleName
-        }
-        Write-Host "Using default module path: $userModulePath" -ForegroundColor Gray
-    }
-
-    # Create module directory (overwrites if exists for idempotency)
-    if (Test-Path $userModulePath) {
-        Write-Host "Module directory exists, updating..." -ForegroundColor Yellow
-        Remove-Item -Path $userModulePath -Recurse -Force
-    }
-
-    New-Item -Path $userModulePath -ItemType Directory -Force | Out-Null
-    Write-Host "Created module directory: $userModulePath" -ForegroundColor Gray
-
-    # Copy gosh.ps1 to the module directory (so it can be invoked as a script)
-    $goshCorePath = Join-Path $userModulePath "gosh-core.ps1"
-    Copy-Item -Path $PSCommandPath -Destination $goshCorePath -Force
-    Write-Host "Copied gosh core script to module" -ForegroundColor Gray
-
-    # Generate module script (.psm1) that wraps gosh.ps1 with upward directory search
-    $moduleScriptPath = Join-Path $userModulePath "$moduleName.psm1"
-
-    $moduleScript = @"
-#Requires -Version 7.0
-using namespace System.Management.Automation
-
-<#
-.SYNOPSIS
-    Gosh! Build orchestration for PowerShell (Module Version)
-.DESCRIPTION
-    PowerShell module version of Gosh that searches upward from the current directory
-    for .build/ folders, enabling 'gosh' command usage from any project directory.
-#>
-
-function Find-BuildDirectory {
-    <#
-    .SYNOPSIS
-        Searches upward from current directory for .build folder
-    .DESCRIPTION
-        Recursively searches parent directories for .build folder, similar to how
-        git searches for .git directory. Returns the path to .build if found.
-    .PARAMETER StartPath
-        The directory to start searching from. Defaults to current location.
+        Returns an empty hashtable if the config file doesn't exist.
+        Logs warnings for malformed JSON but doesn't fail.
+    .PARAMETER ScriptRoot
+        The effective script root (project root) to start searching from
     .PARAMETER TaskDirectory
-        The directory name to search for. Defaults to '.build'.
+        The task directory name (default: .build) to start the search
+    .OUTPUTS
+        Hashtable containing user-defined variables from the config file
     #>
     [CmdletBinding()]
     param(
-        [string]`$StartPath = (Get-Location).Path,
-        [string]`$TaskDirectory = '.build'
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build"
     )
 
-    `$currentPath = `$StartPath
-    `$iterations = 0
-    `$maxIterations = 100  # Prevent infinite loops
+    $configFileName = "bolt.config.json"
 
-    while (`$currentPath -and `$iterations -lt `$maxIterations) {
-        `$buildPath = Join-Path `$currentPath `$TaskDirectory
+    # Start searching from the task directory location
+    $searchPath = Join-Path $ScriptRoot $TaskDirectory
 
-        Write-Verbose "Searching for '`$TaskDirectory' in: `$currentPath"
+    # If task directory doesn't exist, start from script root
+    if (-not (Test-Path $searchPath)) {
+        $searchPath = $ScriptRoot
+    }
 
-        if (Test-Path `$buildPath -PathType Container) {
-            Write-Verbose "Found '`$TaskDirectory' at: `$buildPath"
-            return `$buildPath
-        }
+    # Search upward for bolt.config.json
+    $currentPath = $searchPath
+    $configPath = $null
 
-        # Move to parent directory
-        `$parent = Split-Path `$currentPath -Parent
+    while ($currentPath) {
+        $potentialConfig = Join-Path $currentPath $configFileName
 
-        # Check if we've reached the root
-        if (`$parent -eq `$currentPath -or [string]::IsNullOrEmpty(`$parent)) {
+        if (Test-Path $potentialConfig) {
+            $configPath = $potentialConfig
+            Write-Verbose "Found config file: $configPath"
             break
         }
 
-        `$currentPath = `$parent
-        `$iterations++
+        # Stop at project root (where ScriptRoot points)
+        if ($currentPath -eq $ScriptRoot) {
+            break
+        }
+
+        # Move up one directory
+        $parentPath = Split-Path $currentPath -Parent
+
+        # Stop if we can't go up further or reached root
+        if (-not $parentPath -or $parentPath -eq $currentPath) {
+            break
+        }
+
+        $currentPath = $parentPath
     }
 
-    Write-Verbose "'`$TaskDirectory' not found in any parent directory"
-    return `$null
-}
-
-function Invoke-Gosh {
-    <#
-    .SYNOPSIS
-        Gosh! Build orchestration
-    .DESCRIPTION
-        Executes Gosh build tasks. When running as a module, searches upward from
-        the current directory for .build/ folder.
-    .PARAMETER Task
-        One or more task names to execute
-    .PARAMETER ListTasks
-        Display all available tasks
-    .PARAMETER Only
-        Skip task dependencies
-    .PARAMETER Outline
-        Show task execution plan without running
-    .PARAMETER TaskDirectory
-        Override the default .build directory name
-    .PARAMETER NewTask
-        Create a new task file
-    .PARAMETER UninstallModule
-        Remove Gosh module from current installation
-    .PARAMETER Arguments
-        Additional arguments to pass to tasks
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Position = 0)]
-        [string[]]`$Task,
-
-        [Alias('Help')]
-        [switch]`$ListTasks,
-
-        [switch]`$Only,
-
-        [switch]`$Outline,
-
-        [string]`$TaskDirectory = '.build',
-
-        [string]`$NewTask,
-
-        [switch]`$UninstallModule,
-
-        [switch]`$Force,
-
-        [Parameter(ValueFromRemainingArguments)]
-        [string[]]`$Arguments
-    )
-
-    # Handle UninstallModule (special case - doesn't need project root)
-    if (`$UninstallModule) {
-        # Pass directly to gosh-core.ps1 without requiring project root
-        `$goshCorePath = Join-Path `$PSScriptRoot "gosh-core.ps1"
-        & `$goshCorePath -UninstallModule -Force:`$Force
-        exit `$LASTEXITCODE
+    # If no config found, check at script root as fallback
+    if (-not $configPath) {
+        $fallbackConfig = Join-Path $ScriptRoot $configFileName
+        if (Test-Path $fallbackConfig) {
+            $configPath = $fallbackConfig
+            Write-Verbose "Found config file at script root: $configPath"
+        }
     }
 
-    # Find the project root with .build directory
-    `$buildPath = Find-BuildDirectory -TaskDirectory `$TaskDirectory
-
-    if (-not `$buildPath) {
-        Write-Error "Could not find '`$TaskDirectory' directory in current path or any parent directory."
-        Write-Host "Searched from: `$(Get-Location)" -ForegroundColor Yellow
-        Write-Host "Make sure you're in a directory within a project that has a '`$TaskDirectory' folder." -ForegroundColor Yellow
-        return
+    # Return empty hashtable if config doesn't exist
+    if (-not $configPath) {
+        Write-Verbose "No bolt.config.json found, using empty configuration"
+        return @{}
     }
 
-    # Get the project root (parent of .build)
-    `$projectRoot = Split-Path `$buildPath -Parent
-
-    Write-Verbose "Project root: `$projectRoot"
-    Write-Verbose "Build path: `$buildPath"
-
-    # Get path to the gosh-core.ps1 script in this module
-    `$goshCorePath = Join-Path `$PSScriptRoot "gosh-core.ps1"
-
-    # Build parameter hashtable for splatting
-    `$goshParams = @{}
-    if (`$Task) { `$goshParams['Task'] = `$Task }
-    if (`$ListTasks) { `$goshParams['ListTasks'] = `$true }
-    if (`$Only) { `$goshParams['Only'] = `$true }
-    if (`$Outline) { `$goshParams['Outline'] = `$true }
-    if (`$TaskDirectory -ne '.build') { `$goshParams['TaskDirectory'] = `$TaskDirectory }
-    if (`$NewTask) { `$goshParams['NewTask'] = `$NewTask }
-    if (`$Arguments) { `$goshParams['Arguments'] = `$Arguments }
-
-    # Execute gosh-core.ps1 from the project root directory
-    # Set environment variable to signal module mode and pass the project root
+    # Load and parse the config file
     try {
-        Push-Location `$projectRoot
+        $configContent = Get-Content -Path $configPath -Raw -ErrorAction Stop
+        $config = $configContent | ConvertFrom-Json -AsHashtable -ErrorAction Stop
 
-        # Set environment variable to tell gosh.ps1 it's running in module mode
-        `$env:GOSH_PROJECT_ROOT = `$projectRoot
-
-        # Execute gosh.ps1 with proper parameter splatting
-        & `$goshCorePath @goshParams
-
-        # Propagate exit code
-        if (`$LASTEXITCODE -ne 0 -and `$null -ne `$LASTEXITCODE) {
-            exit `$LASTEXITCODE
-        }
-
-    } finally {
-        # Clean up environment variable
-        Remove-Item Env:GOSH_PROJECT_ROOT -ErrorAction SilentlyContinue
-        Pop-Location
+        Write-Verbose "Loaded config from: $configPath"
+        return $config
+    }
+    catch {
+        Write-Warning "Failed to load bolt.config.json from '$configPath': $_"
+        Write-Warning "Using empty configuration. Please check the JSON syntax."
+        return @{}
     }
 }
 
-# Create alias first, then export
-Set-Alias -Name gosh -Value Invoke-Gosh
-Export-ModuleMember -Function Invoke-Gosh -Alias gosh
 
-# Register argument completer for tab completion
-`$taskCompleter = {
-    param(`$commandName, `$parameterName, `$wordToComplete, `$commandAst, `$fakeBoundParameters)
-
-    # Check if -TaskDirectory was specified in the command
-    `$taskDir = '.build'
-    if (`$fakeBoundParameters.ContainsKey('TaskDirectory')) {
-        `$taskDir = `$fakeBoundParameters['TaskDirectory']
-    }
-
-    # Find the build directory by searching upward
-    `$buildPath = Find-BuildDirectory -TaskDirectory `$taskDir
-
-    if (-not `$buildPath) {
-        return @()
-    }
-
-    # Scan for project-specific tasks in task directory
-    `$projectTasks = @()
-    if (Test-Path `$buildPath) {
-        `$buildFiles = Get-ChildItem `$buildPath -Filter '*.ps1' -File -Force
-        foreach (`$file in `$buildFiles) {
-            # Extract task name from file
-            `$lines = Get-Content `$file.FullName -First 20 -ErrorAction SilentlyContinue
-            `$content = `$lines -join "``n"
-            if (`$content -match '(?m)^#\s*TASK:\s*(.+)`$') {
-                `$taskNames = `$Matches[1] -split ',' | ForEach-Object { `$_.Trim() }
-                `$projectTasks += `$taskNames
-            } else {
-                # If there is no TASK tag, use the noun portion of the filename as the task name
-                `$parts = `$file.BaseName -split '-'
-                if (`$parts.Count -gt 1) {
-                    `$taskName = (`$parts[1..(`$parts.Count-1)] -join '-').ToLower()
-                } else {
-                    `$taskName = `$parts[0].ToLower()
-                }
-                `$projectTasks += `$taskName
-            }
-        }
-    }
-
-    # Core tasks (defined in gosh-core.ps1)
-    `$coreTasks = @('check-index', 'check')
-
-    # Combine and get unique task names
-    `$allTasks = (`$coreTasks + `$projectTasks) | Select-Object -Unique | Sort-Object
-
-    # Return matching completions
-    `$allTasks | Where-Object { `$_ -like "`$wordToComplete*" } |
-    ForEach-Object {
-        [System.Management.Automation.CompletionResult]::new(`$_, `$_, 'ParameterValue', `$_)
-    }
-}
-
-Register-ArgumentCompleter -CommandName 'Invoke-Gosh' -ParameterName 'Task' -ScriptBlock `$taskCompleter
-Register-ArgumentCompleter -CommandName 'gosh' -ParameterName 'Task' -ScriptBlock `$taskCompleter
-"@
-
-    $moduleScript | Out-File -FilePath $moduleScriptPath -Encoding UTF8 -Force
-    Write-Host "Created module script: $moduleName.psm1" -ForegroundColor Gray
-
-    Write-Host ""
-    Write-Host "✓ Gosh module installed successfully!" -ForegroundColor Green
-    Write-Host ""
-
-    if (-not $NoImport) {
-        # Import the module automatically
-        Write-Host "Importing module..." -ForegroundColor Gray
-        try {
-            Import-Module $userModulePath -Force
-            Write-Host "✓ Module imported successfully!" -ForegroundColor Green
-            Write-Host ""
-            Write-Host "You can now use 'gosh' command from any directory." -ForegroundColor Yellow
-            Write-Host "Examples:" -ForegroundColor Gray
-            Write-Host "  gosh build" -ForegroundColor Gray
-            Write-Host "  gosh -ListTasks" -ForegroundColor Gray
-            Write-Host "  gosh format lint build -Only" -ForegroundColor Gray
-        }
-        catch {
-            Write-Host "⚠ Module installed but import failed. You may need to restart PowerShell." -ForegroundColor Yellow
-            Write-Host "To import manually: Import-Module '$userModulePath' -Force" -ForegroundColor Gray
-        }
-    }
-    else {
-        Write-Host "Module installation complete (not imported due to -NoImport flag)." -ForegroundColor Yellow
-        Write-Host "To use the module, run: Import-Module '$userModulePath' -Force" -ForegroundColor Gray
-        Write-Host ""
-        Write-Host "Examples (after importing):" -ForegroundColor Gray
-        Write-Host "  gosh build" -ForegroundColor Gray
-        Write-Host "  gosh -ListTasks" -ForegroundColor Gray
-        Write-Host "  gosh format lint build -Only" -ForegroundColor Gray
-    }
-
-    Write-Host ""
-    Write-Host "The module searches upward from your current directory to find .build/ folders," -ForegroundColor Yellow
-    Write-Host "so you can run gosh from any subdirectory within your project!" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "Module location: $userModulePath" -ForegroundColor DarkGray
-    Write-Host ""
-    Write-Host "To update the module after modifying gosh.ps1, run: .\gosh.ps1 -AsModule" -ForegroundColor DarkGray
-
-    return $true
-}
-
-function Invoke-UninstallGoshModule {
+function Save-BoltConfigFile {
     <#
     .SYNOPSIS
-        Removes Gosh from all installed module locations
+        Saves the configuration hashtable to bolt.config.json
     .DESCRIPTION
-        Uninstalls Gosh from the PowerShell module installation. Automatically detects
-        and removes all installed versions from default user paths. If removal fails,
-        creates a recovery file with manual removal instructions.
-    .PARAMETER Force
-        Skip confirmation prompt before uninstalling
+        Persists the configuration hashtable to bolt.config.json in the project root.
+        Creates the file if it doesn't exist, overwrites if it does.
+        Uses ConvertTo-Json with -Depth 10 to handle nested objects.
+    .PARAMETER Config
+        The configuration hashtable to save
+    .PARAMETER ScriptRoot
+        The effective script root (project root) where config will be saved
     #>
     [CmdletBinding()]
     param(
-        [switch]$Force
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Config,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot
     )
 
-    Write-Host "Gosh Module Uninstallation" -ForegroundColor Cyan
-    Write-Host ""
+    $configPath = Join-Path $ScriptRoot "bolt.config.json"
 
-    # Detect all Gosh module installations (current platform only)
-    $moduleName = "Gosh"
-    $installLocations = @()
+    try {
+        $jsonContent = $Config | ConvertTo-Json -Depth 10
+        Set-Content -Path $configPath -Value $jsonContent -Encoding UTF8 -ErrorAction Stop
 
-    # Build list of potential installation paths based on current platform
-    if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
-        # Windows: Check Documents\PowerShell\Modules
-        $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
-        if (Test-Path $userModulePath) {
-            $installLocations += $userModulePath
-        }
+        Write-Verbose "Saved config to: $configPath"
+        return $true
     }
-    else {
-        # Linux/macOS: Check .local/share/powershell/Modules
-        $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "powershell" "Modules" $moduleName
-        if (Test-Path $userModulePath) {
-            $installLocations += $userModulePath
-        }
-    }
-
-    # Check for installed module in PSModulePath
-    $modulePaths = $env:PSModulePath -split [System.IO.Path]::PathSeparator
-    foreach ($modulePath in $modulePaths) {
-        $goshModulePath = Join-Path $modulePath $moduleName
-        if ((Test-Path $goshModulePath) -and $goshModulePath -notin $installLocations) {
-            $installLocations += $goshModulePath
-        }
-    }
-
-    if ($installLocations.Count -eq 0) {
-        Write-Host "⚠ Gosh module is not installed in any known location." -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host "Checked paths:" -ForegroundColor Gray
-        if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
-            $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
-            Write-Host "  - $userModulePath" -ForegroundColor Gray
-        }
-        else {
-            $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "powershell" "Modules" $moduleName
-            Write-Host "  - $userModulePath" -ForegroundColor Gray
-        }
-        Write-Host ""
+    catch {
+        Write-Error "Failed to save bolt.config.json to '$configPath': $_"
         return $false
     }
+}
 
-    # Display installations found
-    Write-Host "Found $($installLocations.Count) Gosh installation(s):" -ForegroundColor Yellow
-    Write-Host ""
-    foreach ($location in $installLocations) {
-        Write-Host "  - $location" -ForegroundColor Gray
+
+function Add-BoltVariable {
+    <#
+    .SYNOPSIS
+        Adds or updates a variable in the Bolt configuration
+    .DESCRIPTION
+        Adds or updates a variable in bolt.config.json. Supports dot notation for nested properties
+        (e.g., "Colors.Header" to set a nested property). Validates parent object types and warns
+        when overriding built-in variables.
+
+        - Auto-creates parent objects when parent is undefined
+        - Throws error if parent is a primitive type (string, number, etc.)
+        - Warns when overriding built-in variables (ProjectRoot, TaskDirectory, etc.)
+    .PARAMETER Name
+        Variable name (supports dot notation for nested properties)
+    .PARAMETER Value
+        Variable value (string)
+    .PARAMETER ScriptRoot
+        The effective script root (project root)
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build)
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$Value,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build"
+    )
+
+    # Warn if overriding built-in variables
+    $builtInVars = @('ProjectRoot', 'TaskDirectory', 'TaskDirectoryPath', 'TaskScriptRoot', 'TaskName', 'Colors', 'GitRoot', 'GitBranch')
+    $rootVarName = ($Name -split '\.')[0]
+
+    if ($builtInVars -contains $rootVarName) {
+        Write-Warning "Variable '$Name' overrides a built-in variable. This may affect task behavior."
     }
-    Write-Host ""
 
-    # Confirm uninstallation
-    if (-not $Force) {
-        $response = Read-Host "Uninstall Gosh from all locations? (y/n)"
-        if ($response -ne 'y' -and $response -ne 'Y') {
-            Write-Host "Uninstallation cancelled." -ForegroundColor Yellow
-            return $false
-        }
-    }
+    # Load current config
+    $config = Get-BoltConfigFile -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
 
-    Write-Host ""
-    Write-Host "Uninstalling Gosh..." -ForegroundColor Cyan
+    # Handle dot notation for nested properties
+    if ($Name -match '\.') {
+        $parts = $Name -split '\.'
+        $current = $config
 
-    # Track removal status
-    $successCount = 0
-    $failureLocations = @()
+        # Navigate/create parent objects
+        for ($i = 0; $i -lt ($parts.Count - 1); $i++) {
+            $part = $parts[$i]
 
-    # Remove module from memory if currently imported
-    $goshModule = Get-Module -Name $moduleName -ErrorAction SilentlyContinue
-    if ($goshModule) {
-        Write-Host "Removing Gosh module from current session..." -ForegroundColor Gray
-        Remove-Module -Name $moduleName -Force -ErrorAction SilentlyContinue
-    }
-
-    # Remove each installation
-    foreach ($location in $installLocations) {
-        try {
-            # Remove the directory
-            Write-Host "Removing: $location" -ForegroundColor Gray
-            Remove-Item -Path $location -Recurse -Force -ErrorAction Stop
-            Write-Host "  ✓ Successfully removed" -ForegroundColor Green
-            $successCount++
-        }
-        catch {
-            Write-Host "  ✗ Failed to remove: $($_.Exception.Message)" -ForegroundColor Red
-            $failureLocations += @{
-                Path = $location
-                Error = $_.Exception.Message
+            if (-not $current.ContainsKey($part)) {
+                # Create parent object if it doesn't exist
+                $current[$part] = @{}
+                Write-Verbose "Created parent object: $part"
             }
+            elseif ($current[$part] -isnot [hashtable] -and $current[$part] -isnot [System.Collections.IDictionary]) {
+                # Parent exists but is not an object - this is an error
+                $parentPath = ($parts[0..$i] -join '.')
+                throw "Cannot set '$Name': parent '$parentPath' is a primitive value ($(($current[$part]).GetType().Name)). Remove the parent variable first or use a different name."
+            }
+
+            $current = $current[$part]
         }
+
+        # Set the final property
+        $finalKey = $parts[-1]
+        $current[$finalKey] = $Value
+        Write-Verbose "Set $Name = $Value"
+    }
+    else {
+        # Simple variable (no dot notation)
+        $config[$Name] = $Value
+        Write-Verbose "Set $Name = $Value"
     }
 
-    Write-Host ""
+    # Save config
+    $saved = Save-BoltConfigFile -Config $config -ScriptRoot $ScriptRoot
 
-    # Handle results
-    if ($failureLocations.Count -eq 0) {
-        # Complete success
-        Write-Host "✓ Gosh module uninstalled successfully from all locations!" -ForegroundColor Green
-        Write-Host ""
-        Write-Host "The 'gosh' command will no longer be available." -ForegroundColor Yellow
-        Write-Host "You may need to restart PowerShell for changes to take effect." -ForegroundColor Yellow
-        Write-Host ""
+    if ($saved) {
+        # Invalidate cache so next task execution picks up new config
+        $script:CachedConfigJson = $null
+        Write-Verbose "Configuration cache invalidated"
+
+        Write-Host "Variable '$Name' set to '$Value'" -ForegroundColor Green
         return $true
     }
     else {
-        # Partial or complete failure - create recovery file
-        Write-Host "⚠ Partial uninstallation failure - cleaning up what we can" -ForegroundColor Yellow
-        Write-Host ""
-
-        # Create recovery instruction file
-        $recoveryPath = Join-Path $env:TEMP "Gosh-Uninstall-Manual.txt"
-        $recoveryContent = @"
-GOSH UNINSTALLATION - MANUAL CLEANUP REQUIRED
-==============================================
-
-Automatic uninstallation failed for the following locations.
-Please remove them manually:
-
-"@
-
-        foreach ($failure in $failureLocations) {
-            $recoveryContent += "Location: $($failure.Path)$([Environment]::NewLine)"
-            $recoveryContent += "Error: $($failure.Error)$([Environment]::NewLine)"
-            $recoveryContent += [Environment]::NewLine
-            $recoveryContent += "To remove manually:$([Environment]::NewLine)"
-            $recoveryContent += "  - Use your file manager to navigate to: $(Split-Path $failure.Path)$([Environment]::NewLine)"
-            $recoveryContent += "  - Delete the 'Gosh' folder at that location.$([Environment]::NewLine)"
-            $recoveryContent += [Environment]::NewLine
-        }
-
-        $recoveryContent += "Locations successfully removed: $successCount$([Environment]::NewLine)"
-        $recoveryContent += [Environment]::NewLine
-        $recoveryContent += "After removing the above locations manually, you may need to:$([Environment]::NewLine)"
-        $recoveryContent += "  - Restart PowerShell$([Environment]::NewLine)"
-        $recoveryContent += "  - Clear the module cache by running:$([Environment]::NewLine)"
-        $recoveryContent += "    Remove-Item -Path (Join-Path `$env:TEMP 'PowerShellModuleCache') -Force -Recurse$([Environment]::NewLine)"
-        $recoveryContent += [Environment]::NewLine
-        $recoveryContent += "For more help, visit: https://github.com/motowilliams/gosh$([Environment]::NewLine)"
-
-        try {
-            $recoveryContent | Out-File -FilePath $recoveryPath -Encoding UTF8 -Force
-            Write-Host "Recovery instructions saved to:" -ForegroundColor Yellow
-            Write-Host "  $recoveryPath" -ForegroundColor Gray
-            Write-Host ""
-            Write-Host "Please follow the manual cleanup instructions in that file." -ForegroundColor Yellow
-        }
-        catch {
-            Write-Host "Could not create recovery file: $($_.Exception.Message)" -ForegroundColor Red
-            Write-Host ""
-            Write-Host "Failed locations:" -ForegroundColor Yellow
-            foreach ($failure in $failureLocations) {
-                Write-Host "  - $($failure.Path)" -ForegroundColor Gray
-                Write-Host "    Error: $($failure.Error)" -ForegroundColor Gray
-            }
-        }
-
-        Write-Host ""
         return $false
     }
 }
-#endregion
+
+
+function Remove-BoltVariable {
+    <#
+    .SYNOPSIS
+        Removes a variable from the Bolt configuration
+    .DESCRIPTION
+        Removes a variable from bolt.config.json. Supports dot notation for nested properties.
+        Cascade deletes empty parent objects after removing the variable.
+    .PARAMETER Name
+        Variable name (supports dot notation for nested properties)
+    .PARAMETER ScriptRoot
+        The effective script root (project root)
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build)
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build"
+    )
+
+    # Load current config
+    $config = Get-BoltConfigFile -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
+
+    # Handle dot notation for nested properties
+    if ($Name -match '\.') {
+        $parts = $Name -split '\.'
+        $current = $config
+        $parents = @()
+
+        # Navigate to the property
+        for ($i = 0; $i -lt ($parts.Count - 1); $i++) {
+            $part = $parts[$i]
+
+            if (-not $current.ContainsKey($part)) {
+                Write-Warning "Variable '$Name' does not exist in configuration"
+                return $false
+            }
+
+            $parents += @{ Object = $current; Key = $part }
+            $current = $current[$part]
+        }
+
+        # Remove the final property
+        $finalKey = $parts[-1]
+
+        if (-not $current.ContainsKey($finalKey)) {
+            Write-Warning "Variable '$Name' does not exist in configuration"
+            return $false
+        }
+
+        $current.Remove($finalKey)
+        Write-Verbose "Removed $Name"
+
+        # Cascade delete empty parents
+        for ($i = $parents.Count - 1; $i -ge 0; $i--) {
+            $parent = $parents[$i]
+            $childObj = $parent.Object[$parent.Key]
+
+            if ($childObj -is [hashtable] -and $childObj.Count -eq 0) {
+                $parent.Object.Remove($parent.Key)
+                Write-Verbose "Removed empty parent: $($parent.Key)"
+            }
+            else {
+                break  # Stop if parent is not empty
+            }
+        }
+    }
+    else {
+        # Simple variable (no dot notation)
+        if (-not $config.ContainsKey($Name)) {
+            Write-Warning "Variable '$Name' does not exist in configuration"
+            return $false
+        }
+
+        $config.Remove($Name)
+        Write-Verbose "Removed $Name"
+    }
+
+    # Save config
+    $saved = Save-BoltConfigFile -Config $config -ScriptRoot $ScriptRoot
+
+    if ($saved) {
+        # Invalidate cache so next task execution picks up updated config
+        $script:CachedConfigJson = $null
+        Write-Verbose "Configuration cache invalidated"
+
+        Write-Host "Variable '$Name' removed" -ForegroundColor Green
+        return $true
+    }
+    else {
+        return $false
+    }
+}
+
+
+# Script-level variable for caching serialized config JSON
+$script:CachedConfigJson = $null
+
+
+function Get-BoltConfig {
+    <#
+    .SYNOPSIS
+        Builds the complete Bolt configuration object
+    .DESCRIPTION
+        Returns a PSCustomObject containing built-in variables merged with user-defined
+        variables from bolt.config.json. Includes performance caching - the serialized
+        JSON is computed once per bolt.ps1 invocation and reused for all tasks.
+
+        Built-in variables:
+        - ProjectRoot: Absolute path to project root
+        - TaskDirectory: Name of task directory (e.g., ".build")
+        - TaskDirectoryPath: Absolute path to task directory
+        - TaskScriptRoot: Directory of current task script (runtime only)
+        - TaskName: Name of current task (runtime only)
+        - Colors: Standard color scheme (Header, Success, Error, Warning, Info)
+        - GitRoot: Git repository root (if in a repo)
+        - GitBranch: Current git branch (if in a repo)
+    .PARAMETER ScriptRoot
+        The effective script root (project root)
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build)
+    .PARAMETER TaskScriptRoot
+        The directory of the current task script (injected at runtime)
+    .PARAMETER TaskName
+        The name of the current task (injected at runtime)
+    .OUTPUTS
+        PSCustomObject with built-in and user-defined variables
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build",
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskScriptRoot = $null,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskName = $null
+    )
+
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+    # Load user-defined variables from config file
+    $userConfig = Get-BoltConfigFile -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
+
+    # Build configuration object with built-ins
+    $config = @{
+        # Project structure
+        ProjectRoot = $ScriptRoot
+        TaskDirectory = $TaskDirectory
+        TaskDirectoryPath = Join-Path $ScriptRoot $TaskDirectory
+
+        # Task context (runtime values, may be null during non-task operations)
+        TaskScriptRoot = $TaskScriptRoot
+        TaskName = $TaskName
+
+        # Standard color scheme
+        Colors = @{
+            Header = 'Cyan'
+            Success = 'Green'
+            Error = 'Red'
+            Warning = 'Yellow'
+            Info = 'Gray'
+        }
+    }
+
+    # Add Git information if available
+    try {
+        $gitRoot = git rev-parse --show-toplevel 2>$null
+        if ($LASTEXITCODE -eq 0 -and $gitRoot) {
+            $config['GitRoot'] = $gitRoot.Trim()
+        }
+
+        $gitBranch = git rev-parse --abbrev-ref HEAD 2>$null
+        if ($LASTEXITCODE -eq 0 -and $gitBranch) {
+            $config['GitBranch'] = $gitBranch.Trim()
+        }
+    }
+    catch {
+        # Git not available or not in a repo - skip git variables
+        Write-Verbose "Git information not available: $_"
+    }
+
+    # Merge user-defined variables (user config overrides built-ins if conflicts exist)
+    foreach ($key in $userConfig.Keys) {
+        if ($config.ContainsKey($key)) {
+            Write-Verbose "User config overrides built-in variable: $key"
+        }
+        $config[$key] = $userConfig[$key]
+    }
+
+    $stopwatch.Stop()
+    Write-Verbose "Configuration built in $($stopwatch.ElapsedMilliseconds)ms"
+
+    # Convert to PSCustomObject for clean JSON serialization
+    return [PSCustomObject]$config
+}
+
+
+function Get-CachedBoltConfigJson {
+    <#
+    .SYNOPSIS
+        Returns cached or newly serialized Bolt configuration JSON
+    .DESCRIPTION
+        Caches the serialized JSON string for performance. The config is computed once
+        per bolt.ps1 invocation and reused for all task executions.
+    .PARAMETER ScriptRoot
+        The effective script root (project root)
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build)
+    .OUTPUTS
+        JSON string representation of the configuration
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build"
+    )
+
+    # Return cached version if available
+    if ($script:CachedConfigJson) {
+        Write-Verbose "Using cached configuration JSON"
+        return $script:CachedConfigJson
+    }
+
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+    # Build config without task-specific context (will be injected per task)
+    $config = Get-BoltConfig -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
+
+    # Serialize to JSON
+    $script:CachedConfigJson = $config | ConvertTo-Json -Depth 10 -Compress
+
+    $stopwatch.Stop()
+    Write-Verbose "Configuration serialized and cached in $($stopwatch.ElapsedMilliseconds)ms"
+
+    return $script:CachedConfigJson
+}
+
+
+function Show-BoltVariables {
+    <#
+    .SYNOPSIS
+        Displays all Bolt configuration variables
+    .DESCRIPTION
+        Shows both built-in variables (provided by Bolt) and user-defined variables
+        (from bolt.config.json) in an organized format.
+    .PARAMETER ScriptRoot
+        The effective script root (project root)
+    .PARAMETER TaskDirectory
+        The task directory name (default: .build)
+    .OUTPUTS
+        Formatted output showing categorized variables
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ScriptRoot,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TaskDirectory = ".build"
+    )
+
+    Write-Host "`nBolt Configuration Variables`n" -ForegroundColor Cyan
+
+    # Get full config
+    $config = Get-BoltConfig -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
+
+    # Define built-in variable names
+    $builtInNames = @(
+        'ProjectRoot',
+        'TaskDirectory',
+        'TaskDirectoryPath',
+        'TaskScriptRoot',
+        'TaskName',
+        'Colors',
+        'GitRoot',
+        'GitBranch'
+    )
+
+    # Categorize variables (config is PSCustomObject, use PSObject.Properties)
+    $builtInVars = @{}
+    $userVars = @{}
+
+    foreach ($property in $config.PSObject.Properties) {
+        $key = $property.Name
+        $value = $property.Value
+
+        if ($builtInNames -contains $key) {
+            $builtInVars[$key] = $value
+        }
+        else {
+            $userVars[$key] = $value
+        }
+    }
+    # Display built-in variables
+    Write-Host "Built-in Variables:" -ForegroundColor Yellow
+    if ($builtInVars.Count -eq 0) {
+        Write-Host "  (none)" -ForegroundColor Gray
+    }
+    else {
+        foreach ($key in ($builtInVars.Keys | Sort-Object)) {
+            $value = $builtInVars[$key]
+            if ($null -eq $value) {
+                Write-Host "  $key = `$null" -ForegroundColor Gray
+            }
+            elseif ($value -is [hashtable]) {
+                Write-Host "  $key = @{" -ForegroundColor Gray
+                foreach ($subKey in ($value.Keys | Sort-Object)) {
+                    Write-Host "    $subKey = $($value[$subKey])" -ForegroundColor DarkGray
+                }
+                Write-Host "  }" -ForegroundColor Gray
+            }
+            else {
+                Write-Host "  $key = $value" -ForegroundColor Gray
+            }
+        }
+    }
+
+    Write-Host ""
+
+    # Display user-defined variables
+    Write-Host "User-Defined Variables:" -ForegroundColor Yellow
+    if ($userVars.Count -eq 0) {
+        Write-Host "  (none - create bolt.config.json to add variables)" -ForegroundColor Gray
+    }
+    else {
+        foreach ($key in ($userVars.Keys | Sort-Object)) {
+            $value = $userVars[$key]
+            if ($null -eq $value) {
+                Write-Host "  $key = `$null" -ForegroundColor Gray
+            }
+            elseif ($value -is [hashtable]) {
+                Write-Host "  $key = @{" -ForegroundColor Gray
+                foreach ($subKey in ($value.Keys | Sort-Object)) {
+                    Write-Host "    $subKey = $($value[$subKey])" -ForegroundColor DarkGray
+                }
+                Write-Host "  }" -ForegroundColor Gray
+            }
+            else {
+                Write-Host "  $key = $value" -ForegroundColor Gray
+            }
+        }
+    }
+
+    Write-Host ""
+}
+
 
 function Invoke-CheckGitIndex {
     <#
@@ -1209,9 +1275,9 @@ function Get-ProjectTasks {
             $metadata.UsedFilenameFallback = $true
 
             # Warn about filename fallback unless disabled via environment variable
-            if (-not $env:GOSH_NO_FALLBACK_WARNINGS) {
+            if (-not $env:BOLT_NO_FALLBACK_WARNINGS) {
                 $fileName = Split-Path $FilePath -Leaf
-                Write-Warning "Task file '$fileName' does not have a # TASK: metadata tag. Using filename fallback to derive task name '$taskName'. To disable this warning, set: `$env:GOSH_NO_FALLBACK_WARNINGS = 1"
+                Write-Warning "Task file '$fileName' does not have a # TASK: metadata tag. Using filename fallback to derive task name '$taskName'. To disable this warning, set: `$env:BOLT_NO_FALLBACK_WARNINGS = 1"
             }
         }
 
@@ -1523,8 +1589,8 @@ function Invoke-Task {
                 throw "Script path is outside project directory: $scriptPath"
             }
 
-            # Get utility functions from Gosh
-            $utilities = Get-GoshUtilities
+            # Get utility functions from Bolt
+            $utilities = Get-BoltUtilities
 
             # Build function definitions for injection
             $utilityDefinitions = @()
@@ -1533,16 +1599,33 @@ function Invoke-Task {
                 $utilityDefinitions += "function $($util.Key) { $funcDef }"
             }
 
+            # Get Bolt configuration with task context
+            $taskScriptRoot = [System.IO.Path]::GetDirectoryName($TaskInfo.ScriptPath)
+            $boltConfig = Get-BoltConfig -ScriptRoot $script:EffectiveScriptRoot -TaskDirectory $TaskDirectory -TaskScriptRoot $taskScriptRoot -TaskName $primaryName
+
+            # Serialize config to JSON for injection
+            $configJson = $boltConfig | ConvertTo-Json -Depth 10 -Compress
+
+            # Escape single quotes in JSON for PowerShell string literal
+            $configJsonEscaped = $configJson -replace "'", "''"
+
+            $stopwatchConfig = [System.Diagnostics.Stopwatch]::StartNew()
+            Write-Verbose "Configuration prepared for task '$primaryName' in $($stopwatchConfig.ElapsedMilliseconds)ms"
+
             # Create the complete script that:
-            # 1. Defines utility functions
-            # 2. Sets up task context variables
-            # 3. Executes the original task script
+            # 1. Injects BoltConfig object
+            # 2. Defines utility functions
+            # 3. Sets up task context variables
+            # 4. Executes the original task script
             $scriptContent = @"
-# Injected Gosh utility functions
+# Injected Bolt configuration
+`$BoltConfig = '$configJsonEscaped' | ConvertFrom-Json
+
+# Injected Bolt utility functions
 $($utilityDefinitions -join "`n")
 
 # Set task context variables
-`$TaskScriptRoot = '$([System.IO.Path]::GetDirectoryName($TaskInfo.ScriptPath))'
+`$TaskScriptRoot = '$taskScriptRoot'
 
 # Execute the original task script in the context of its directory
 Push-Location `$TaskScriptRoot
@@ -1577,26 +1660,20 @@ try {
 
 # Handle parameter sets
 switch ($PSCmdlet.ParameterSetName) {
-    'InstallModule' {
-        $installResult = Install-GoshModule -ModuleOutputPath $ModuleOutputPath -NoImport:$NoImport
-        exit $(if ($installResult) { 0 } else { 1 })
-    }
-    'UninstallModule' {
-        $uninstallResult = Invoke-UninstallGoshModule -Force:$Force
-        exit $(if ($uninstallResult) { 0 } else { 1 })
-    }
     'Help' {
         # Default behavior when no parameters - show available tasks
-        Write-Host "Gosh! Build orchestration for PowerShell" -ForegroundColor Cyan
+        Write-Host "Bolt! Build orchestration for PowerShell" -ForegroundColor Cyan
         Write-Host ""
         Write-Host "Usage:" -ForegroundColor Yellow
-        Write-Host "  .\gosh.ps1 <task> [task2 task3...] [arguments]" -ForegroundColor Gray
-        Write-Host "  .\gosh.ps1 <task>,<task2>,<task3> [arguments]  (comma-separated)" -ForegroundColor Gray
-        Write-Host "  .\gosh.ps1 <task> -Only [arguments]  (skip dependencies)" -ForegroundColor Gray
-        Write-Host "  .\gosh.ps1 -ListTasks  (or -Help)" -ForegroundColor Gray
-        Write-Host "  .\gosh.ps1 -NewTask <name>" -ForegroundColor Gray
-        Write-Host "  .\gosh.ps1 -AsModule" -ForegroundColor Gray
-        Write-Host "  .\gosh.ps1 -UninstallModule" -ForegroundColor Gray
+        Write-Host "  .\bolt.ps1 <task> [task2 task3...] [arguments]" -ForegroundColor Gray
+        Write-Host "  .\bolt.ps1 <task>,<task2>,<task3> [arguments]  (comma-separated)" -ForegroundColor Gray
+        Write-Host "  .\bolt.ps1 <task> -Only [arguments]  (skip dependencies)" -ForegroundColor Gray
+        Write-Host "  .\bolt.ps1 -ListTasks  (or -Help)" -ForegroundColor Gray
+        Write-Host "  .\bolt.ps1 -NewTask <name>" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "For module installation, use New-BoltModule.ps1:" -ForegroundColor Yellow
+        Write-Host "  .\New-BoltModule.ps1 -Install" -ForegroundColor Gray
+        Write-Host "  .\New-BoltModule.ps1 -Uninstall" -ForegroundColor Gray
         Write-Host ""
 
         # Show available tasks
@@ -1605,11 +1682,11 @@ switch ($PSCmdlet.ParameterSetName) {
 }
 
 # Determine the effective script root
-# When running as a module, use GOSH_PROJECT_ROOT environment variable
+# When running as a module, use BOLT_PROJECT_ROOT environment variable
 # When running as a script, use $PSScriptRoot
-$script:EffectiveScriptRoot = if ($env:GOSH_PROJECT_ROOT) {
-    Write-Verbose "Running in module mode, using project root: $env:GOSH_PROJECT_ROOT"
-    $env:GOSH_PROJECT_ROOT
+$script:EffectiveScriptRoot = if ($env:BOLT_PROJECT_ROOT) {
+    Write-Verbose "Running in module mode, using project root: $env:BOLT_PROJECT_ROOT"
+    $env:BOLT_PROJECT_ROOT
 } else {
     Write-Verbose "Running in script mode, using PSScriptRoot: $PSScriptRoot"
     $PSScriptRoot
@@ -1677,10 +1754,48 @@ exit 0
     Write-Host "Next steps:" -ForegroundColor Yellow
     Write-Host "  1. Edit $fileName to implement your task logic" -ForegroundColor Gray
     Write-Host "  2. Update the DESCRIPTION and DEPENDS metadata as needed" -ForegroundColor Gray
-    Write-Host "  3. Run '.\gosh.ps1 $($NewTask.ToLower())' to execute your task" -ForegroundColor Gray
+    Write-Host "  3. Run '.\bolt.ps1 $($NewTask.ToLower())' to execute your task" -ForegroundColor Gray
     Write-Host "  4. Restart PowerShell to enable tab completion for the new task" -ForegroundColor Gray
 
     exit 0
+}
+
+# Handle ListVariables parameter set
+if ($PSCmdlet.ParameterSetName -eq 'ListVariables') {
+    Show-BoltVariables -ScriptRoot $EffectiveScriptRoot -TaskDirectory $TaskDirectory
+    exit 0
+}
+
+# Handle AddVariable parameter set
+if ($PSCmdlet.ParameterSetName -eq 'AddVariable') {
+    Write-Host "Adding variable: $Name = $Value" -ForegroundColor Cyan
+
+    try {
+        Add-BoltVariable -Name $Name -Value $Value -ScriptRoot $EffectiveScriptRoot -TaskDirectory $TaskDirectory
+        Write-Host "✓ Variable '$Name' added successfully" -ForegroundColor Green
+        Write-Host "  Run '.\bolt.ps1 -ListVariables' to see all variables" -ForegroundColor Gray
+        exit 0
+    }
+    catch {
+        Write-Error "Failed to add variable: $_"
+        exit 1
+    }
+}
+
+# Handle RemoveVariable parameter set
+if ($PSCmdlet.ParameterSetName -eq 'RemoveVariable') {
+    Write-Host "Removing variable: $VariableName" -ForegroundColor Cyan
+
+    try {
+        Remove-BoltVariable -Name $VariableName -ScriptRoot $EffectiveScriptRoot -TaskDirectory $TaskDirectory
+        Write-Host "✓ Variable '$VariableName' removed successfully" -ForegroundColor Green
+        Write-Host "  Run '.\bolt.ps1 -ListVariables' to see remaining variables" -ForegroundColor Gray
+        exit 0
+    }
+    catch {
+        Write-Error "Failed to remove variable: $_"
+        exit 1
+    }
 }
 
 # Handle ListTasks parameter set

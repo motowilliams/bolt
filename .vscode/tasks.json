@@ -2,10 +2,10 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Gosh: Build",
+      "label": "Bolt: Build",
       "type": "shell",
       "command": "pwsh",
-      "args": ["-File", "${workspaceFolder}/gosh.ps1", "build"],
+      "args": ["-File", "${workspaceFolder}/bolt.ps1", "build"],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -18,10 +18,10 @@
       "problemMatcher": []
     },
     {
-      "label": "Gosh: Format",
+      "label": "Bolt: Format Source",
       "type": "shell",
       "command": "pwsh",
-      "args": ["-File", "${workspaceFolder}/gosh.ps1", "format"],
+      "args": ["-File", "${workspaceFolder}/bolt.ps1", "format"],
       "presentation": {
         "reveal": "always",
         "panel": "shared",
@@ -30,10 +30,10 @@
       "problemMatcher": []
     },
     {
-      "label": "Gosh: Lint",
+      "label": "Bolt: Lint Source",
       "type": "shell",
       "command": "pwsh",
-      "args": ["-File", "${workspaceFolder}/gosh.ps1", "lint"],
+      "args": ["-File", "${workspaceFolder}/bolt.ps1", "lint"],
       "presentation": {
         "reveal": "always",
         "panel": "shared",
@@ -42,10 +42,10 @@
       "problemMatcher": []
     },
     {
-      "label": "Gosh: List Tasks",
+      "label": "Bolt: List Tasks",
       "type": "shell",
       "command": "pwsh",
-      "args": ["-File", "${workspaceFolder}/gosh.ps1", "-Help"],
+      "args": ["-File", "${workspaceFolder}/bolt.ps1", "-Help"],
       "presentation": {
         "reveal": "always",
         "panel": "shared",

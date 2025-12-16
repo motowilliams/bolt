@@ -1,10 +1,10 @@
-# Gosh! - Implementation Summary
+# Bolt! - Implementation Summary
 
-> **Go** + **powerShell** = **Gosh!** 🎉
+> **Bolt** - Lightning-fast PowerShell! ⚡
 
 ## ✅ Fully Implemented Features
 
-### 1. Core Build System (`gosh.ps1`)
+### 1. Core Build System (`bolt.ps1`)
 - **Task Discovery**: Automatically finds tasks in `.build/` directory (or custom directory via `-TaskDirectory`)
 - **Dependency Resolution**: Executes dependencies before main tasks
 - **Tab Completion**: Task names auto-complete in PowerShell (respects `-TaskDirectory`, works in script and module mode)
@@ -13,15 +13,24 @@
 - **Exit Code Handling**: Properly propagates errors
 - **Parameterized Task Directory**: Use `-TaskDirectory` to specify custom task locations
 - **Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
-- **Module Installation**: Install as PowerShell module with `-AsModule` for global `gosh` command
+- **Module Installation**: Install as PowerShell module via `New-BoltModule.ps1` for global `bolt` command
   - `-ModuleOutputPath`: Custom installation path for build/release scenarios
   - `-NoImport`: Skip automatic importing for CI/CD pipelines
 - **Upward Directory Search**: Module mode finds `.build/` by searching parent directories (like git)
-- **Parameter Sets**: PowerShell parameter sets provide validated operation modes (Help, TaskExecution, ListTasks, CreateTask, InstallModule)
+- **Parameter Sets**: PowerShell parameter sets provide validated operation modes (Help, TaskExecution, ListTasks, CreateTask, ListVariables, AddVariable, RemoveVariable)
+- **Configuration Variables**: Project-level variables via `bolt.config.json` auto-injected as `$BoltConfig` into all tasks
+- **Variable Management**: CLI commands to list, add, and remove variables:
+  - `-ListVariables`: Display all built-in and user-defined variables
+  - `-AddVariable <Name> <Value>`: Add or update a configuration variable
+  - `-RemoveVariable <Name>`: Remove a configuration variable
+- **Config Caching**: Configuration cached per-invocation and invalidated on add/remove for fast multi-task execution
+- **Upward Config Search**: `bolt.config.json` discovered via upward directory search (same as `.build/`)
 
-### 2. Build Tasks
+### 2. Bicep Starter Package Tasks
 
-#### **Format Task** (`.\gosh.ps1 format` or `.\gosh.ps1 fmt`)
+The Bicep starter package (`packages/.build-bicep`) provides infrastructure-as-code tasks:
+
+#### **Format Task** (`.\bolt.ps1 format` or `.\bolt.ps1 fmt`)
 - Formats all Bicep files using `bicep format`
 - Recursively finds all `.bicep` files in `tests/iac/` directory
 - Shows per-file formatting status
@@ -38,7 +47,7 @@ Found 4 Bicep file(s)
 ✓ Successfully formatted 4 Bicep file(s)
 ```
 
-#### **Lint Task** (`.\gosh.ps1 lint`)
+#### **Lint Task** (`.\bolt.ps1 lint`)
 - Validates all Bicep files for syntax errors
 - Runs Bicep linter using `bicep lint`
 - Detects and reports errors and warnings
@@ -59,7 +68,7 @@ Lint Summary:
 ✓ All Bicep files passed linting with no issues!
 ```
 
-#### **Build Task** (`.\gosh.ps1 build`)
+#### **Build Task** (`.\bolt.ps1 build`)
 - **Dependencies**: `format`, `lint` (auto-executed first)
 - Compiles Bicep files to ARM JSON templates
 - Only compiles `main*.bicep` files (not modules)
@@ -84,8 +93,8 @@ Building Bicep templates...
 ```
 
 #### **Test Suite** (`Invoke-Pester`)
-- Comprehensive Pester test suite for Gosh build system
-- Located in `tests/gosh.Tests.ps1`
+- Comprehensive Pester test suite for Bolt build system
+- Located in `tests/bolt.Tests.ps1`
 - Requires Pester 5.0+: `Install-Module -Name Pester -MinimumVersion 5.0.0`
 - Tests task discovery, execution, dependencies, and error handling
 - Generates NUnit XML test results for CI/CD integration
@@ -107,8 +116,8 @@ Building Bicep templates...
 Running Pester tests...
 
 Pester v5.7.1
-Running tests from 'C:\...\gosh.Tests.ps1'
-Describing Gosh Core Functionality
+Running tests from 'C:\...\bolt.Tests.ps1'
+Describing Bolt Core Functionality
  Context Script Validation
    [+] Should exist 3ms
    [+] Should have valid PowerShell syntax 4ms
@@ -147,7 +156,7 @@ Created a complete Azure infrastructure setup for testing:
 The system properly detects and reports errors:
 
 ✅ **Syntax Errors**: Invalid Bicep syntax caught by linter
-✅ **Format Issues**: Unformatted files detected in check mode  
+✅ **Format Issues**: Unformatted files detected in check mode
 ✅ **Compilation Errors**: Failed builds return non-zero exit codes
 ✅ **Dependency Failures**: Build stops if lint/format fails
 
@@ -186,50 +195,223 @@ Dedicated tooling for creating PowerShell module manifests from existing modules
 .\generate-manifest-docker.ps1 -ModulePath "MyModule.psm1" -ModuleVersion "1.0.0" -Tags "Build,DevOps"
 
 # With additional metadata
-.\generate-manifest.ps1 -ModulePath "Gosh/Gosh.psm1" -ModuleVersion "3.0.0" -Tags "Build,Task" -ProjectUri "https://github.com/owner/repo"
+.\generate-manifest.ps1 -ModulePath "Bolt/Bolt.psm1" -ModuleVersion "3.0.0" -Tags "Build,Task" -ProjectUri "https://github.com/owner/repo"
 ```
 
 **Architecture:**
 - **Separation of Concerns**: Manifest generation is separate from core module installation
-- **Build Integration**: Works with enhanced `-AsModule -NoImport -ModuleOutputPath` options
+- **Build Integration**: Works with `New-BoltModule.ps1 -Install -NoImport -ModuleOutputPath` options
 - **CI/CD Ready**: Docker wrapper provides consistent containerized execution
 - **Validation**: Multiple validation layers ensure manifest correctness
+
+### 6. Configuration Variable System
+
+Project-level configuration management with automatic injection into task contexts:
+
+#### **Configuration File** (`bolt.config.json`)
+- JSON-based configuration file in project root
+- Discovered via upward directory search (same as `.build/` folder)
+- Supports nested values with dot notation (e.g., `Azure.SubscriptionId`)
+- Auto-created when using `-AddVariable` if it doesn't exist
+- Schema available in `bolt.config.schema.json` for IDE validation
+- Example configuration in `bolt.config.example.json`
+
+**Example `bolt.config.json`:**
+```json
+{
+  "SourcePath": "src",
+  "Environment": "dev",
+  "Azure": {
+    "SubscriptionId": "00000000-0000-0000-0000-000000000000",
+    "ResourceGroup": "rg-myapp-dev"
+  }
+}
+```
+
+#### **Variable Management CLI**
+Three dedicated parameter sets for managing configuration:
+
+**List Variables:**
+```powershell
+.\bolt.ps1 -ListVariables
+
+# Output:
+# Bolt Configuration Variables
+#
+# Built-in Variables:
+#   ProjectRoot = C:\projects\myapp
+#   TaskDirectory = .build
+#   TaskDirectoryPath = C:\projects\myapp\.build
+#   TaskName =
+#   TaskScriptRoot =
+#   GitRoot = C:/projects/myapp
+#   GitBranch = main
+#   Colors = @{ Header = Blue }
+#
+# User-Defined Variables:
+#   SourcePath = src
+#   Environment = dev
+#   Azure.SubscriptionId = 00000000-0000-0000-0000-000000000000
+#   Azure.ResourceGroup = rg-myapp-dev
+```
+
+**Add/Update Variables:**
+```powershell
+# Add a simple variable
+.\bolt.ps1 -AddVariable -Name "SourcePath" -Value "src"
+
+# Add a nested variable (creates nested structure)
+.\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "00000000-0000-0000-0000-000000000000"
+
+# Update existing variable (same command)
+.\bolt.ps1 -AddVariable -Name "Environment" -Value "staging"
+
+# Output:
+# Adding variable: SourcePath = src
+# Variable 'SourcePath' set to 'src'
+# ✓ Variable 'SourcePath' added successfully
+#   Run '.\bolt.ps1 -ListVariables' to see all variables
+```
+
+**Remove Variables:**
+```powershell
+# Remove a variable
+.\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
+
+# Remove a nested variable
+.\bolt.ps1 -RemoveVariable -VariableName "Azure.OldProperty"
+
+# Output:
+# Removing variable: OldSetting
+# Variable 'OldSetting' removed
+# ✓ Variable 'OldSetting' removed successfully
+#   Run '.\bolt.ps1 -ListVariables' to see remaining variables
+```
+
+#### **Automatic Config Injection**
+
+All tasks automatically receive a `$BoltConfig` variable containing:
+
+**Built-in Variables** (always available):
+- `ProjectRoot`: Absolute path to project root directory
+- `TaskDirectory`: Name of task directory (e.g., ".build")
+- `TaskDirectoryPath`: Absolute path to task directory
+- `TaskName`: Current task name being executed
+- `TaskScriptRoot`: Directory containing the current task script
+- `GitRoot`: Git repository root (if in a git repo)
+- `GitBranch`: Current git branch (if in a git repo)
+- `Colors`: Hashtable with color theme (e.g., `$BoltConfig.Colors.Header`)
+
+**User-Defined Variables** (from `bolt.config.json`):
+- All variables from configuration file
+- Accessed via property access: `$BoltConfig.YourVariable`
+- Nested values via dot notation: `$BoltConfig.Azure.SubscriptionId`
+
+**Task Usage Example:**
+```powershell
+# .build/Invoke-Deploy.ps1
+# TASK: deploy
+# DESCRIPTION: Deploy infrastructure to Azure
+
+# Access built-in variables
+Write-Host "Project Root: $($BoltConfig.ProjectRoot)" -ForegroundColor Cyan
+Write-Host "Task Directory: $($BoltConfig.TaskDirectory)" -ForegroundColor Gray
+
+# Access user-defined variables
+$sourcePath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.SourcePath
+$subscriptionId = $BoltConfig.Azure.SubscriptionId
+$resourceGroup = $BoltConfig.Azure.ResourceGroup
+
+Write-Host "Deploying from: $sourcePath" -ForegroundColor Cyan
+Write-Host "Subscription: $subscriptionId" -ForegroundColor Gray
+Write-Host "Resource Group: $resourceGroup" -ForegroundColor Gray
+
+# Your deployment logic here
+
+exit 0
+```
+
+#### **Configuration Caching**
+
+- Configuration is cached per bolt.ps1 invocation for performance
+- Cache automatically invalidated when using `-AddVariable` or `-RemoveVariable`
+- Multi-task executions in a single run share the cached config
+- Each new bolt.ps1 invocation starts with a fresh cache
+
+**Performance Benefits:**
+- Avoids repeated file I/O and JSON parsing
+- Enables fast multi-task execution (e.g., `.\bolt.ps1 format lint build`)
+- No performance penalty for tasks that don't use config
+
+**Cache Invalidation:**
+```powershell
+# Cache is automatically cleared after these operations:
+.\bolt.ps1 -AddVariable -Name "Setting" -Value "value"      # Cache invalidated
+.\bolt.ps1 -RemoveVariable -VariableName "Setting"           # Cache invalidated
+
+# Fresh cache on each invocation:
+.\bolt.ps1 build                               # Loads config, caches it
+.\bolt.ps1 format lint                         # New invocation, fresh cache
+```
+
+#### **Bicep Starter Package Integration**
+
+All Bicep starter package tasks (`format`, `lint`, `build`) have been refactored to use `$BoltConfig`:
+
+```powershell
+# Before: Hardcoded paths
+$iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+
+# After: Configuration-driven
+$iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+
+# Fallback to default if not configured
+if (-not $BoltConfig.IacPath) {
+    $iacPath = Join-Path $BoltConfig.ProjectRoot "tests" "iac"
+}
+```
+
+This makes the tasks portable and reusable across different projects by simply changing `bolt.config.json`.
 
 ## Usage Examples
 
 ```powershell
 # List all available tasks
-.\gosh.ps1 -ListTasks
-.\gosh.ps1 -Help
+.\bolt.ps1 -ListTasks
+.\bolt.ps1 -Help
+
+# Manage configuration variables
+.\bolt.ps1 -ListVariables
+.\bolt.ps1 -AddVariable -Name "SourcePath" -Value "src"
+.\bolt.ps1 -AddVariable -Name "Azure.SubscriptionId" -Value "00000000-0000-0000-0000-000000000000"
+.\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
 
 # Preview task execution plan (no execution)
-.\gosh.ps1 build -Outline
+.\bolt.ps1 build -Outline
 
-# Format all Bicep files
-.\gosh.ps1 format
+# Format source files
+.\bolt.ps1 format
 
-# Lint/validate Bicep files
-.\gosh.ps1 lint
+# Lint/validate source files
+.\bolt.ps1 lint
 
 # Full build (format → lint → compile)
-.\gosh.ps1 build
+.\bolt.ps1 build
 
-# Install Gosh as a PowerShell module (enables 'gosh' command globally)
-.\gosh.ps1 -AsModule
+# Install Bolt as a PowerShell module (enables 'bolt' command globally)
+.\New-BoltModule.ps1 -Install
 
 # Install to custom location (for build/release)
-.\gosh.ps1 -AsModule -ModuleOutputPath "C:\Custom\Path" -NoImport
+.\New-BoltModule.ps1 -Install -ModuleOutputPath "C:\Custom\Path" -NoImport
 
-# Use global 'gosh' command (after module installation)
-gosh build
-gosh -ListTasks
-gosh format lint build -Only
+# Use global 'bolt' command (after module installation)
+bolt build
+bolt -ListTasks
+bolt -ListVariables
+bolt format lint build -Only
 
-# Uninstall Gosh module from all locations
-.\gosh.ps1 -UninstallModule
-
-# Uninstall via global command (after module installation)
-gosh -UninstallModule
+# Uninstall Bolt module from all locations
+.\New-BoltModule.ps1 -Uninstall
 
 # Run test suite directly with Pester
 Invoke-Pester
@@ -238,21 +420,21 @@ Invoke-Pester
 Invoke-Pester -Output Detailed
 
 # Skip dependencies
-.\gosh.ps1 build -Only
+.\bolt.ps1 build -Only
 
 # Preview what -Only would do
-.\gosh.ps1 build -Only -Outline
+.\bolt.ps1 build -Only -Outline
 
 # Use task aliases
-.\gosh.ps1 fmt           # Same as format
-.\gosh.ps1 check         # Check git index
+.\bolt.ps1 fmt           # Same as format
+.\bolt.ps1 check         # Check git index
 
 # Use custom task directory
-.\gosh.ps1 -TaskDirectory "infra-tasks" -ListTasks
-.\gosh.ps1 deploy -TaskDirectory "deployment"
+.\bolt.ps1 -TaskDirectory "infra-tasks" -ListTasks
+.\bolt.ps1 deploy -TaskDirectory "deployment"
 
 # Create new task in custom directory
-.\gosh.ps1 -NewTask validate -TaskDirectory "validation"
+.\bolt.ps1 -NewTask validate -TaskDirectory "validation"
 ```
 
 ## Task Outline Feature
@@ -261,13 +443,13 @@ The `-Outline` flag visualizes task dependency trees without execution:
 
 **Example Output:**
 ```
-PS> .\gosh.ps1 build -Outline
+PS> .\bolt.ps1 build -Outline
 
 Task execution plan for: build
 
-build (Compiles Bicep files to ARM JSON templates)
-├── format (Formats Bicep files using bicep format)
-└── lint (Validates Bicep syntax and runs linter)
+build (Compiles source files)
+├── format (Formats source files)
+└── lint (Validates source files)
 
 Execution order:
   1. format
@@ -277,12 +459,12 @@ Execution order:
 
 **With `-Only` flag:**
 ```
-PS> .\gosh.ps1 build -Only -Outline
+PS> .\bolt.ps1 build -Only -Outline
 
 Task execution plan for: build
 (Dependencies will be skipped with -Only flag)
 
-build (Compiles Bicep files to ARM JSON templates)
+build (Compiles source files)
 (Dependencies skipped: format, lint)
 
 Execution order:
@@ -291,17 +473,17 @@ Execution order:
 
 **Multiple tasks:**
 ```
-PS> .\gosh.ps1 format lint build -Outline
+PS> .\bolt.ps1 format lint build -Outline
 
 Task execution plan for: format, lint, build
 
-format (Formats Bicep files using bicep format)
+format (Formats source files)
 
-lint (Validates Bicep syntax and runs linter)
+lint (Validates source files)
 
-build (Compiles Bicep files to ARM JSON templates)
-├── format (Formats Bicep files using bicep format)
-└── lint (Validates Bicep syntax and runs linter)
+build (Compiles source files)
+├── format (Formats source files)
+└── lint (Validates source files)
 
 Execution order:
   1. format
@@ -323,7 +505,7 @@ build
 └── lint    (auto-executed second)
 ```
 
-When you run `.\gosh.ps1 build`, it automatically:
+When you run `.\bolt.ps1 build`, it automatically:
 1. Formats all Bicep files
 2. Validates all Bicep files
 3. Compiles main Bicep files to JSON
@@ -334,80 +516,80 @@ If any step fails, the build stops and returns an error code.
 
 ### Installation
 
-Gosh can be installed as a PowerShell module for global command-line usage:
+Bolt can be installed as a PowerShell module for global command-line usage:
 
 **Basic Installation:**
 ```powershell
 # Install to default user module location
-.\gosh.ps1 -AsModule
+.\New-BoltModule.ps1 -Install
 
 # Output:
-# Installing Gosh as a PowerShell module...
-# Using default module path: C:\Users\username\Documents\PowerShell\Modules\Gosh
-# ✓ Gosh module installed successfully!
-# You can now use 'gosh' command from any directory.
+# Installing Bolt as a PowerShell module...
+# Using default module path: C:\Users\username\Documents\PowerShell\Modules\Bolt
+# ✓ Bolt module installed successfully!
+# You can now use 'bolt' command from any directory.
 ```
 
 **Advanced Installation Options:**
 ```powershell
 # Install to custom location
-.\gosh.ps1 -AsModule -ModuleOutputPath "C:\Custom\Modules\Path"
+.\New-BoltModule.ps1 -Install -ModuleOutputPath "C:\Custom\Modules\Path"
 
 # Install without auto-importing (for CI/CD pipelines)
-.\gosh.ps1 -AsModule -NoImport
+.\New-BoltModule.ps1 -Install -NoImport
 
 # Both options combined
-.\gosh.ps1 -AsModule -ModuleOutputPath ".\dist" -NoImport
+.\New-BoltModule.ps1 -Install -ModuleOutputPath ".\dist" -NoImport
 ```
 
 **After Installation:**
 ```powershell
-# Use global 'gosh' command from any directory
-gosh build
-gosh -ListTasks
-gosh format lint build -Only
+# Use global 'bolt' command from any directory
+bolt build
+bolt -ListTasks
+bolt format lint build -Only
 
 # The module automatically searches upward for .build/ directories
 # Just like 'git' searches for '.git/' when using git commands
 ```
 
 **Cross-Platform Support:**
-- Windows: `~\Documents\PowerShell\Modules\Gosh\`
-- Linux/macOS: `~/.local/share/powershell/Modules/Gosh/`
+- Windows: `~\Documents\PowerShell\Modules\Bolt\`
+- Linux/macOS: `~/.local/share/powershell/Modules/Bolt/`
 
 ### Uninstallation
 
-Remove Gosh from all module installation locations:
+Remove Bolt from all module installation locations:
 
 **From Script Mode:**
 ```powershell
 # Uninstall from all known locations
-.\gosh.ps1 -UninstallModule
+.\New-BoltModule.ps1 -Uninstall
 
 # Output:
-# Gosh Module Uninstallation
+# Bolt Module Uninstallation
 #
-# Found 1 Gosh installation(s):
+# Found 1 Bolt installation(s):
 #
-#   - C:\Users\username\Documents\PowerShell\Modules\Gosh
+#   - C:\Users\username\Documents\PowerShell\Modules\Bolt
 #
-# Uninstall Gosh from all locations? (y/n): y
+# Uninstall Bolt from all locations? (y/n): y
 #
-# Uninstalling Gosh...
-# Removing: C:\Users\username\Documents\PowerShell\Modules\Gosh
+# Uninstalling Bolt...
+# Removing: C:\Users\username\Documents\PowerShell\Modules\Bolt
 #   ✓ Successfully removed
 #
-# ✓ Gosh module uninstalled successfully!
+# ✓ Bolt module uninstalled successfully!
 ```
 
-**From Module Mode (After Installation):**
+**Skip Confirmation:**
 ```powershell
-# Use the 'gosh' command directly
-gosh -UninstallModule
+# Use -Force to skip confirmation prompt
+.\New-BoltModule.ps1 -Uninstall -Force
 ```
 
 **Uninstallation Features:**
-- ✅ **Auto-Detection**: Finds all Gosh installations on current platform
+- ✅ **Auto-Detection**: Finds all Bolt installations on current platform
 - ✅ **Confirmation**: Prompts before removing (safe by default)
 - ✅ **Clean Removal**: Removes module from memory and disk
 - ✅ **Recovery Instructions**: If automatic removal fails, creates a recovery file with manual cleanup steps
@@ -417,14 +599,14 @@ gosh -UninstallModule
 - Detects all installations (default path + custom paths)
 - Removes module from current PowerShell session
 - Deletes module directory recursively
-- Creates recovery file at `$env:TEMP\Gosh-Uninstall-Manual.txt` if manual cleanup needed
+- Creates recovery file at `$env:TEMP\Bolt-Uninstall-Manual.txt` if manual cleanup needed
 - Works across Windows, Linux, and macOS
 
 **After Uninstallation:**
 ```powershell
-# The 'gosh' command will no longer be available
-gosh build
-# PowerShell: The term 'gosh' is not recognized...
+# The 'bolt' command will no longer be available
+bolt build
+# PowerShell: The term 'bolt' is not recognized...
 
 # You may need to restart PowerShell for changes to take effect
 ```
@@ -435,8 +617,8 @@ The project includes a comprehensive Pester test suite organized into three file
 
 ### Test Structure
 
-**Core Orchestration** (`tests/gosh.Tests.ps1` - 28 tests):
-- Tests Gosh's task discovery, execution, and dependency resolution
+**Core Orchestration** (`tests/bolt.Tests.ps1` - 28 tests):
+- Tests Bolt's task discovery, execution, and dependency resolution
 - Uses mock tasks from `tests/fixtures/` to avoid external dependencies
 - Validates script syntax, parameter handling, error handling
 - Tests filename fallback for tasks without metadata (handles Invoke-Verb-Noun.ps1 patterns)
@@ -447,19 +629,19 @@ The project includes a comprehensive Pester test suite organized into three file
 - Tests input sanitization and validation
 - Ensures secure error handling
 
-**Bicep Tasks** (`packages/.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
-- Validates structure and metadata of Bicep tasks
+**Bicep Starter Package Tests** (`packages/.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
+- Validates structure and metadata of Bicep starter package tasks
 - Checks task existence, syntax, and proper metadata headers
 - Verifies dependency declarations
 
-**Bicep Integration** (`packages/.build-bicep/tests/Integration.Tests.ps1` - 4 tests):
+**Bicep Starter Package Integration** (`packages/.build-bicep/tests/Integration.Tests.ps1` - 4 tests):
 - End-to-end tests executing actual Bicep operations
 - Requires Bicep CLI to be installed
 - Tests format, lint, build, and full pipeline
 
 ### Test Fixtures
 
-Mock tasks in `tests/fixtures/` allow testing Gosh orchestration without external tool dependencies:
+Mock tasks in `tests/fixtures/` allow testing Bolt orchestration without external tool dependencies:
 
 - `Invoke-MockSimple.ps1` - Simple task with no dependencies
 - `Invoke-MockWithDep.ps1` - Task with single dependency (depends on mock-simple)
@@ -470,14 +652,14 @@ These fixtures are used by tests via the `-TaskDirectory` parameter to achieve c
 
 ```powershell
 # Tests explicitly specify the fixture directory
-.\gosh.ps1 mock-simple -TaskDirectory 'tests/fixtures'
+.\bolt.ps1 mock-simple -TaskDirectory 'tests/fixtures'
 
-# This parameterization removes hardcoded test paths from gosh.ps1
+# This parameterization removes hardcoded test paths from bolt.ps1
 # allowing it to focus solely on task orchestration
 ```
 
 **Architecture Benefits:**
-- ✅ No test-specific code in `gosh.ps1` (clean production code)
+- ✅ No test-specific code in `bolt.ps1` (clean production code)
 - ✅ Tests explicitly declare their fixture location
 - ✅ Easy to add new test scenarios by creating new fixture tasks
 - ✅ Fixtures can be reused across different test contexts
@@ -492,7 +674,7 @@ Invoke-Pester
 Invoke-Pester -Output Detailed
 
 # Run specific test file
-Invoke-Pester -Path tests/gosh.Tests.ps1
+Invoke-Pester -Path tests/bolt.Tests.ps1
 Invoke-Pester -Path packages/.build-bicep/tests/
 
 # Run tests by tag
@@ -506,8 +688,8 @@ Invoke-Pester -Tag Bicep-Tasks    # Only Bicep task tests (16 tests, ~22s)
 The test suite uses Pester tags for flexible test execution:
 
 **`Core` Tag** (28 tests, ~1 second)
-- Tests gosh.ps1 orchestration functionality
-- Includes `gosh.Tests.ps1` and `Documentation Consistency` tests
+- Tests bolt.ps1 orchestration functionality
+- Includes `bolt.Tests.ps1` and `Documentation Consistency` tests
 - Fast execution with no external dependencies
 - Uses mock fixtures from `tests/fixtures/`
 - Ideal for quick validation during development
@@ -520,7 +702,7 @@ The test suite uses Pester tags for flexible test execution:
 - Critical for security compliance
 
 **`Bicep-Tasks` Tag** (16 tests, ~22 seconds)
-- Tests Bicep task implementation in `packages/.build-bicep/` directory
+- Tests Bicep starter package implementation in `packages/.build-bicep/` directory
 - Includes `Tasks.Tests.ps1` (structure validation)
 - Includes `Integration.Tests.ps1` (actual Bicep execution)
 - Requires Bicep CLI to be installed
@@ -531,7 +713,7 @@ The test suite uses Pester tags for flexible test execution:
 # Quick feedback loop during core development
 Invoke-Pester -Tag Core
 
-# Validate Bicep tasks before committing changes
+# Validate Bicep starter package before committing changes
 Invoke-Pester -Tag Bicep-Tasks
 
 # Complete validation (default)
@@ -592,14 +774,14 @@ The build system is CI/CD ready with proper exit codes:
 # Example GitHub Actions
 steps:
   - name: Run build
-    run: pwsh -File gosh.ps1 build
-    
+    run: pwsh -File bolt.ps1 build
+
   - name: Run tests
     run: |
       Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
       Invoke-Pester -Output Detailed -CI
     shell: pwsh
-    
+
   - name: Publish Test Results
     uses: EnricoMi/publish-unit-test-result-action@v2
     if: always()
@@ -619,5 +801,5 @@ steps:
 
 ---
 
-**Gosh, that was easy!** 🎉
+**Lightning fast builds with Bolt!** ⚡
 

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Gosh build system will be documented in this file.
+All notable changes to the Bolt build system will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -8,9 +8,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Configuration Variable System**: New project-level configuration management with `bolt.config.json`
+  - Create configuration file at project root with user-defined variables
+  - Automatic config injection into all tasks via `$BoltConfig` variable
+  - Built-in variables: `ProjectRoot`, `TaskDirectory`, `TaskDirectoryPath`, `TaskScriptRoot`, `TaskName`, `GitRoot`, `GitBranch`, `Colors`
+  - User-defined variables are merged at the root: access them via `$BoltConfig.YourVariableName`
+  - Supports nested objects and complex data structures
+  - Per-invocation configuration caching for performance (multiple tasks share same config)
+  - Automatic cache invalidation on add/remove operations
+  - New files: `bolt.config.json` (configuration), `bolt.config.schema.json` (JSON schema), `bolt.config.example.json` (template)
+- **Variable Management CLI**: New command-line interface for managing configuration variables
+  - `-ListVariables`: Display all configuration variables (built-in and user-defined) with values
+  - `-AddVariable`: Add or update user-defined variables interactively with `-Name` and `-Value` parameters
+  - `-RemoveVariable`: Remove user-defined variables by name with `-VariableName` parameter
+  - Works in both script mode (`.\bolt.ps1 -ListVariables`) and module mode (`bolt -ListVariables`)
+  - JSON schema validation on add/remove operations
+  - Human-readable output with syntax-highlighted JSON display
+- **Bicep Starter Package Refactoring**: Refactored all Bicep starter package tasks to use `$BoltConfig` for data access
+  - Format, Lint, and Build tasks now use `$BoltConfig.ProjectRoot` instead of environment variables
+  - Cleaner task implementation with safer nested value access patterns
+  - Example demonstrates best practices for accessing configuration in tasks
+  - Maintains backward compatibility (no breaking changes)
+
+### Changed
+- **Project Rename: Gosh → Bolt**: Complete rebranding of the project from "Gosh" to "Bolt"
+  - Renamed main script from `gosh.ps1` to `bolt.ps1`
+  - Renamed module script from `New-GoshModule.ps1` to `New-BoltModule.ps1`
+  - Updated all function names, variables, and aliases (e.g., `Invoke-Gosh` → `Invoke-Bolt`)
+  - Updated all documentation files (README.md, IMPLEMENTATION.md, CONTRIBUTING.md, SECURITY.md)
+  - Updated all test files to use new naming conventions
+  - Fixed `.gitignore` to use `.bolt/` instead of `.gosh/`
+  - Updated security.txt URLs to reflect new project name
+  - Updated copilot instructions and prompts with new naming
+  - Repository URL remains `motowilliams/gosh` (GitHub repository name unchanged)
+- **Git Worktree Instructions**: Added comprehensive git worktree workflow documentation
+  - New instruction file: `.github/instructions/feature-branches.instructions.md`
+  - Preferred workflow for feature branch development
+  - Naming convention: `../<repo-name>-wt-<branch-name>`
+  - Cross-platform PowerShell syntax examples
+  - Better than traditional `git checkout` for parallel work
+- **Module Installation Refactor**: Separated module installation into dedicated script
+  - Moved all module installation code from `bolt.ps1` to `New-BoltModule.ps1`
+  - Cleaner separation of concerns: orchestration vs. installation
+  - New test file: `tests/New-BoltModule.Tests.ps1` with comprehensive coverage
+  - Updated documentation to reference external script for module management
+  - CI pipeline updated to use new script for testing
+- **Documentation Cleanup**: Removed test counts from user-facing documentation
+  - Test counts change frequently and don't add value for users
+  - Focus on test quality and coverage categories instead
+  - Updated prompt to prevent test counts in documentation
+  - Security documentation retains test counts (verification status)
+
+### Fixed
+- **Git Ignore Rules**: Enhanced `.gitignore` organization and coverage
+  - Clear section headers for different file categories
+  - Better coverage of OS-specific files (Windows, macOS, Linux)
+  - Proper exclusion of `.bolt/` directory (audit logs)
+  - Improved module and build artifact exclusions
+- **Test Cleanup**: Removed skipped test requiring user interaction
+  - Module installation tests no longer require manual confirmation
+  - All tests can run fully automated in CI/CD pipelines
+
+### Added
 - **Filename Fallback Warning System**: Tasks using filename-based task names (no `# TASK:` metadata) now display a warning
   - Warning message explains the fallback behavior and encourages explicit metadata
-  - Can be disabled via environment variable `$env:GOSH_NO_FALLBACK_WARNINGS = 1`
+  - Can be disabled via environment variable `$env:BOLT_NO_FALLBACK_WARNINGS = 1`
   - Helps prevent confusion from file rename operations
   - Applies to both script mode and module mode
 
@@ -28,13 +90,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic Git repository URI inference (GitHub, GitLab, Bitbucket)
   - Cross-platform compatibility (Windows, Linux, macOS)
   - Robust validation with fallback error handling
-- **Module Uninstallation**: New `-UninstallModule` parameter to remove Gosh from all installations
-  - Auto-detects all Gosh module installations on current platform (Windows, Linux, macOS)
+- **Module Uninstallation**: New `-UninstallModule` parameter to remove Bolt from all installations
+  - Auto-detects all Bolt module installations on current platform (Windows, Linux, macOS)
   - Prompts for confirmation before removal (safe by default)
   - Removes module from current PowerShell session and disk
   - Creates recovery instruction file if automatic removal fails
   - Proper exit codes for CI/CD integration (0=success, 1=failure)
-  - Works from both script mode (`.\gosh.ps1 -UninstallModule`) and module mode (`gosh -UninstallModule`)
+  - Works from both script mode (`.\bolt.ps1 -UninstallModule`) and module mode (`bolt -UninstallModule`)
   - Gracefully handles self-removal when called from installed module
 - **Enhanced Module Installation**: Extended `-AsModule` parameter set with new options
   - `-ModuleOutputPath`: Specify custom installation path for build/release scenarios
@@ -51,19 +113,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - No more terminal hanging when no parameters provided
   - Better IntelliSense and tab completion support
   - Improved help system showing all parameter sets clearly
-- **Module Installation**: `-AsModule` parameter to install Gosh as a PowerShell module
-  - Enables global `gosh` command accessible from any directory
+- **Module Installation**: `-AsModule` parameter to install Bolt as a PowerShell module
+  - Enables global `bolt` command accessible from any directory
   - Cross-platform support (Windows, Linux, macOS)
   - Automatic upward directory search for `.build/` folders (like git)
   - Tab completion in module mode for task names
   - Idempotent installation (re-run to update)
 - Module installation paths:
-  - Windows: `~/Documents/PowerShell/Modules/Gosh/`
-  - Linux/macOS: `~/.local/share/powershell/Modules/Gosh/`
+  - Windows: `~/Documents/PowerShell/Modules/Bolt/`
+  - Linux/macOS: `~/.local/share/powershell/Modules/Bolt/`
 - `Find-BuildDirectory` function for upward directory traversal
 - Cross-platform path detection using `$IsWindows`, `$IsLinux`, `$IsMacOS`
 - **Improved .gitignore**: Comprehensive reorganization with clear sections and comments
-  - Bicep Infrastructure: ARM templates, parameter files, configuration
+  - Bicep starter package infrastructure: ARM templates, parameter files, configuration
   - Test Results: Pester outputs, temporary directories
   - PowerShell Modules: Generated manifests, module installations
   - Development/IDE: Editor-specific files
@@ -79,8 +141,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Examples of past violations documented to prevent repetition
 
 ### Changed
-- **Manifest Generation Removed from Core**: Separated module manifest generation from `gosh.ps1`
-  - Removed hardcoded manifest creation from `Install-GoshModule` function
+- **Manifest Generation Removed from Core**: Separated module manifest generation from `bolt.ps1`
+  - Removed hardcoded manifest creation from `Install-BoltModule` function
   - Use dedicated `generate-manifest.ps1` script for publishing/distribution scenarios
   - Cleaner separation of concerns: module installation vs. manifest generation
   - Faster module installation without manifest overhead
@@ -88,7 +150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - README.md: Added manifest generation section
   - IMPLEMENTATION.md: Updated module features documentation
   - .github/copilot-instructions.md: Added new script usage patterns
-- Task discovery now supports both script mode (`$PSScriptRoot`) and module mode (`$env:GOSH_PROJECT_ROOT`)
+- Task discovery now supports both script mode (`$PSScriptRoot`) and module mode (`$env:BOLT_PROJECT_ROOT`)
 - All functions now use `$script:EffectiveScriptRoot` for path resolution
 
 **Technical Notes**:
@@ -103,14 +165,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ❌ **Failed**: Used alias export before `Export-ModuleMember` in generated module
   - `Set-Alias` must be called before `Export-ModuleMember`
   - Aliases defined after export are not visible to module users
-- ❌ **Failed**: Passed arguments as array to gosh-core.ps1 instead of hashtable
+- ❌ **Failed**: Passed arguments as array to bolt-core.ps1 instead of hashtable
   - Array splatting doesn't work with parameter names
   - Resulted in positional parameter errors
-- ❌ **Failed**: Tab completion only registered for 'gosh.ps1' not module function
-  - `Register-ArgumentCompleter` needs both 'Invoke-Gosh' and 'gosh' alias
+- ❌ **Failed**: Tab completion only registered for 'bolt.ps1' not module function
+  - `Register-ArgumentCompleter` needs both 'Invoke-Bolt' and 'bolt' alias
   - Module mode had no tab completion initially
-- ✅ **Solution**: Environment variable `$env:GOSH_PROJECT_ROOT` for context passing
-  - Module sets variable before invoking gosh-core.ps1
+- ✅ **Solution**: Environment variable `$env:BOLT_PROJECT_ROOT` for context passing
+  - Module sets variable before invoking bolt-core.ps1
   - Core script checks variable and sets `$script:EffectiveScriptRoot`
   - All functions use `$script:EffectiveScriptRoot` instead of direct `$PSScriptRoot`
   - No function signature changes required
@@ -121,25 +183,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - README.md: Added comprehensive "Module Installation" section
   - IMPLEMENTATION.md: Added module features to Core Build System
   - .github/copilot-instructions.md: Added module examples and cross-platform paths
-- Task discovery now supports both script mode (`$PSScriptRoot`) and module mode (`$env:GOSH_PROJECT_ROOT`)
+- Task discovery now supports both script mode (`$PSScriptRoot`) and module mode (`$env:BOLT_PROJECT_ROOT`)
 - All functions now use `$script:EffectiveScriptRoot` for path resolution
 
 ### Fixed
 - Cross-platform compatibility for module installation (Windows/Linux/macOS paths)
-- **Security Logging Directory Creation**: Fixed issue where `.gosh` file could be created instead of directory
+- **Security Logging Directory Creation**: Fixed issue where `.bolt` file could be created instead of directory
   - Enhanced `Write-SecurityLog` function with more robust directory creation logic
-  - Explicitly handles file-to-directory conversion when `.gosh` exists as a file
+  - Explicitly handles file-to-directory conversion when `.bolt` exists as a file
   - Prevents race conditions and ensures audit logging works reliably
   - Added double-verification to confirm directory creation succeeded
 
 **Technical Notes**:
 - ❌ **Failed**: Original directory creation logic had race condition vulnerability
   - `Test-Path -PathType Container` + `New-Item -Force` wasn't atomic
-  - If `.gosh` existed as a file, `New-Item` might fail silently
-  - `Add-Content` could then create `.gosh` as a file instead of `audit.log` in directory
+  - If `.bolt` existed as a file, `New-Item` might fail silently
+  - `Add-Content` could then create `.bolt` as a file instead of `audit.log` in directory
   - Occurred intermittently during parallel test execution
 - ✅ **Solution**: Enhanced directory creation with explicit file-to-directory conversion
-  - Check if `.gosh` exists and remove if it's a file (not directory)
+  - Check if `.bolt` exists and remove if it's a file (not directory)
   - Create directory with error handling and double-verification
   - Atomic operation prevents race conditions between multiple processes
   - Throws clear error if directory creation fails, preventing silent failures
@@ -160,7 +222,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-10-17
 
 ### Added
-- Core orchestration system (gosh.ps1)
+- Core orchestration system (bolt.ps1)
 - Task discovery via comment-based metadata in `.build/*.ps1` files
 - Automatic dependency resolution with circular dependency prevention
 - Multi-task execution (space-separated and comma-separated)
@@ -171,12 +233,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `-NewTask` parameter to generate new task files with proper metadata
 - `-ListTasks` / `-Help` to display available tasks
 - Core tasks: `check-index` (git status validation)
-- Example Azure Bicep tasks: `format`, `lint`, `build`
+- Example Bicep starter package tasks: `format`, `lint`, `build`
 - Example Azure infrastructure (App Service + SQL Database)
-- Comprehensive test suite with Pester (267 tests)
+- Comprehensive test suite with Pester
   - Core orchestration tests (28 tests, fast)
   - Security validation tests (205 tests)
-  - Bicep task tests (16 tests)
+  - Bicep starter package tests (16 tests)
   - Test tags: `Core`, `Security`, `Bicep-Tasks`
 - VS Code integration:
   - Pre-configured tasks (build, format, lint, test)

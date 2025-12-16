@@ -3,9 +3,9 @@
 
 <#
 .SYNOPSIS
-    Pester tests for Gosh core orchestration functionality
+    Pester tests for Bolt core orchestration functionality
 .DESCRIPTION
-    Tests core Gosh features using mock tasks from tests/fixtures.
+    Tests core Bolt features using mock tasks from tests/fixtures.
     This ensures tests are independent of project-specific tasks.
 #>
 
@@ -24,7 +24,7 @@ BeforeAll {
         }
         $currentPath = Split-Path -Parent $currentPath
     }
-    $script:GoshScriptPath = Join-Path $projectRoot 'gosh.ps1'
+    $script:BoltScriptPath = Join-Path $projectRoot 'bolt.ps1'
 
     $script:BuildPath = Join-Path $projectRoot '.build'
     $script:FixturesPath = Join-Path $PSScriptRoot 'fixtures'
@@ -55,8 +55,8 @@ BeforeAll {
         return $true
     }
 
-    # Helper function to invoke gosh with captured output
-    function Invoke-Gosh {
+    # Helper function to invoke bolt with captured output
+    function Invoke-Bolt {
         param(
             [Parameter()]
             [string[]]$Arguments = @(),
@@ -79,7 +79,7 @@ BeforeAll {
         }
 
         # Execute with splatting
-        $output = & $script:GoshScriptPath @splatParams 2>&1
+        $output = & $script:BoltScriptPath @splatParams 2>&1
         $exitCode = $LASTEXITCODE
 
         return @{
@@ -104,45 +104,45 @@ BeforeAll {
     }
 }
 
-Describe 'Gosh Core Functionality' -Tag 'Core' {
+Describe 'Bolt Core Functionality' -Tag 'Core' {
 
     Context 'Script Validation' {
         It 'Should exist' {
-            Test-Path $script:GoshScriptPath | Should -Be $true
+            Test-Path $script:BoltScriptPath | Should -Be $true
         }
 
         It 'Should have valid PowerShell syntax' {
-            { $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script:GoshScriptPath -Raw), [ref]$null) } | Should -Not -Throw
+            { $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script:BoltScriptPath -Raw), [ref]$null) } | Should -Not -Throw
         }
 
         It 'Should require PowerShell 7.0+' {
-            $content = Get-Content $script:GoshScriptPath -Raw
+            $content = Get-Content $script:BoltScriptPath -Raw
             $content | Should -Match '#Requires -Version 7\.0'
         }
     }
 
     Context 'Task Listing' {
         It 'Should list tasks with -ListTasks' {
-            $result = Invoke-Gosh -Parameters @{ ListTasks = $true }
+            $result = Invoke-Bolt -Parameters @{ ListTasks = $true }
             $result.Success | Should -Be $true
         }
 
         It 'Should show core tasks' {
-            $result = Invoke-Gosh -Parameters @{ ListTasks = $true }
+            $result = Invoke-Bolt -Parameters @{ ListTasks = $true }
             # The -ListTasks command should succeed
             $result.Success | Should -Be $true
         }
 
         It 'Should show project tasks if .build directory exists' {
             if (Test-Path $script:BuildPath) {
-                $result = Invoke-Gosh -Parameters @{ ListTasks = $true }
+                $result = Invoke-Bolt -Parameters @{ ListTasks = $true }
                 $result.Success | Should -Be $true
             }
         }
 
         It 'Should accept -Help as alias for -ListTasks' {
-            $resultList = Invoke-Gosh -Parameters @{ ListTasks = $true }
-            $resultHelp = Invoke-Gosh -Parameters @{ Help = $true }
+            $resultList = Invoke-Bolt -Parameters @{ ListTasks = $true }
+            $resultHelp = Invoke-Bolt -Parameters @{ Help = $true }
 
             # Both should succeed
             $resultList.Success | Should -Be $true
@@ -189,7 +189,7 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
 
                 # Verify tasks are discovered with correct names
                 # Capture output using 6>&1 to redirect information stream (Write-Host)
-                $output = & $script:GoshScriptPath -TaskDirectory $relativePath -ListTasks 6>&1 2>&1 | Out-String
+                $output = & $script:BoltScriptPath -TaskDirectory $relativePath -ListTasks 6>&1 2>&1 | Out-String
 
                 # Should contain derived task names
                 $output | Should -Match '\btestoutput\b'
@@ -219,7 +219,7 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
 
                 # Verify initial discovery finds 'original' task
                 # Use relative path for -TaskDirectory parameter (security validation)
-                $output = & $script:GoshScriptPath -TaskDirectory $relativeDir -ListTasks 6>&1 2>&1 | Out-String
+                $output = & $script:BoltScriptPath -TaskDirectory $relativeDir -ListTasks 6>&1 2>&1 | Out-String
                 $output | Should -Match '\boriginal\b'
 
                 # Rename the file
@@ -227,7 +227,7 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
                 Rename-Item -Path $file1 -NewName (Split-Path $file2 -Leaf)
 
                 # Verify discovery finds 'renamed' task after rename
-                $output = & $script:GoshScriptPath -TaskDirectory $relativeDir -ListTasks 6>&1 2>&1 | Out-String
+                $output = & $script:BoltScriptPath -TaskDirectory $relativeDir -ListTasks 6>&1 2>&1 | Out-String
                 $output | Should -Match '\brenamed\b'
                 $output | Should -Not -Match '\boriginal\b'
             }
@@ -246,18 +246,18 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
             $gitAvailable = $null -ne (Get-Command git -ErrorAction SilentlyContinue)
 
             if ($gitAvailable) {
-                $result = Invoke-Gosh -Arguments @('check-index')
+                $result = Invoke-Bolt -Arguments @('check-index')
                 # May pass or fail depending on git state, but should execute
                 $result.ExitCode | Should -BeIn @(0, 1)
             }
         }
 
         It 'Should fail on non-existent task' {
-            { Invoke-Gosh -Arguments @('non-existent-task-xyz') } | Should -Throw -ExpectedMessage '*not found*'
+            { Invoke-Bolt -Arguments @('non-existent-task-xyz') } | Should -Throw -ExpectedMessage '*not found*'
         }
 
         It 'Should execute mock task successfully' {
-            $result = Invoke-Gosh -Arguments @('mock-simple') -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
+            $result = Invoke-Bolt -Arguments @('mock-simple') -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
             $result.ExitCode | Should -Be 0
             $result.Success | Should -Be $true
         }
@@ -265,19 +265,19 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
 
     Context 'Dependency Resolution' {
         It 'Should respect -Only flag to skip dependencies' {
-            $result = Invoke-Gosh -Arguments @('mock-with-dep') -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
+            $result = Invoke-Bolt -Arguments @('mock-with-dep') -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
             # Should run without executing mock-simple dependency
             $result.ExitCode | Should -Be 0
         }
 
         It 'Should execute dependencies when not using -Only' {
-            $result = Invoke-Gosh -Arguments @('mock-with-dep') -Parameters @{ TaskDirectory = 'tests/fixtures' }
+            $result = Invoke-Bolt -Arguments @('mock-with-dep') -Parameters @{ TaskDirectory = 'tests/fixtures' }
             # Should execute mock-simple first, then mock-with-dep
             $result.ExitCode | Should -Be 0
         }
 
         It 'Should handle complex dependency chains' {
-            $result = Invoke-Gosh -Arguments @('mock-complex') -Parameters @{ TaskDirectory = 'tests/fixtures' }
+            $result = Invoke-Bolt -Arguments @('mock-complex') -Parameters @{ TaskDirectory = 'tests/fixtures' }
             # Should execute: mock-simple, then mock-with-dep, then mock-complex
             $result.ExitCode | Should -Be 0
         }
@@ -296,9 +296,9 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
 
         It 'Should create a new task file with -NewTask' {
             $taskName = "test-task-$(Get-Random)"
-            Invoke-Gosh -Parameters @{ NewTask = $taskName }
+            Invoke-Bolt -Parameters @{ NewTask = $taskName }
 
-            # Find the created file - gosh converts test-task-123 to Invoke-Test-Task-123.ps1
+            # Find the created file - bolt converts test-task-123 to Invoke-Test-Task-123.ps1
             $createdFile = Get-ChildItem $script:BuildPath -Filter "Invoke-Test-Task*.ps1" |
                 Where-Object { $_.Name -match 'Test-Task-\d+' } |
                 Sort-Object LastWriteTime -Descending |
@@ -309,7 +309,7 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
 
         It 'Should create task file with proper metadata structure' {
             $taskName = "test-metadata-$(Get-Random)"
-            Invoke-Gosh -Parameters @{ NewTask = $taskName }
+            Invoke-Bolt -Parameters @{ NewTask = $taskName }
 
             # Find and read the created file
             $createdFile = Get-ChildItem $script:BuildPath -Filter "Invoke-Test-Metadata*.ps1" |
@@ -326,7 +326,7 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
 
         It 'Should convert task name to proper filename' {
             $taskName = "test-conversion-$(Get-Random)"
-            Invoke-Gosh -Parameters @{ NewTask = $taskName }
+            Invoke-Bolt -Parameters @{ NewTask = $taskName }
 
             # Should create a file with the task name
             $createdFiles = Get-ChildItem $script:BuildPath -Filter "Invoke-Test*.ps1"
@@ -352,15 +352,15 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
 
         It 'Should handle missing .build directory gracefully' {
             # Test with a non-existent task that would be in .build
-            { Invoke-Gosh -Arguments @('absolutely-non-existent-task') } | Should -Throw -ExpectedMessage '*not found*'
+            { Invoke-Bolt -Arguments @('absolutely-non-existent-task') } | Should -Throw -ExpectedMessage '*not found*'
         }
 
         It 'Should provide helpful error message for invalid task' {
-            { Invoke-Gosh -Arguments @('invalid-task-name') } | Should -Throw -ExpectedMessage '*not found*'
+            { Invoke-Bolt -Arguments @('invalid-task-name') } | Should -Throw -ExpectedMessage '*not found*'
         }
 
         It 'Should handle task failures correctly' {
-            $result = Invoke-Gosh -Arguments @('mock-fail') -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
+            $result = Invoke-Bolt -Arguments @('mock-fail') -Parameters @{ TaskDirectory = 'tests/fixtures'; Only = $true }
             $result.ExitCode | Should -Be 1
             $result.Success | Should -Be $false
         }
@@ -369,40 +369,35 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
     Context 'Parameter Validation' {
         It 'Should accept comma-separated task list' {
             # This tests the parameter parsing for multiple tasks
-            $result = Invoke-Gosh -Arguments @('check,check-index')
+            $result = Invoke-Bolt -Arguments @('check,check-index')
             # Should parse and attempt to execute (may fail, but parsing should work)
             $result.ExitCode | Should -BeIn @(0, 1)
         }
 
         It 'Should accept space-separated task list' {
-            $result = Invoke-Gosh -Arguments @('check', 'check-index')
+            $result = Invoke-Bolt -Arguments @('check', 'check-index')
             $result.ExitCode | Should -BeIn @(0, 1)
         }
     }
 
     Context 'Parameter Sets' {
         It 'Should use Help parameter set with no parameters' {
-            $output = (& $script:GoshScriptPath *>&1) -join "`n"
-            $output | Should -Match 'Gosh! Build orchestration|Usage|Available tasks'
+            $output = (& $script:BoltScriptPath *>&1) -join "`n"
+            $output | Should -Match 'Bolt! Build orchestration|Usage|Available tasks'
         }
 
         It 'Should reject invalid parameter combinations' {
             # -ListTasks and -NewTask should be mutually exclusive
-            { & $script:GoshScriptPath -ListTasks -NewTask test 2>&1 } | Should -Throw -ExpectedMessage '*Parameter set cannot be resolved*'
-        }
-
-        It 'Should reject invalid parameter combinations (AsModule + ListTasks)' {
-            # -AsModule and -ListTasks should be mutually exclusive
-            { & $script:GoshScriptPath -AsModule -ListTasks 2>&1 } | Should -Throw -ExpectedMessage '*Parameter set cannot be resolved*'
+            { & $script:BoltScriptPath -ListTasks -NewTask test 2>&1 } | Should -Throw -ExpectedMessage '*Parameter set cannot be resolved*'
         }
 
         It 'Should accept valid TaskExecution parameter set' {
-            $result = Invoke-Gosh -Arguments @('check-index') -Parameters @{ Only = $true }
+            $result = Invoke-Bolt -Arguments @('check-index') -Parameters @{ Only = $true }
             $result.ExitCode | Should -BeIn @(0, 1)  # May succeed or fail, but should parse correctly
         }
 
         It 'Should accept valid ListTasks parameter set' {
-            $output = (& $script:GoshScriptPath -ListTasks *>&1) -join "`n"
+            $output = (& $script:BoltScriptPath -ListTasks *>&1) -join "`n"
             $LASTEXITCODE | Should -Be 0
             $output | Should -Match 'Available tasks'
         }
@@ -410,12 +405,12 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
         It 'Should accept valid CreateTask parameter set' {
             $testTaskName = "test-param-set-$(Get-Random)"
             try {
-                $output = (& $script:GoshScriptPath -NewTask $testTaskName *>&1) -join "`n"
+                $output = (& $script:BoltScriptPath -NewTask $testTaskName *>&1) -join "`n"
                 $LASTEXITCODE | Should -Be 0
                 $output | Should -Match "Created task file"
             }
             finally {
-                # Clean up test task file - use same logic as gosh.ps1
+                # Clean up test task file - use same logic as bolt.ps1
                 $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($testTaskName.ToLower())
                 $testFile = Join-Path $script:BuildPath "Invoke-$taskNameCapitalized.ps1"
                 if (Test-Path $testFile) {
@@ -440,8 +435,8 @@ Describe 'Gosh Core Functionality' -Tag 'Core' {
 
 Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
     BeforeAll {
-        # Load the gosh.ps1 script to register the argument completer
-        . $script:GoshScriptPath
+        # Load the bolt.ps1 script to register the argument completer
+        . $script:BoltScriptPath
 
         # Helper function to simulate tab completion
         function Get-TabCompletions {
@@ -470,20 +465,20 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
 
     Context 'Core Task Completion' {
         It 'Should provide completions for core tasks' {
-            $completions = Get-TabCompletions ".\gosh.ps1 ch"
+            $completions = Get-TabCompletions ".\bolt.ps1 ch"
             $taskNames = $completions | Select-Object -ExpandProperty CompletionText
             $taskNames | Should -Contain 'check'
             $taskNames | Should -Contain 'check-index'
         }
 
         It 'Should complete partial task names' {
-            $completions = Get-TabCompletions ".\gosh.ps1 check-"
+            $completions = Get-TabCompletions ".\bolt.ps1 check-"
             $taskNames = $completions | Select-Object -ExpandProperty CompletionText
             $taskNames | Should -Contain 'check-index'
         }
 
         It 'Should provide all core tasks when no prefix given' {
-            $completions = Get-TabCompletions ".\gosh.ps1 "
+            $completions = Get-TabCompletions ".\bolt.ps1 "
             $taskNames = $completions | Select-Object -ExpandProperty CompletionText
             $taskNames | Should -Contain 'check'
             $taskNames | Should -Contain 'check-index'
@@ -493,7 +488,7 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
     Context 'Project Task Completion' {
         It 'Should discover tasks from .build directory' {
             if (Test-Path $script:BuildPath) {
-                $completions = Get-TabCompletions ".\gosh.ps1 "
+                $completions = Get-TabCompletions ".\bolt.ps1 "
                 $taskNames = $completions | Select-Object -ExpandProperty CompletionText
 
                 # Should have more than just core tasks
@@ -503,7 +498,7 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
 
         It 'Should discover tasks from fixtures directory when using -TaskDirectory' {
             # This tests that the completer respects -TaskDirectory parameter
-            $completions = Get-TabCompletions ".\gosh.ps1 -TaskDirectory tests/fixtures mock"
+            $completions = Get-TabCompletions ".\bolt.ps1 -TaskDirectory tests/fixtures mock"
             $taskNames = $completions | Select-Object -ExpandProperty CompletionText
 
             $taskNames | Should -Contain 'mock-simple'
@@ -515,7 +510,7 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
         It 'Should complete task aliases' {
             # If .build has tasks with aliases, they should be completable
             if (Test-Path $script:BuildPath) {
-                $completions = Get-TabCompletions ".\gosh.ps1 "
+                $completions = Get-TabCompletions ".\bolt.ps1 "
                 # Just verify we get some completions - specific aliases depend on .build content
                 $completions.Count | Should -BeGreaterThan 0
             }
@@ -524,7 +519,7 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
 
     Context 'Completion Filtering' {
         It 'Should filter completions by prefix' {
-            $completions = Get-TabCompletions ".\gosh.ps1 -TaskDirectory tests/fixtures mock-s"
+            $completions = Get-TabCompletions ".\bolt.ps1 -TaskDirectory tests/fixtures mock-s"
             $taskNames = $completions | Select-Object -ExpandProperty CompletionText
 
             # Should only show tasks starting with "mock-s"
@@ -534,12 +529,12 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
         }
 
         It 'Should return no completions for non-matching prefix' {
-            $completions = Get-TabCompletions ".\gosh.ps1 xyz-nonexistent"
+            $completions = Get-TabCompletions ".\bolt.ps1 xyz-nonexistent"
             $completions.Count | Should -Be 0
         }
 
         It 'Should be case-insensitive' {
-            $completions = Get-TabCompletions ".\gosh.ps1 CHECK"
+            $completions = Get-TabCompletions ".\bolt.ps1 CHECK"
             $taskNames = $completions | Select-Object -ExpandProperty CompletionText
             $taskNames | Should -Contain 'check'
             $taskNames | Should -Contain 'check-index'
@@ -551,7 +546,7 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
             # Test the completion script block directly since PowerShell's tab completion
             # may provide file completions for subsequent positional arguments.
             # We extract and invoke the script block with test parameters.
-            $content = Get-Content $script:GoshScriptPath -Raw
+            $content = Get-Content $script:BoltScriptPath -Raw
 
             # Extract the script block from $taskCompleter variable assignment
             if ($content -match '\$taskCompleter\s*=\s*\{([\s\S]+?)\n\}\s*\n\s*Register-ArgumentCompleter') {
@@ -562,12 +557,12 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
                 # Parameters: $commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters
                 # We need to provide a valid command AST or the script block will fail
                 $mockAst = [System.Management.Automation.Language.Parser]::ParseInput(
-                    ".\gosh.ps1 ch",
+                    ".\bolt.ps1 ch",
                     [ref]$null,
                     [ref]$null
                 )
 
-                $completions = & $scriptBlock 'gosh.ps1' 'Task' 'ch' $mockAst.EndBlock.Statements[0].PipelineElements[0] @{}
+                $completions = & $scriptBlock 'bolt.ps1' 'Task' 'ch' $mockAst.EndBlock.Statements[0].PipelineElements[0] @{}
 
                 if ($completions) {
                     $completionTexts = $completions | ForEach-Object { $_.CompletionText }
@@ -578,12 +573,12 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
                     $true | Should -Be $true
                 }
             } else {
-                throw "Could not extract completion script block from gosh.ps1"
+                throw "Could not extract completion script block from bolt.ps1"
             }
         }
 
         It 'Should complete task after comma-separated list' {
-            $completions = Get-TabCompletions ".\gosh.ps1 check,ch"
+            $completions = Get-TabCompletions ".\bolt.ps1 check,ch"
             # This tests completion after comma (may or may not work depending on PowerShell parsing)
             # If it doesn't work, that's acceptable behavior
             $completions.Count | Should -BeGreaterOrEqual 0
@@ -592,14 +587,14 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
 
     Context 'Completion with Other Parameters' {
         It 'Should complete tasks when -Only flag is present' {
-            $completions = Get-TabCompletions ".\gosh.ps1 -Only ch"
+            $completions = Get-TabCompletions ".\bolt.ps1 -Only ch"
             $taskNames = $completions | Select-Object -ExpandProperty CompletionText
             $taskNames | Should -Contain 'check'
             $taskNames | Should -Contain 'check-index'
         }
 
         It 'Should complete tasks when -Outline flag is present' {
-            $completions = Get-TabCompletions ".\gosh.ps1 -Outline ch"
+            $completions = Get-TabCompletions ".\bolt.ps1 -Outline ch"
             $taskNames = $completions | Select-Object -ExpandProperty CompletionText
             $taskNames | Should -Contain 'check'
             $taskNames | Should -Contain 'check-index'
@@ -611,11 +606,11 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
             # Since Get-ArgumentCompleter is not available in PowerShell 7.0,
             # we verify registration by testing that the registration code executes
             # and that tab completion actually works (tested in other contexts).
-            $content = Get-Content $script:GoshScriptPath -Raw
+            $content = Get-Content $script:BoltScriptPath -Raw
 
             # Verify the $taskCompleter variable assignment and Register-ArgumentCompleter call exist
             $content | Should -Match '\$taskCompleter\s*=\s*\{'
-            $content | Should -Match 'Register-ArgumentCompleter\s+-CommandName\s+[''"]gosh\.ps1[''"]'
+            $content | Should -Match 'Register-ArgumentCompleter\s+-CommandName\s+[''"]bolt\.ps1[''"]'
             $content | Should -Match 'Register-ArgumentCompleter.*-ParameterName\s+[''"]Task[''"]'
 
             # Verify the script block is syntactically valid by attempting to parse it
@@ -623,13 +618,13 @@ Describe 'Tab Completion (ArgumentCompleter)' -Tag 'Core' {
                 $scriptBlockPortion = $matches[1] -replace 'Register-ArgumentCompleter.*', ''
                 { [ScriptBlock]::Create($scriptBlockPortion) } | Should -Not -Throw
             } else {
-                throw "Could not find taskCompleter script block in gosh.ps1"
+                throw "Could not find taskCompleter script block in bolt.ps1"
             }
         }
 
         It 'Should use the correct script block for completion' {
-            $content = Get-Content $script:GoshScriptPath -Raw
-            $content | Should -Match 'Register-ArgumentCompleter.*-CommandName.*gosh\.ps1'
+            $content = Get-Content $script:BoltScriptPath -Raw
+            $content | Should -Match 'Register-ArgumentCompleter.*-CommandName.*bolt\.ps1'
             $content | Should -Match 'Register-ArgumentCompleter.*-ParameterName.*Task'
         }
     }
@@ -660,9 +655,9 @@ exit 0
 
         It 'Should fallback to filename-based task name when no metadata exists' {
             # Need to reload the completer to pick up new file
-            . $script:GoshScriptPath
+            . $script:BoltScriptPath
 
-            $completions = Get-TabCompletions ".\gosh.ps1 temp-comp"
+            $completions = Get-TabCompletions ".\bolt.ps1 temp-comp"
             $taskNames = $completions | Select-Object -ExpandProperty CompletionText
 
             # Should extract "temp-completion-test" from "Invoke-Temp-Completion-Test.ps1"
@@ -673,7 +668,7 @@ exit 0
 
 Describe 'Task Outline Feature (-Outline)' -Tag 'Core' {
     BeforeAll {
-        # Helper function to invoke gosh with -Outline and capture output
+        # Helper function to invoke bolt with -Outline and capture output
         function Get-OutlineOutput {
             param(
                 [Parameter()]
@@ -700,7 +695,7 @@ Describe 'Task Outline Feature (-Outline)' -Tag 'Core' {
 
             # Capture all output streams including Write-Host (information stream 6)
             # In PowerShell 5.0+, Write-Host writes to the information stream
-            $output = & $script:GoshScriptPath @params *>&1 | Out-String
+            $output = & $script:BoltScriptPath @params *>&1 | Out-String
             return $output
         }
     }
@@ -859,8 +854,8 @@ exit 0
 
         It 'Should handle empty parameter gracefully' {
             # With parameter sets, calling with no parameters should show help (default Help parameter set)
-            $output = (& $script:GoshScriptPath *>&1) -join "`n"
-            $output | Should -Match 'Gosh! Build orchestration|Usage|Available tasks'
+            $output = (& $script:BoltScriptPath *>&1) -join "`n"
+            $output | Should -Match 'Bolt! Build orchestration|Usage|Available tasks'
         }
     }
 
@@ -923,7 +918,7 @@ exit 0
 Describe 'Documentation Consistency' -Tag 'Core' {
     BeforeAll {
         $projectRoot = Split-Path -Parent $PSScriptRoot
-        $script:GoshScriptPath = Join-Path $projectRoot 'gosh.ps1'
+        $script:BoltScriptPath = Join-Path $projectRoot 'bolt.ps1'
     }
 
     Context 'README Examples' {
@@ -943,14 +938,14 @@ Describe 'Documentation Consistency' -Tag 'Core' {
 
     Context 'Help Documentation' {
         It 'Should have proper comment-based help' {
-            $content = Get-Content $script:GoshScriptPath -Raw
+            $content = Get-Content $script:BoltScriptPath -Raw
             $content | Should -Match '\.SYNOPSIS'
             $content | Should -Match '\.DESCRIPTION'
             $content | Should -Match '\.EXAMPLE'
         }
 
         It 'Should document all parameters' {
-            $content = Get-Content $script:GoshScriptPath -Raw
+            $content = Get-Content $script:BoltScriptPath -Raw
             $content | Should -Match '\.PARAMETER Task'
             $content | Should -Match '\.PARAMETER ListTasks'
             $content | Should -Match '\.PARAMETER Only'

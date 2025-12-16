@@ -2,7 +2,7 @@
 
 **CRITICAL POLICY: ZERO TOLERANCE FOR FICTIONAL INFORMATION**
 
-This policy applies to all AI agents, documentation updates, and content generation for the Gosh project.
+This policy applies to all AI agents, documentation updates, and content generation for the Bolt project.
 
 ## Core Principle
 
@@ -40,8 +40,8 @@ Before documenting or referencing ANYTHING:
 
 These specific examples must NEVER be repeated:
 
-- `https://github.com/motowilliams/gosh/security/advisories/new` ❌
-- `https://github.com/motowilliams/gosh/security/advisories` ❌
+- `https://github.com/motowilliams/bolt/security/advisories/new` ❌
+- `https://github.com/motowilliams/bolt/security/advisories` ❌
 - Documenting features before verifying they exist ❌
 - Creating contact URLs without checking validity ❌
 

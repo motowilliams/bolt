@@ -1,5 +1,5 @@
 # =============================================================================
-# Gosh! Build System - Git Ignore Rules
+# Git Ignore Rules
 # =============================================================================
 # This file specifies intentionally untracked files that Git should ignore.
 # See: https://git-scm.com/docs/gitignore
@@ -38,15 +38,18 @@ tests/*temp*/**                     # Any test temporary files
 # Generated module manifests (created by generate-manifest.ps1)
 *.psd1
 
+# Bolt configuration files (user-specific)
+bolt.config.json
+
 # Security logging directories (should only be directories, never files)
-.gosh/                              # Security audit log directory (opt-in logging)
-.gosh/**/*                          # All contents of .gosh directory
-.Gosh/                              # Case variations for cross-platform
-.Gosh/**/*
+.bolt/                              # Security audit log directory (opt-in logging)
+.bolt/**/*                          # All contents of .bolt directory
+.Bolt/                              # Case variations for cross-platform
+.Bolt/**/*
 
 # Module installation directories (created by -AsModule)
-gosh/**/*                           # Module directories (various cases)
-Gosh/**/*
+bolt/**/*                           # Module directories (various cases)
+Bolt/**/*
 
 # =============================================================================
 # Development and IDE Files
@@ -90,3 +93,6 @@ logs/
 *.tmp
 *.temp
 temp/
+test-module/**/*
+output/Bolt/bolt-core.ps1
+output/Bolt/Bolt.psm1

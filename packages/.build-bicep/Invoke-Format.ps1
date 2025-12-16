@@ -10,8 +10,15 @@ if (-not $bicepCmd) {
     exit 1
 }
 
-# Find all .bicep files (cross-platform path handling)
-$iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+# Find all .bicep files (using config or fallback to default path)
+if ($BoltConfig.IacPath) {
+    # Use configured path (relative to project root)
+    $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+}
+else {
+    # Fallback to default location for backward compatibility
+    $iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+}
 $bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File -Force -ErrorAction SilentlyContinue
 
 if ($bicepFiles.Count -eq 0) {

@@ -169,7 +169,7 @@ Describe "Security.txt File Compliance" -Tag "SecurityTxt", "Operational" {
 
         It "Should reference the GitHub repository" {
             $content = Get-Content $SecurityTxtPath -Raw
-            $content | Should -Match 'github\.com/motowilliams/gosh'
+            $content | Should -Match 'github\.com/motowilliams/bolt'
         }
 
         It "Should be tracked in git (not in .gitignore)" {

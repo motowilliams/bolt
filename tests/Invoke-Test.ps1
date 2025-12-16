@@ -1,5 +1,5 @@
 # TASK: test
-# DESCRIPTION: Run Pester tests for the Gosh build system
+# DESCRIPTION: Run Pester tests for the Bolt build system
 # DEPENDS:
 
 #Requires -Version 7.0
@@ -21,7 +21,7 @@ Write-Host ""
 $configuration = New-PesterConfiguration
 
 # Determine test file path (same directory as this script)
-$testFile = Join-Path $PSScriptRoot 'gosh.Tests.ps1'
+$testFile = Join-Path $PSScriptRoot 'bolt.Tests.ps1'
 
 # Verify test file exists
 if (-not (Test-Path $testFile)) {

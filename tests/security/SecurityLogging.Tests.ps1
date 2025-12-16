@@ -7,7 +7,7 @@
 
 .DESCRIPTION
     Validates that security-relevant events are properly logged when
-    $env:GOSH_AUDIT_LOG is enabled, including task execution, file creation,
+    $env:BOLT_AUDIT_LOG is enabled, including task execution, file creation,
     external command execution, and user context capture.
 
 .NOTES
@@ -16,8 +16,8 @@
 
 BeforeAll {
     $ProjectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-    $GoshScript = Join-Path $ProjectRoot "gosh.ps1"
-    $LogDir = Join-Path $ProjectRoot ".gosh"
+    $BoltScript = Join-Path $ProjectRoot "bolt.ps1"
+    $LogDir = Join-Path $ProjectRoot ".bolt"
     $LogFile = Join-Path $LogDir "audit.log"
 
     # Safe cleanup function to handle race conditions
@@ -94,26 +94,26 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
     Context "Logging Disabled by Default" {
 
-        It "Should not create .gosh directory when logging is disabled" {
+        It "Should not create .bolt directory when logging is disabled" {
             # Run a simple task without enabling logging
-            & $GoshScript -ListTasks | Out-Null
+            & $BoltScript -ListTasks | Out-Null
 
             Test-Path -PathType Container $LogDir | Should -Be $false
         }
 
         It "Should not create audit.log when logging is disabled" {
-            & $GoshScript -ListTasks | Out-Null
+            & $BoltScript -ListTasks | Out-Null
 
             Test-Path $LogFile | Should -Be $false
         }
 
         It "Should work normally without logging overhead" {
             # Ensure logging is explicitly disabled
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
 
             # Execute a simple task without logging enabled
             $ErrorActionPreference = 'SilentlyContinue'
-            & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
 
             # Should execute successfully without creating logs
             $LASTEXITCODE | Should -Be 0
@@ -124,16 +124,16 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "Logging Enabled via Environment Variable" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
-        It "Should create .gosh directory when logging is enabled" {
+        It "Should create .bolt directory when logging is enabled" {
             # Execute a simple task to trigger logging
-            & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
 
             Test-Path -PathType Container $LogDir | Should -Be $true
             (Get-Item -Force $LogDir).PSIsContainer | Should -Be $true
@@ -141,14 +141,14 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
         It "Should create audit.log file when logging is enabled" {
             # Execute a simple task to trigger logging
-            & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
 
             Test-Path $LogFile | Should -Be $true
         }
 
         It "Should write UTF-8 encoded log entries" {
             # Execute a simple task to trigger logging
-            & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -160,15 +160,15 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "Log Entry Format" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should include timestamp in log entries" {
-            & $GoshScript -ListTasks | Out-Null
+            & $BoltScript -ListTasks | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -177,7 +177,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should include severity level in log entries" {
-            & $GoshScript -ListTasks | Out-Null
+            & $BoltScript -ListTasks | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -186,7 +186,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should include username in log entries" {
-            & $GoshScript -ListTasks | Out-Null
+            & $BoltScript -ListTasks | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -196,7 +196,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should include machine name in log entries" {
-            & $GoshScript -ListTasks | Out-Null
+            & $BoltScript -ListTasks | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -206,7 +206,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should include event type in log entries" {
-            & $GoshScript -TaskDirectory "custom" -ListTasks 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "custom" -ListTasks 2>$null | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -215,7 +215,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should use pipe delimiter format: Timestamp | Severity | User@Machine | Event | Details" {
-            & $GoshScript -TaskDirectory "custom" -ListTasks 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "custom" -ListTasks 2>$null | Out-Null
 
             if (Test-Path $LogFile) {
                 $lines = Get-Content $LogFile
@@ -229,15 +229,15 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "TaskDirectory Usage Logging" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should not log when using default TaskDirectory" {
-            & $GoshScript -ListTasks | Out-Null
+            & $BoltScript -ListTasks | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -246,7 +246,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should log when using custom TaskDirectory" {
-            & $GoshScript -TaskDirectory "custom-tasks" -ListTasks 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "custom-tasks" -ListTasks 2>$null | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -259,7 +259,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "File Creation Logging" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
             $testTaskName = "test-logging-$(Get-Random)"
         }
 
@@ -269,13 +269,13 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
             # Final cleanup of test task files after all tests in this context
             Clear-TestLoggingTask
         }
 
         It "Should log file creation when using -NewTask" {
-            & $GoshScript -NewTask $testTaskName | Out-Null
+            & $BoltScript -NewTask $testTaskName | Out-Null
 
             Test-Path $LogFile | Should -Be $true
             $content = Get-Content $LogFile -Raw
@@ -285,7 +285,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
         It "Should include task name in file creation log" {
             $testTaskName = "test-logging-$(Get-Random)"
-            & $GoshScript -NewTask $testTaskName | Out-Null
+            & $BoltScript -NewTask $testTaskName | Out-Null
 
             $content = Get-Content $LogFile -Raw
             $content | Should -Match $testTaskName.ToLower()
@@ -295,7 +295,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "Task Execution Logging" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
 
             # Create a simple test task
             $testTaskName = "test-exec-logging"
@@ -303,11 +303,11 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should log task execution start" {
-            & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -316,7 +316,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should log task execution completion" {
-            & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -325,7 +325,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should log task success status" {
-            & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
 
             if (Test-Path $LogFile) {
                 $content = Get-Content $LogFile -Raw
@@ -337,11 +337,11 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "External Command Logging" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should log git command execution" {
@@ -349,7 +349,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
             $gitAvailable = Get-Command git -ErrorAction SilentlyContinue
 
             if ($gitAvailable) {
-                & $GoshScript "check-index" -Only 2>$null | Out-Null
+                & $BoltScript "check-index" -Only 2>$null | Out-Null
 
                 if (Test-Path $LogFile) {
                     $content = Get-Content $LogFile -Raw
@@ -365,20 +365,20 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "Log File Management" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should append to existing log file" {
             # Execute a simple task to create initial log
-            & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
             $firstSize = (Get-Item $LogFile -ErrorAction SilentlyContinue).Length
 
             # Execute again to append
-            & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
+            & $BoltScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
             $secondSize = (Get-Item $LogFile -ErrorAction SilentlyContinue).Length
 
             if ($firstSize -and $secondSize) {
@@ -387,9 +387,9 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
         }
 
         It "Should handle multiple sequential writes" {
-            # Run multiple gosh commands sequentially to verify log appending works
+            # Run multiple bolt commands sequentially to verify log appending works
             1..3 | ForEach-Object {
-                & $GoshScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
+                & $BoltScript -TaskDirectory "tests/fixtures" "mock-simple" -Only 2>$null | Out-Null
             }
 
             # Log file should exist and have entries from all executions
@@ -404,12 +404,12 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
 
     Context "GitIgnore Integration" {
 
-        It "Should have .gosh/ in .gitignore" {
+        It "Should have .bolt/ in .gitignore" {
             $gitignorePath = Join-Path $ProjectRoot ".gitignore"
 
             if (Test-Path $gitignorePath) {
                 $content = Get-Content $gitignorePath -Raw
-                $content | Should -Match '\.gosh/'
+                $content | Should -Match '\.bolt/'
             } else {
                 Set-ItResult -Skipped -Because ".gitignore file not found"
             }
@@ -425,20 +425,20 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
             }
 
             # Enable logging and execute a task to create log file
-            $env:GOSH_AUDIT_LOG = '1'
-            & $GoshScript -TaskDirectory 'tests/fixtures' mock-simple | Out-Null
+            $env:BOLT_AUDIT_LOG = '1'
+            & $BoltScript -TaskDirectory 'tests/fixtures' mock-simple | Out-Null
 
             # Verify log file was created
             Test-Path $LogFile | Should -BeTrue
 
-            # Verify .gosh/ is not tracked by git
+            # Verify .bolt/ is not tracked by git
             Push-Location $ProjectRoot
             try {
-                $status = git status --porcelain .gosh/ 2>$null
+                $status = git status --porcelain .bolt/ 2>$null
                 $status | Should -BeNullOrEmpty
             } finally {
                 Pop-Location
-                $env:GOSH_AUDIT_LOG = $null
+                $env:BOLT_AUDIT_LOG = $null
             }
         }
     }
@@ -446,16 +446,16 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
     Context "Error Handling" {
 
         BeforeAll {
-            $env:GOSH_AUDIT_LOG = '1'
+            $env:BOLT_AUDIT_LOG = '1'
         }
 
         AfterAll {
-            $env:GOSH_AUDIT_LOG = $null
+            $env:BOLT_AUDIT_LOG = $null
         }
 
         It "Should not fail script execution if logging fails" {
             # This is difficult to test directly, but we can verify the try-catch exists
-            $scriptContent = Get-Content $GoshScript -Raw
+            $scriptContent = Get-Content $BoltScript -Raw
             $scriptContent | Should -Match 'function Write-SecurityLog'
             $scriptContent | Should -Match 'try\s*\{[\s\S]*?\}\s*catch\s*\{'
         }
@@ -465,7 +465,7 @@ Describe "Security Event Logging" -Tag "SecurityLogging", "Operational" {
             New-Item -Path $LogDir -ItemType File -Force | Out-Null
 
             # Should not throw, just skip logging
-            { & $GoshScript -ListTasks 2>$null | Out-Null } | Should -Not -Throw
+            { & $BoltScript -ListTasks 2>$null | Out-Null } | Should -Not -Throw
 
             Remove-Directory $LogDir
         }
