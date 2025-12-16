@@ -94,3 +94,5 @@ logs/
 *.temp
 temp/
 test-module/**/*
+output/Bolt/bolt-core.ps1
+output/Bolt/Bolt.psm1
