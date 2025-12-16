@@ -134,10 +134,6 @@ What branch strategy would you prefer?"
 # PREFERRED: Create a worktree (see .github/instructions/feature-branches.instructions.md)
 # Pattern: ../<repo-name>-wt-<sanitized-branch-name>
 
-# Example: branch 'feature/descriptive-name' → directory '../gosh-wt-feature-descriptive-name'
-git worktree add -b feature/descriptive-name ../gosh-wt-feature-descriptive-name main
-Set-Location -Path ../gosh-wt-feature-descriptive-name
-
 # Example: branch 'feature/descriptive-name' → directory '../bolt-wt-feature-descriptive-name'
 git worktree add -b feature/descriptive-name ../bolt-wt-feature-descriptive-name main
 Set-Location -Path ../bolt-wt-feature-descriptive-name
