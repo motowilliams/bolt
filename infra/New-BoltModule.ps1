@@ -118,13 +118,13 @@ function Install-BoltModule {
     Write-Host "Created module directory: $userModulePath" -ForegroundColor Gray
 
     # Copy bolt.ps1 to the module directory (so it can be invoked as a script)
-    $boltScriptPath = Join-Path $PSScriptRoot "bolt.ps1"
-    if (-not (Test-Path $boltScriptPath)) {
+    $boltScriptPath = Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath "bolt.ps1"
+    if (-not (Test-Path -Path $boltScriptPath)) {
         Write-Error "Could not find bolt.ps1 at: $boltScriptPath"
         return $false
     }
 
-    $boltCorePath = Join-Path $userModulePath "bolt-core.ps1"
+    $boltCorePath = Join-Path -Path $userModulePath -ChildPath "bolt-core.ps1"
     Copy-Item -Path $boltScriptPath -Destination $boltCorePath -Force
     Write-Host "Copied bolt core script to module" -ForegroundColor Gray
 
