@@ -572,6 +572,100 @@ else {
 $modulePath = Join-Path $HOME "Documents" "PowerShell" "Modules" $moduleName
 ```
 
+### PowerShell Coding Style
+
+**CRITICAL: Always use named parameters for cmdlets, never positional arguments.**
+
+This improves code readability, maintainability, and makes the intent explicit.
+
+**Named Parameters (Required)**:
+```powershell
+# ✅ GOOD - Named parameters are explicit and clear
+Get-ChildItem -Path $buildPath -Filter "*.ps1" -File -Force
+Get-Content -Path $filePath -First 30 -ErrorAction SilentlyContinue
+Join-Path -Path $PSScriptRoot -ChildPath ".build"
+Select-String -Path "*.ps1" -Pattern "TASK:" -CaseSensitive
+Test-Path -Path $configPath -PathType Leaf
+Copy-Item -Path $source -Destination $dest -Force -Recurse
+Where-Object { $_.Length -gt 1000 }
+Select-Object -Property Name, Length -First 10
+Measure-Object -Property Length -Sum -Average
+
+# ❌ BAD - Positional parameters are unclear
+Get-ChildItem $buildPath "*.ps1" -File -Force
+Get-Content $filePath 30 -ErrorAction SilentlyContinue
+Join-Path $PSScriptRoot ".build"
+Select-String "*.ps1" "TASK:" -CaseSensitive
+Test-Path $configPath Leaf
+Copy-Item $source $dest -Force -Recurse
+```
+
+**Why Named Parameters?**
+1. **Readability**: Code is self-documenting - `Get-Content -Path $file -First 30` vs `Get-Content $file 30`
+2. **Maintainability**: Easier to modify - adding/removing parameters doesn't break parameter order
+3. **Correctness**: Prevents mistakes from parameter position confusion
+4. **Discoverability**: IDEs provide better IntelliSense with named parameters
+5. **Consistency**: Matches PowerShell best practices and official Microsoft documentation
+
+**Exceptions** (where positional is acceptable):
+- **Common cmdlets with obvious single parameters**: `Write-Host`, `Write-Error`, `Write-Verbose`, `Push-Location`, `Pop-Location`
+  ```powershell
+  Write-Host "Building..." -ForegroundColor Cyan  # Message is obvious
+  Push-Location $directory  # Path is obvious
+  ```
+- **Pipeline operations where context is clear**:
+  ```powershell
+  Get-Process | Where-Object { $_.CPU -gt 10 }  # Scriptblock is obvious
+  $data | ForEach-Object { $_.Name }  # Scriptblock is obvious
+  ```
+
+**Common Cmdlets to Always Use Named Parameters**:
+- `Get-ChildItem` - Use `-Path`, `-Filter`, `-Recurse`, `-File`, `-Directory`, `-Force`
+- `Get-Content` - Use `-Path`, `-First`, `-Last`, `-Tail`, `-ErrorAction`
+- `Set-Content` / `Out-File` - Use `-Path`, `-Value`, `-Encoding`, `-Force`
+- `Join-Path` - Use `-Path`, `-ChildPath`
+- `Split-Path` - Use `-Path`, `-Parent`, `-Leaf`, `-Extension`
+- `Test-Path` - Use `-Path`, `-PathType`
+- `Copy-Item` / `Move-Item` / `Remove-Item` - Use `-Path`, `-Destination`, `-Force`, `-Recurse`
+- `Select-String` - Use `-Path`, `-Pattern`, `-CaseSensitive`
+- `Select-Object` - Use `-Property`, `-First`, `-Last`, `-Skip`, `-Unique`
+- `Measure-Object` - Use `-Property`, `-Sum`, `-Average`, `-Maximum`, `-Minimum`
+- `Invoke-Expression` - **NEVER USE** - Security risk, use scriptblocks or `&` operator instead
+- `Invoke-Command` - Use `-ScriptBlock`, `-ComputerName`, `-ArgumentList`
+
+**Real Examples from Bolt**:
+```powershell
+# ✅ Task discovery code
+$buildFiles = Get-ChildItem -Path $buildPath -Filter "*.ps1" -File -Force | 
+              Where-Object { $_.Name -notmatch '\.Tests\.ps1$' }
+
+# ✅ Metadata parsing
+$lines = Get-Content -Path $FilePath -First 30 -ErrorAction SilentlyContinue
+$content = $lines -join "`n"
+
+# ✅ Path construction
+$buildPath = Join-Path -Path $ScriptRoot -ChildPath $TaskDirectory
+
+# ✅ Security validation
+$resolvedPath = [System.IO.Path]::GetFullPath($buildPath)
+$projectRoot = [System.IO.Path]::GetFullPath($ScriptRoot)
+
+if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "TaskDirectory must resolve to a path within the project directory"
+}
+```
+
+**Code Review Checklist**:
+- [ ] All `Get-ChildItem` calls use `-Path`, `-Filter`, etc.
+- [ ] All `Get-Content` calls use `-Path`, `-First`/`-Last`
+- [ ] All `Join-Path` calls use `-Path`, `-ChildPath`
+- [ ] All `Test-Path` calls use `-Path`
+- [ ] All file operations (`Copy-Item`, `Move-Item`, etc.) use named parameters
+- [ ] All `Select-String` calls use `-Path`, `-Pattern`
+- [ ] Pipeline cmdlets (`Where-Object`, `ForEach-Object`, `Select-Object`) use named parameters where applicable
+
+**Remember**: When in doubt, use named parameters. The extra typing is worth the clarity and maintainability.
+
 ### Bicep Starter Package Conventions
 
 The Bicep starter package (`packages/.build-bicep`) follows these conventions:
