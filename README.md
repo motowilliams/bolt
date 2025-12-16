@@ -37,7 +37,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 
 **Bolt** represents lightning-fast task execution ⚡ - a quick, powerful strike that gets things done!
 
-It's the perfect name for a build orchestration tool that runs fast and efficiently! 🚀
+It's a solid name for a build orchestration tool that runs fast and efficiently! 🚀
 
 ## ✨ Features
 
