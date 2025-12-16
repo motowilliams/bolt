@@ -188,15 +188,15 @@ jobs:
 
           # Test local manifest generation (requires Bolt module)
           Write-Host "Creating test module for manifest generation..." -ForegroundColor Gray
-          pwsh -File New-BoltModule.ps1 -Install -NoImport -ModuleOutputPath ".\test-module"
+          pwsh -File infra/New-BoltModule.ps1 -Install -NoImport -ModuleOutputPath ".\test-module"
 
           # Test manifest generation
           Write-Host "Testing generate-manifest.ps1..." -ForegroundColor Gray
-          pwsh -File generate-manifest.ps1 -ModulePath "test-module/Bolt/Bolt.psm1" -ModuleVersion "0.0.1" -Tags "Test,CI"
+          pwsh -File infra/generate-manifest.ps1 -ModulePath "test-module/Bolt/Bolt.psm1" -ModuleVersion "0.0.1" -Tags "Test,CI"
 
           # Verify manifest was created
           $manifestPath = "test-module/Bolt/Bolt.psd1"
-          if (-not (Test-Path $manifestPath)) {
+          if (-not (Test-Path -Path $manifestPath)) {
             Write-Error "Manifest file not created at $manifestPath"
             exit 1
           }
