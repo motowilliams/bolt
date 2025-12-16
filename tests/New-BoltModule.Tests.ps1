@@ -10,15 +10,15 @@
 
 BeforeAll {
     # Get project root
-    $moduleRoot = Resolve-Path (Split-Path -Parent $PSScriptRoot)
-    $script:NewBoltModulePath = Join-Path $moduleRoot 'New-BoltModule.ps1'
-    $script:BoltScriptPath = Join-Path $moduleRoot 'bolt.ps1'
+    $moduleRoot = Resolve-Path -Path (Split-Path -Path $PSScriptRoot -Parent)
+    $script:NewBoltModulePath = Join-Path -Path $moduleRoot -ChildPath 'infra' | Join-Path -ChildPath 'New-BoltModule.ps1'
+    $script:BoltScriptPath = Join-Path -Path $moduleRoot -ChildPath 'bolt.ps1'
 
     # Helper function to get a temp module path
     function Get-TempModulePath {
         $tempDir = if ($env:TEMP) { $env:TEMP } else { "/tmp" }
-        $tempPath = Join-Path $tempDir "BoltModuleTest_$(Get-Random)"
-        if (-not (Test-Path $tempPath)) {
+        $tempPath = Join-Path -Path $tempDir -ChildPath "BoltModuleTest_$(Get-Random)"
+        if (-not (Test-Path -Path $tempPath)) {
             New-Item -Path $tempPath -ItemType Directory -Force | Out-Null
         }
         return $tempPath
@@ -27,7 +27,7 @@ BeforeAll {
     # Helper function to clean up temp paths
     function Remove-TempModulePath {
         param([string]$Path)
-        if (Test-Path $Path) {
+        if (Test-Path -Path $Path) {
             Remove-Item -Path $Path -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
@@ -40,7 +40,7 @@ Describe 'New-BoltModule.ps1 Script Validation' -Tag 'Core' {
     }
 
     It 'Should require PowerShell 7.0+' {
-        $content = Get-Content $script:NewBoltModulePath -Raw
+        $content = Get-Content -Path $script:NewBoltModulePath -Raw
         $content | Should -Match '#Requires -Version 7.0'
     }
 
@@ -85,12 +85,12 @@ Describe 'Module Installation' -Tag 'Core' {
             $LASTEXITCODE | Should -Be 0
             
             # Check that module directory was created
-            $modulePath = Join-Path $tempPath "Bolt"
+            $modulePath = Join-Path -Path $tempPath -ChildPath "Bolt"
             $modulePath | Should -Exist
             
             # Check that required files exist
-            Join-Path $modulePath "bolt-core.ps1" | Should -Exist
-            Join-Path $modulePath "Bolt.psm1" | Should -Exist
+            Join-Path -Path $modulePath -ChildPath "bolt-core.ps1" | Should -Exist
+            Join-Path -Path $modulePath -ChildPath "Bolt.psm1" | Should -Exist
         }
         finally {
             Remove-TempModulePath -Path $tempPath
@@ -102,12 +102,12 @@ Describe 'Module Installation' -Tag 'Core' {
         try {
             & $script:NewBoltModulePath -Install -ModuleOutputPath $tempPath -NoImport 2>&1 | Out-Null
             
-            $boltCorePath = Join-Path $tempPath "Bolt" "bolt-core.ps1"
+            $boltCorePath = Join-Path -Path $tempPath -ChildPath "Bolt" | Join-Path -ChildPath "bolt-core.ps1"
             $boltCorePath | Should -Exist
             
             # Verify it's a copy of bolt.ps1
-            $originalContent = Get-Content $script:BoltScriptPath -Raw
-            $coreContent = Get-Content $boltCorePath -Raw
+            $originalContent = Get-Content -Path $script:BoltScriptPath -Raw
+            $coreContent = Get-Content -Path $boltCorePath -Raw
             $coreContent | Should -Be $originalContent
         }
         finally {
@@ -120,11 +120,11 @@ Describe 'Module Installation' -Tag 'Core' {
         try {
             & $script:NewBoltModulePath -Install -ModuleOutputPath $tempPath -NoImport 2>&1 | Out-Null
             
-            $moduleManifestPath = Join-Path $tempPath "Bolt" "Bolt.psm1"
+            $moduleManifestPath = Join-Path -Path $tempPath -ChildPath "Bolt" | Join-Path -ChildPath "Bolt.psm1"
             $moduleManifestPath | Should -Exist
             
             # Verify module manifest contains key components
-            $manifestContent = Get-Content $moduleManifestPath -Raw
+            $manifestContent = Get-Content -Path $moduleManifestPath -Raw
             $manifestContent | Should -Match 'function Invoke-Bolt'
             $manifestContent | Should -Match 'function Find-BuildDirectory'
             $manifestContent | Should -Match 'Export-ModuleMember'
@@ -180,7 +180,7 @@ Describe 'Module Uninstallation' -Tag 'Core' {
             & $script:NewBoltModulePath -Install -ModuleOutputPath $tempPath -NoImport 2>&1 | Out-Null
             
             # Verify installation
-            $modulePath = Join-Path $tempPath "Bolt"
+            $modulePath = Join-Path -Path $tempPath -ChildPath "Bolt"
             $modulePath | Should -Exist
             
             # Note: The uninstall function only checks standard paths, not custom ones
@@ -216,7 +216,7 @@ Describe 'Cross-Platform Compatibility' -Tag 'Core' {
     }
 
     It 'Should use Join-Path for path construction' {
-        $scriptContent = Get-Content $script:NewBoltModulePath -Raw
+        $scriptContent = Get-Content -Path $script:NewBoltModulePath -Raw
         # Should use Join-Path cmdlet for cross-platform compatibility
         $scriptContent | Should -Match 'Join-Path'
     }
@@ -224,18 +224,18 @@ Describe 'Cross-Platform Compatibility' -Tag 'Core' {
 
 Describe 'Help and Documentation' -Tag 'Core' {
     It 'Should have help documentation' {
-        { Get-Help $script:NewBoltModulePath } | Should -Not -Throw
+        { Get-Help -Name $script:NewBoltModulePath } | Should -Not -Throw
     }
 
     It 'Should document parameters' {
-        $scriptContent = Get-Content $script:NewBoltModulePath -Raw
+        $scriptContent = Get-Content -Path $script:NewBoltModulePath -Raw
         $scriptContent | Should -Match '\.PARAMETER Install'
         $scriptContent | Should -Match '\.PARAMETER Uninstall'
         $scriptContent | Should -Match '\.PARAMETER ModuleOutputPath'
     }
 
     It 'Should have examples in comments' {
-        $scriptContent = Get-Content $script:NewBoltModulePath -Raw
+        $scriptContent = Get-Content -Path $script:NewBoltModulePath -Raw
         $scriptContent | Should -Match '\.EXAMPLE'
     }
 }
