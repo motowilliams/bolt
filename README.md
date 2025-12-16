@@ -8,6 +8,37 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 
 **Perfect for any build workflow** - infrastructure-as-code, application builds, testing pipelines, deployment automation, and more. Runs on Windows, Linux, and macOS.
 
+## 📑 Table of Contents
+
+- [✨ Features](#-features)
+- [💡 Why "Bolt"?](#-why-bolt)
+- [🚀 Quick Start](#-quick-start)
+- [📦 Package Starters](#-package-starters)
+- [⚙️ Parameter Sets](#️-parameter-sets)
+- [📁 Project Structure](#-project-structure)
+- [🛠️ Creating Tasks](#️-creating-tasks)
+- [⚠️ Important: Task Execution Behaviors](#️-important-task-execution-behaviors)
+- [📊 Task Visualization with `-Outline`](#-task-visualization-with--outline)
+- [🏗️ Example Workflows](#️-example-workflows)
+- [📖 Philosophy](#-philosophy)
+- [🧪 Testing](#-testing)
+- [🔧 Requirements](#-requirements)
+- [🎨 Output Formatting](#-output-formatting)
+- [📦 Module Installation](#-module-installation)
+- [📦 Module Manifest Generation](#-module-manifest-generation)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [📝 License](#-license)
+- [🤝 Contributing](#-contributing)
+- [🔄 Continuous Integration](#-continuous-integration)
+- [🔒 Security](#-security)
+- [🤔 Logic Flows](#-logic-flows)
+
+## 💡 Why "Bolt"?
+
+**Bolt** represents lightning-fast task execution ⚡ - a quick, powerful strike that gets things done!
+
+It's a solid name for a build orchestration tool that runs fast and efficiently! 🚀
+
 ## ✨ Features
 
 - **🔍 Automatic Task Discovery**: Drop `.ps1` files in `.build/` with comment-based metadata
@@ -30,6 +61,8 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🔧 Variable Management**: CLI commands to list, add, and remove variables (`-ListVariables`, `-AddVariable`, `-RemoveVariable`)
 - **⚡ Config Caching**: Configuration cached per-invocation for fast multi-task execution
 - **🌍 Cross-Platform**: Runs on Windows, Linux, and macOS with PowerShell Core
+
+[toc](#-table-of-contents)
 
 ## 🚀 Quick Start
 
@@ -192,6 +225,8 @@ We're working on additional package starters for popular toolchains:
 
 See [`packages/README.md`](packages/README.md) for details on available package starters and how to create your own.
 
+[toc](#-table-of-contents)
+
 ## ⚙️ Parameter Sets
 
 Bolt uses PowerShell parameter sets to provide a clean, validated interface with better user experience:
@@ -260,6 +295,8 @@ Bolt uses PowerShell parameter sets to provide a clean, validated interface with
 - **Clear Help**: `Get-Help .\bolt.ps1` shows all parameter sets distinctly
 - **No Hanging**: Running with no parameters automatically shows help instead of prompting
 
+[toc](#-table-of-contents)
+
 ## 📁 Project Structure
 
 ```
@@ -312,6 +349,8 @@ The Bicep starter package (`packages/.build-bicep`) includes a complete Azure in
 - **SQL Database**: Database with configurable DTU/storage
 
 All modules are parameterized and support multiple environments (dev, staging, prod). These are example templates used for testing the Bicep starter package tasks.
+
+[toc](#-table-of-contents)
 
 ## 🛠️ Creating Tasks
 
@@ -405,6 +444,8 @@ $env:BOLT_NO_FALLBACK_WARNINGS = 1
 ```
 
 **Best Practice**: Always include explicit `# TASK:` metadata for clarity and to avoid file-rename surprises.
+
+[toc](#-table-of-contents)
 
 ## ⚠️ Important: Task Execution Behaviors
 
@@ -593,6 +634,8 @@ param(
 2. **Use environment variables** - For CI/CD or system-level settings: `$env:VARIABLE_NAME`
 3. **Use configuration files** - Load from JSON/YAML/XML in your task as needed
 
+[toc](#-table-of-contents)
+
 ## 📊 Task Visualization with `-Outline`
 
 The `-Outline` flag displays the task dependency tree and execution order **without executing** any tasks:
@@ -633,6 +676,8 @@ The `-Outline` flag displays the task dependency tree and execution order **with
 # Preview with custom task directory
 .\bolt.ps1 -TaskDirectory "infra-tasks" deploy -Outline
 ```
+
+[toc](#-table-of-contents)
 
 ## 🏗️ Example Workflows
 
@@ -678,6 +723,8 @@ The `-Outline` flag displays the task dependency tree and execution order **with
 .\bolt.ps1 build
 ```
 
+[toc](#-table-of-contents)
+
 ## 📖 Philosophy
 
 ### Local-First Principle (90/10 Rule)
@@ -712,6 +759,8 @@ steps:
       arguments: 'build'
       pwsh: true
 ```
+
+[toc](#-table-of-contents)
 
 ## 🧪 Testing
 
@@ -939,10 +988,14 @@ Use Pester directly in CI pipelines:
 
 All tests pass consistently. Run `Invoke-Pester` to see current results.
 
+[toc](#-table-of-contents)
+
 ## 🔧 Requirements
 
 - **PowerShell 7.0+** (uses `#Requires -Version 7.0` and modern syntax)
 - **Git** (for `check-index` task)
+
+[toc](#-table-of-contents)
 
 ## 🎨 Output Formatting
 
@@ -953,6 +1006,8 @@ All tasks use consistent color coding:
 - **Green**: Success (✓)
 - **Yellow**: Warnings (⚠)
 - **Red**: Errors (✗)
+
+[toc](#-table-of-contents)
 
 ## 📦 Module Installation
 
@@ -1085,6 +1140,8 @@ cd ~/projects/bolt
 - ✅ Works across Windows, Linux, and macOS
 - ✅ Proper exit codes for CI/CD integration (0=success, 1=failure)
 
+[toc](#-table-of-contents)
+
 ## 📦 Module Manifest Generation
 
 Bolt includes dedicated tooling for generating PowerShell module manifests (`.psd1` files) from existing modules. This is useful for publishing modules to PowerShell Gallery or creating distribution packages.
@@ -1189,6 +1246,8 @@ Exported Aliases (1): bolt
   GUID: 5ed0dd69-db75-4ee7-b0d3-e93922605317
 ```
 
+[toc](#-table-of-contents)
+
 ## 🐛 Troubleshooting
 
 ### Module: Tab completion not working
@@ -1246,9 +1305,13 @@ bicep --version
 - Restart your PowerShell session after adding new tasks
 - Check that task scripts have proper `# TASK:` metadata
 
+[toc](#-table-of-contents)
+
 ## 📝 License
 
 MIT License - See [LICENSE](LICENSE) file for details.
+
+[toc](#-table-of-contents)
 
 ## 🤝 Contributing
 
@@ -1300,6 +1363,8 @@ Task is automatically discovered - no registration needed! Restart your shell to
 - Add metadata comments: `# TASK:`, `# DESCRIPTION:`, `# DEPENDS:`
 - Only include `param()` if your task accepts parameters
 
+[toc](#-table-of-contents)
+
 ## 🔄 Continuous Integration
 
 Bolt includes a GitHub Actions workflow that runs on Ubuntu and Windows:
@@ -1333,6 +1398,8 @@ Invoke-Pester             # All tests
 ```
 
 This follows the **90/10 principle**: 90% of the workflow should be identical locally and in CI.
+
+[toc](#-table-of-contents)
 
 ## 🔒 Security
 
@@ -1387,12 +1454,6 @@ For security best practices and vulnerability reporting, see:
 
 **Report security vulnerabilities** via [GitHub Security Advisories](https://github.com/motowilliams/bolt/security/advisories/new). Do not report vulnerabilities through public issues.
 
-## 💡 Why "Bolt"?
-
-**Bolt** represents lightning-fast task execution ⚡ - a quick, powerful strike that gets things done!
-
-It's the perfect name for a build orchestration tool that runs fast and efficiently! 🚀
-
 ### Design Goals
 
 - **Zero external dependencies**: Just PowerShell 7.0+ (tools like Bicep, Git, etc. are optional via package starters)
@@ -1400,6 +1461,390 @@ It's the perfect name for a build orchestration tool that runs fast and efficien
 - **Convention over configuration**: Drop tasks in `.build/`, they're discovered automatically
 - **Developer-friendly**: Tab completion, colorized output, helpful error messages
 - **CI/CD ready**: Exit codes, deterministic behavior, no special flags
+
+[toc](#-table-of-contents)
+
+## 🤔 Logic Flows
+
+### Bolt Tab Completion Flow
+
+This diagram shows how Bolt discovers and provides tab completion for task names when you type `.\bolt.ps1 <TAB>` in the PowerShell command line.
+
+```mermaid
+flowchart TD
+    A[User presses TAB] --> B[PowerShell invokes Tab Completer]
+    B --> C{Extract script path from AST}
+    C --> D{Check -TaskDirectory parameter}
+    D -->|Specified| E[Use custom directory]
+    D -->|Not specified| F[Use default .build]
+    E --> G[Scan task directory]
+    F --> G
+    
+    G --> H{Directory exists?}
+    H -->|No| M[Skip project tasks]
+    H -->|Yes| I[Get-ChildItem *.ps1 files]
+    
+    I --> J[Loop through each file]
+    J --> K[Read first 20 lines]
+    K --> L{Has TASK metadata?}
+    
+    L -->|Yes| N[Extract task names from TASK comment]
+    L -->|No| O[Derive from filename Invoke-X becomes x]
+    
+    N --> P[Add to task list]
+    O --> P
+    
+    P --> Q{More files?}
+    Q -->|Yes| J
+    Q -->|No| M
+    
+    M --> R[Add core tasks: check-index, check]
+    R --> S[Combine all tasks]
+    S --> T[Remove duplicates]
+    T --> U[Sort alphabetically]
+    U --> V[Filter by typed prefix]
+    V --> W[Create CompletionResult objects]
+    W --> X[Return to PowerShell]
+    X --> Y[Display completions to user]
+```
+
+#### Key Components
+
+1. Registration
+The tab completer is registered once when the script loads:
+```powershell
+Register-ArgumentCompleter -CommandName 'bolt.ps1' -ParameterName 'Task' -ScriptBlock $taskCompleter
+```
+
+2. Discovery Process
+When tab completion is triggered:
+
+    1. **Extract Context**: Get script directory and check for `-TaskDirectory` parameter
+    2. **Scan Directory**: Look for `*.ps1` files in the task directory (default: `.build/`)
+    3. **Parse Metadata**: Read first 20 lines of each file looking for:
+      - `# TASK: taskname` - Primary task name(s)
+      - `# DESCRIPTION: description` - Task description (not used in completion)
+      - `# DEPENDS: dep1, dep2` - Dependencies (not used in completion)
+    4. **Filename Fallback**: If no `# TASK:` metadata, derive name from filename
+      - `Invoke-TaskName.ps1` → `taskname`
+      - `Invoke-My-Custom-Task.ps1` → `my-custom-task`
+    5. **Combine Tasks**: Merge project tasks with core tasks (`check-index`, `check`)
+    6. **Filter & Sort**: Remove duplicates, sort alphabetically, filter by typed prefix
+
+3. CompletionResult Format
+Each completion is created as:
+```powershell
+[CompletionResult]::new($taskName, $taskName, 'ParameterValue', $taskName)
+```
+
+4. Task Directory Override
+Users can specify custom task directories:
+```powershell
+.\bolt.ps1 -TaskDirectory "custom-tasks" <TAB>
+```
+The completer respects this and scans the specified directory instead of `.build/`.
+
+#### Example Flow
+
+**Scenario**: User types `.\bolt.ps1 b<TAB>`
+
+1. PowerShell invokes the completer with `wordToComplete = "b"`
+2. Completer scans `.build/` directory
+3. Finds `Invoke-Build.ps1` with `# TASK: build`
+4. Adds core tasks (`check-index`, `check`)
+5. Filters for tasks starting with "b": `build`
+6. Returns `[CompletionResult]` for "build"
+7. PowerShell displays "build" as completion option
+
+**Result**: User sees `.\bolt.ps1 build` and can press Enter to execute
+
+### Bolt Task Discovery and Execution Flow
+
+This document visualizes three core aspects of Bolt's architecture:
+1. **Script Locator**: How Bolt finds task scripts in the file system
+2. **Metadata Parser**: How task metadata is extracted from script files
+3. **Task Dependency Resolution**: How dependencies are resolved and executed
+
+#### 1. Script Locator and Metadata Parser
+
+```mermaid
+flowchart TD
+    Start[Get-AllTasks called] --> GetCore[Get core tasks: check-index, check]
+    GetCore --> CheckParam{TaskDirectory parameter?}
+    
+    CheckParam -->|Custom directory| ValidatePath[Validate path is relative and no ..]
+    CheckParam -->|Default| UseDefault[Use .build directory]
+    
+    ValidatePath --> ResolvePath[Resolve full path]
+    UseDefault --> ResolvePath
+    
+    ResolvePath --> SecurityCheck{Path within project root?}
+    SecurityCheck -->|No| ThrowError[Throw security error]
+    SecurityCheck -->|Yes| ScanDir[Scan directory for *.ps1 files]
+    
+    ScanDir --> FilterTests[Exclude *.Tests.ps1 files]
+    FilterTests --> LoopFiles{For each .ps1 file}
+    
+    LoopFiles --> ReadFile[Read first 30 lines]
+    ReadFile --> ParseMeta[Get-TaskMetadata]
+    
+    ParseMeta --> CheckTask{Has TASK comment?}
+    
+    CheckTask -->|Yes| ExtractTask[Extract from: # TASK: name1, name2]
+    CheckTask -->|No| ExtractFile[Derive from filename fallback]
+    
+    ExtractTask --> ValidateName[Validate task name regex: ^[a-z0-9][a-z0-9\-]*$]
+    ExtractFile --> ValidateName
+    
+    ValidateName --> ValidLength{Length <= 50?}
+    ValidLength -->|No| WarnSkip[Warn and skip task]
+    ValidLength -->|Yes| CheckDesc{Has DESCRIPTION comment?}
+    
+    CheckDesc -->|Yes| ExtractDesc[Extract from: # DESCRIPTION: text]
+    CheckDesc -->|No| NoDesc[Leave description empty]
+    
+    ExtractDesc --> CheckDeps{Has DEPENDS comment?}
+    NoDesc --> CheckDeps
+    
+    CheckDeps -->|Yes| ExtractDeps[Extract from: # DEPENDS: dep1, dep2]
+    CheckDeps -->|No| NoDeps[Empty dependencies array]
+    
+    ExtractDeps --> BuildMeta[Build metadata object]
+    NoDeps --> BuildMeta
+    
+    BuildMeta --> StoreTask[Store in tasks hashtable by name]
+    StoreTask --> MoreFiles{More files?}
+    
+    MoreFiles -->|Yes| LoopFiles
+    MoreFiles -->|No| MergeTasks[Merge core and project tasks]
+    
+    MergeTasks --> CheckConflict{Project task overrides core?}
+    CheckConflict -->|Yes| WarnOverride[Warn about override]
+    CheckConflict -->|No| Continue[Continue]
+    
+    WarnOverride --> ReturnAll[Return all tasks hashtable]
+    Continue --> ReturnAll
+    
+    style Start fill:###e1f5ff
+    style ReturnAll fill:###c8e6c9
+    style ThrowError fill:###ffcdd2
+    style SecurityCheck fill:###fff9c4
+```
+
+#### 2. Task Dependency Resolution and Execution
+
+```mermaid
+flowchart TD
+    InvokeStart[Invoke-Task called] --> CheckExecuted{Task already executed?}
+    
+    CheckExecuted -->|Yes| SkipDup[Skip to prevent circular dependencies]
+    CheckExecuted -->|No| MarkExecuted[Add to ExecutedTasks hashtable]
+    
+    MarkExecuted --> HasDeps{Task has dependencies?}
+    
+    HasDeps -->|No| ExecTask[Execute task]
+    HasDeps -->|Yes| CheckOnly{-Only flag set?}
+    
+    CheckOnly -->|Yes| WarnSkip[Warn: Skipping dependencies]
+    CheckOnly -->|No| ShowDeps[Display dependencies list]
+    
+    WarnSkip --> ExecTask
+    ShowDeps --> LoopDeps{For each dependency}
+    
+    LoopDeps --> DepExists{Dependency exists in AllTasks?}
+    
+    DepExists -->|No| WarnMissing[Warn: Dependency not found]
+    DepExists -->|Yes| RecurseInvoke[Recursively call Invoke-Task for dependency]
+    
+    RecurseInvoke --> DepResult{Dependency succeeded?}
+    
+    DepResult -->|No| CheckErrAction{ErrorAction = Stop?}
+    CheckErrAction -->|Yes| ReturnFalse[Return false, stop execution]
+    CheckErrAction -->|No| WarnContinue[Warn and continue despite failure]
+    
+    DepResult -->|Yes| MoreDeps{More dependencies?}
+    WarnMissing --> MoreDeps
+    WarnContinue --> MoreDeps
+    
+    MoreDeps -->|Yes| LoopDeps
+    MoreDeps -->|No| ExecTask
+    
+    ExecTask --> IsCore{Is core task?}
+    
+    IsCore -->|Yes| LogCore[Log core task execution]
+    IsCore -->|No| LogExternal[Log external task execution]
+    
+    LogCore --> ExecFunc[Execute core function]
+    LogExternal --> ValidateScript[Validate script path security]
+    
+    ValidateScript --> CheckChars{Path has dangerous chars?}
+    CheckChars -->|Yes| ThrowInject[Throw: Code injection risk]
+    CheckChars -->|No| CheckBounds{Path within project root?}
+    
+    CheckBounds -->|No| ThrowPath[Throw: Path outside project]
+    CheckBounds -->|Yes| InjectUtils[Inject BoltConfig and utilities]
+    
+    InjectUtils --> SetContext[Set TaskScriptRoot variable]
+    SetContext --> PushLoc[Push-Location to task directory]
+    PushLoc --> DotSource[Dot-source task script]
+    DotSource --> PopLoc[Pop-Location]
+    
+    ExecFunc --> CheckExit{Exit code check}
+    PopLoc --> CheckExit
+    
+    CheckExit -->|Non-zero| LogFail[Log task failure]
+    CheckExit -->|Zero or null| LogSuccess[Log task success]
+    
+    LogFail --> ReturnFalse
+    LogSuccess --> ReturnTrue[Return true]
+    
+    SkipDup --> ReturnTrue
+    ThrowInject --> ReturnFalse
+    ThrowPath --> ReturnFalse
+    
+    style InvokeStart fill:###e1f5ff
+    style ReturnTrue fill:###c8e6c9
+    style ReturnFalse fill:###ffcdd2
+    style CheckExecuted fill:###fff9c4
+    style ValidateScript fill:###fff9c4
+```
+
+### Key Concepts
+
+Script Locator
+
+**Purpose**: Finds all task scripts in the specified directory.
+
+**Process**:
+1. Accepts `-TaskDirectory` parameter (default: `.build`)
+2. Validates path is relative and doesn't escape project root
+3. Resolves absolute path and performs security check
+4. Scans for `*.ps1` files (excludes `*.Tests.ps1`)
+5. Returns list of script paths for metadata parsing
+
+**Security Features**:
+- Path traversal protection (no `..` sequences)
+- Absolute path validation (must be within project root)
+- Relative path enforcement
+
+#### Metadata Parser
+
+**Purpose**: Extracts task configuration from script file comments.
+
+**Metadata Format**:
+```powershell
+# TASK: build, compile          # Task names (comma-separated for aliases)
+# DESCRIPTION: Compiles source  # Human-readable description
+# DEPENDS: format, lint          # Dependencies (comma-separated)
+```
+
+**Parsing Logic**:
+1. Read first 30 lines of script file
+2. Use regex to match comment patterns:
+   - `(?m)^#\s*TASK:\s*(.+)$` - Extract task names
+   - `(?m)^#\s*DESCRIPTION:[ \t]*([^\r\n]*)` - Extract description
+   - `(?m)^#\s*DEPENDS:(.*)$` - Extract dependencies
+3. Validate task names (lowercase, alphanumeric, hyphens only, max 50 chars)
+4. Fallback: If no `# TASK:` found, derive from filename
+   - `Invoke-Build.ps1` → `build`
+   - `Invoke-My-Task.ps1` → `my-task`
+
+**Metadata Object**:
+```powershell
+@{
+    Names = @('build', 'compile')  # Array of task names (first is primary)
+    Description = 'Compiles source'
+    Dependencies = @('format', 'lint')
+    ScriptPath = 'C:\project\.build\Invoke-Build.ps1'
+    IsCore = $false
+    UsedFilenameFallback = $false
+}
+```
+
+##### Task Dependency Resolution
+
+**Purpose**: Execute tasks in correct order respecting dependencies.
+
+**Algorithm**:
+1. **Duplicate Prevention**: Check `ExecutedTasks` hashtable
+   - If task already executed, return immediately (prevents circular deps)
+   - Otherwise, mark as executed BEFORE processing dependencies
+2. **Dependency Processing**:
+   - If `-Only` flag: Skip dependencies with warning
+   - Otherwise: Recursively invoke each dependency task
+3. **Execution**:
+   - **Core tasks**: Call PowerShell function directly
+   - **External tasks**: 
+     - Validate script path (security checks)
+     - Inject `$BoltConfig` object and utility functions
+     - Set `$TaskScriptRoot` context variable
+     - Push-Location to task directory
+     - Dot-source task script
+     - Pop-Location to restore directory
+4. **Result Handling**:
+   - Check `$LASTEXITCODE` for success/failure
+   - Log security events (execution start/completion)
+   - Return boolean result up the call stack
+
+**Circular Dependency Protection**:
+```
+Task A depends on B
+Task B depends on C  
+Task C depends on A  ### CIRCULAR!
+
+Execution:
+1. Invoke A → Mark A executed
+2. Check deps: B → Invoke B → Mark B executed
+3. Check deps: C → Invoke C → Mark C executed
+4. Check deps: A → Already executed! Skip (prevents infinite loop)
+```
+
+**Example Execution Tree**:
+```
+bolt build
+├── format (dependency)
+│   └── (no dependencies)
+├── lint (dependency)
+│   └── (no dependencies)
+└── build (main task)
+```
+
+Execution order: `format` → `lint` → `build`
+
+#### Configuration Injection
+
+When external tasks execute, Bolt injects:
+
+1. **`$BoltConfig` object**: Project configuration from `bolt.config.json`
+2. **Utility functions**: Helper functions like `Get-TaskConfig`, `Get-ProjectRoot`
+3. **Context variables**: `$TaskScriptRoot` pointing to task's directory
+
+This allows tasks to access project settings and utilities without importing modules.
+
+#### Example Task File
+
+```powershell
+# .build/Invoke-Build.ps1
+# TASK: build, compile
+# DESCRIPTION: Compiles all Bicep files to ARM templates
+# DEPENDS: format, lint
+
+Write-Host "Building..." -ForegroundColor Cyan
+
+# Access injected configuration
+$outputDir = $BoltConfig.build.outputDirectory
+
+# Task logic here
+bicep build main.bicep --outdir $outputDir
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "✗ Build failed" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "✓ Build succeeded" -ForegroundColor Green
+exit 0
+```
 
 ---
 
