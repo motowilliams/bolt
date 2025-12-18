@@ -17,8 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Changelog validation to ensure version entries exist
   - Pre-release detection for beta/RC versions
   - Documentation prompt for release workflow maintenance
-
-### Added
 - **Configuration Variable System**: New project-level configuration management with `bolt.config.json`
   - Create configuration file at project root with user-defined variables
   - Automatic config injection into all tasks via `$BoltConfig` variable
