@@ -10,6 +10,7 @@
     The version being released (e.g., 0.1.0, 1.0.0-beta)
 #>
 
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$Version

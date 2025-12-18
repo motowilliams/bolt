@@ -666,6 +666,103 @@ if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnor
 
 **Remember**: When in doubt, use named parameters. The extra typing is worth the clarity and maintainability.
 
+### CmdletBinding Attribute Required
+
+**CRITICAL: All functions and scripts must use the `[CmdletBinding()]` attribute.**
+
+This enables advanced PowerShell features and ensures consistent behavior across the codebase.
+
+**Required Pattern**:
+```powershell
+# ✅ GOOD - Function with CmdletBinding
+function Get-TaskList {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$TaskDirectory,
+        
+        [Parameter()]
+        [switch]$IncludeCore
+    )
+    
+    # Function implementation
+}
+
+# ✅ GOOD - Script with CmdletBinding
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory)]
+    [string]$ModulePath,
+    
+    [Parameter()]
+    [string]$OutputPath = "."
+)
+
+# Script implementation
+
+# ❌ BAD - Missing CmdletBinding
+function Get-TaskList {
+    param(
+        [string]$TaskDirectory,
+        [switch]$IncludeCore
+    )
+}
+
+# ❌ BAD - Script without CmdletBinding
+param(
+    [string]$ModulePath
+)
+```
+
+**Why CmdletBinding?**
+1. **Common Parameters**: Enables `-Verbose`, `-Debug`, `-ErrorAction`, `-WarningAction`, `-InformationAction`, `-ErrorVariable`, `-WarningVariable`, `-OutVariable`, `-OutBuffer`, `-PipelineVariable`
+2. **Parameter Validation**: Improves parameter binding and validation behavior
+3. **ShouldProcess Support**: Allows `-WhatIf` and `-Confirm` when using `SupportsShouldProcess`
+4. **Consistency**: Makes functions behave like native cmdlets
+5. **Best Practice**: Required by PowerShell style guidelines (PSScriptAnalyzer PSUseCmdletBindingAttribute)
+
+**Advanced Usage**:
+```powershell
+# Support for -WhatIf and -Confirm
+function Remove-TaskCache {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)]
+        [string]$CachePath
+    )
+    
+    if ($PSCmdlet.ShouldProcess($CachePath, "Remove cache directory")) {
+        Remove-Item -Path $CachePath -Recurse -Force
+    }
+}
+
+# Default parameter set
+function Invoke-Task {
+    [CmdletBinding(DefaultParameterSetName = 'TaskExecution')]
+    param(
+        [Parameter(ParameterSetName = 'TaskExecution', Position = 0)]
+        [string[]]$Task,
+        
+        [Parameter(ParameterSetName = 'ListTasks')]
+        [switch]$ListTasks
+    )
+}
+```
+
+**Code Review Checklist**:
+- [ ] All functions have `[CmdletBinding()]` attribute
+- [ ] All scripts (`.ps1` files) have `[CmdletBinding()]` attribute at the top
+- [ ] `SupportsShouldProcess` is used for functions that modify state
+- [ ] Parameter sets are defined when multiple modes exist
+- [ ] Common parameters (`-Verbose`, `-Debug`) are tested and work correctly
+
+**Exceptions** (where CmdletBinding may be omitted)**:
+- **Simple script blocks** in pipeline operations: `Where-Object { }`, `ForEach-Object { }`
+- **Task scripts** in `.build/` directory that are invoked via `&` operator (not functions)
+- **Legacy scripts** being gradually migrated (should have tracking issue for migration)
+
+**Remember**: CmdletBinding is not just a formality - it fundamentally changes how PowerShell processes your code and enables features users expect from professional PowerShell tools.
+
 ### Bicep Starter Package Conventions
 
 The Bicep starter package (`packages/.build-bicep`) follows these conventions:

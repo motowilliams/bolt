@@ -8,6 +8,9 @@
     to the module directory for inclusion in the release.
 #>
 
+[CmdletBinding()]
+param()
+
 $releaseDir = "release"
 $moduleName = "Bolt"
 $moduleDir = Join-Path -Path $releaseDir -ChildPath $moduleName

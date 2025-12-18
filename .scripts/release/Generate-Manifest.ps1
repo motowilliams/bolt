@@ -12,10 +12,11 @@
     The manifest version without suffix (e.g., 0.1.0, 1.0.0)
 #>
 
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$Version,
-    
+
     [Parameter(Mandatory = $true)]
     [string]$ManifestVersion
 )

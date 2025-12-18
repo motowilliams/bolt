@@ -10,6 +10,7 @@
     The version being released (e.g., 0.1.0, 1.0.0-beta)
 #>
 
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$Version
@@ -24,7 +25,7 @@ $changelogContent = Get-Content -Path "CHANGELOG.md" -Raw
 $pattern = "(?s)## \[$Version\].*?(?=## \[|\z)"
 if ($changelogContent -match $pattern) {
     $releaseNotes = $Matches[0]
-    
+
     # Save to file
     $releaseNotes | Out-File -FilePath "release-notes.md" -Encoding UTF8
     Write-Host "✓ Release notes extracted from CHANGELOG.md" -ForegroundColor Green

@@ -15,13 +15,14 @@
     Path to GitHub Actions output file
 #>
 
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
     [string]$EventName,
-    
+
     [Parameter(Mandatory = $false)]
     [string]$GitRef = "",
-    
+
     [Parameter(Mandatory = $true)]
     [string]$OutputFile
 )
@@ -35,7 +36,7 @@ if ($EventName -eq "workflow_dispatch") {
 else {
     # Remove 'refs/tags/v' prefix
     $fullVersion = $GitRef -replace '^refs/tags/v', ''
-    
+
     # PowerShell module manifests don't support semantic versioning pre-release suffixes
     # Strip any pre-release suffix (e.g., 1.0.0-beta -> 1.0.0) for manifest
     $manifestVersion = $fullVersion -replace '-.*$', ''
