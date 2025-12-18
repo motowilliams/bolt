@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Installation Instructions**: Updated README installation section to prioritize GitHub Releases as the primary installation method
+  - Added comprehensive, version-agnostic step-by-step instructions for downloading from GitHub Releases
+  - Covers both local (script mode) and module mode installation from releases
+  - Moved clone-from-source option to Option 2 for development use
+  - Added helpful tips for updating installations
+
 ## [0.1.0] - 2025-12-16
 
 ### Added
