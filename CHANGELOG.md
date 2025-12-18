@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2025-12-16
+
+### Added
+- **GitHub Release Automation**: New CI workflow for publishing Bolt module to GitHub releases
+  - Automatic release creation on git tag push (e.g., `v0.1.0`, `v1.0.0-beta`)
+  - Module package generation with proper manifest and documentation
+  - SHA256 checksums for release assets
+  - Changelog validation to ensure version entries exist
+  - Pre-release detection for beta/RC versions
+  - Documentation prompt for release workflow maintenance
+
 ### Added
 - **Configuration Variable System**: New project-level configuration management with `bolt.config.json`
   - Create configuration file at project root with user-defined variables
@@ -261,5 +272,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - EditorConfig for consistent code formatting
 
-[Unreleased]: https://github.com/motowilliams/gosh/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/motowilliams/gosh/releases/tag/v1.0.0
+[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/motowilliams/bolt/releases/tag/v0.1.0

@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on any tag starting with 'v' (e.g., v0.1.0, v1.0.0-beta)
+  workflow_dispatch: # Allow manual trigger for testing
+
+permissions:
+  contents: write # Required for creating releases
+
+jobs:
+  release:
+    name: Build and Publish Module
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for changelog
+
+      - name: Setup PowerShell
+        shell: pwsh
+        run: |
+          Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)" -ForegroundColor Cyan
+          Write-Host "OS: $($PSVersionTable.OS)" -ForegroundColor Cyan
+
+      - name: Extract version from tag
+        id: version
+        shell: pwsh
+        run: |
+          & .scripts/release/Extract-Version.ps1 `
+            -EventName "${{ github.event_name }}" `
+            -GitRef "${{ github.ref }}" `
+            -OutputFile $env:GITHUB_OUTPUT
+
+      - name: Validate changelog entry
+        shell: pwsh
+        run: |
+          & .scripts/release/Validate-Changelog.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}"
+
+      - name: Build module package
+        shell: pwsh
+        run: |
+          & .scripts/release/Build-ModulePackage.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}"
+
+      - name: Generate module manifest
+        shell: pwsh
+        run: |
+          & .scripts/release/Generate-Manifest.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}" `
+            -ManifestVersion "${{ steps.version.outputs.MANIFEST_VERSION }}"
+
+      - name: Copy documentation files
+        shell: pwsh
+        run: |
+          & .scripts/release/Copy-Documentation.ps1
+
+      - name: Create release archive
+        shell: pwsh
+        run: |
+          & .scripts/release/Create-Archive.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}"
+
+      - name: Generate release notes
+        id: release_notes
+        shell: pwsh
+        run: |
+          & .scripts/release/Generate-ReleaseNotes.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: |
+            release/Bolt-${{ steps.version.outputs.VERSION }}.zip
+            release/Bolt-${{ steps.version.outputs.VERSION }}.zip.sha256
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bolt-module-${{ steps.version.outputs.VERSION }}
+          path: release/
+          retention-days: 30

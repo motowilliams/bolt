@@ -30,6 +30,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - [📝 License](#-license)
 - [🤝 Contributing](#-contributing)
 - [🔄 Continuous Integration](#-continuous-integration)
+- [📦 Releases](#-releases)
 - [🔒 Security](#-security)
 - [🤔 Logic Flows](#-logic-flows)
 
@@ -1398,6 +1399,70 @@ Invoke-Pester             # All tests
 ```
 
 This follows the **90/10 principle**: 90% of the workflow should be identical locally and in CI.
+
+[toc](#-table-of-contents)
+
+## 📦 Releases
+
+Bolt uses automated GitHub releases for version distribution. Each release includes:
+
+- **Module Package**: Complete Bolt module with all core files
+- **Documentation**: README, CHANGELOG, LICENSE, CONTRIBUTING, SECURITY, IMPLEMENTATION
+- **Configuration**: JSON schema and example files for `bolt.config.json`
+- **Checksums**: SHA256 hash for package verification
+
+### Release Types
+
+**Production Releases**: `v1.0.0`, `v2.1.0`, etc.
+- Stable, fully tested releases
+- No pre-release suffix
+- Recommended for production use
+
+**Pre-Releases**: `v1.0.0-beta`, `v2.0.0-rc1`, etc.
+- Early access to new features
+- Include pre-release suffix (`-beta`, `-rc1`, `-alpha`)
+- May have known issues or breaking changes
+
+### Installing from Releases
+
+1. Download the latest release from [GitHub Releases](https://github.com/motowilliams/bolt/releases)
+2. Verify the checksum:
+   ```powershell
+   # Download both .zip and .sha256 files
+   $hash = Get-FileHash -Path "Bolt-0.1.0.zip" -Algorithm SHA256
+   $expected = Get-Content "Bolt-0.1.0.zip.sha256" | Select-String -Pattern "^[A-F0-9]+" | ForEach-Object { $_.Matches.Value }
+   
+   if ($hash.Hash -eq $expected) {
+     Write-Host "✓ Checksum verified" -ForegroundColor Green
+   } else {
+     Write-Error "✗ Checksum mismatch!"
+   }
+   ```
+3. Extract the archive to your PowerShell modules directory:
+   - Windows: `~/Documents/PowerShell/Modules/`
+   - Linux/macOS: `~/.local/share/powershell/Modules/`
+4. Import the module:
+   ```powershell
+   Import-Module Bolt -Force
+   bolt -ListTasks
+   ```
+
+### Creating a Release
+
+For maintainers:
+
+1. Update `CHANGELOG.md` with version entry (e.g., `## [0.1.0] - 2025-12-16`)
+2. Commit changelog changes to `main` branch
+3. Create and push a git tag:
+   ```powershell
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+4. GitHub Actions automatically builds and publishes the release
+
+The workflow validates the changelog entry matches the tag version before creating the release.
+
+See `.github/workflows/release.yml` for the complete release automation.
 
 [toc](#-table-of-contents)
 

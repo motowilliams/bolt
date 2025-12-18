@@ -908,6 +908,20 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
   shell: pwsh
 ```
 
+### GitHub Actions Release
+
+This project includes a release workflow at `.github/workflows/release.yml`:
+
+- **Triggers**: Git tag pushes matching `v*` pattern (e.g., `v0.1.0`, `v1.0.0-beta`), manual dispatch
+  - Production releases: `v1.0.0`, `v2.1.3`, etc.
+  - Pre-releases: `v1.0.0-beta`, `v2.0.0-rc1`, etc.
+- **Platform**: Ubuntu (Linux) only for consistent release builds
+- **Pipeline**: Version extraction → Changelog validation → Module building → Manifest generation → Documentation bundling → Archive creation → GitHub release
+- **Permissions**: `contents: write` (required for creating GitHub releases)
+- **Release Assets**: Module zip and SHA256 checksum
+
+See `.github/workflows/release.yml` and `.github/workflows/release.md` for complete workflow configuration and documentation.
+
 ### ⚠️ CRITICAL: Workflow Documentation Synchronization
 
 **MANDATORY: When modifying any GitHub Actions workflow, the corresponding documentation MUST be updated.**
@@ -941,6 +955,8 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
 **Current Workflow Documentation Pairs:**
 - `.github/workflows/ci.yml` ↔ `.github/workflows/ci.md`
   - Prompt: `.github/prompts/document.ci.workflow.prompt.md`
+- `.github/workflows/release.yml` ↔ `.github/workflows/release.md`
+  - Prompt: `.github/prompts/document.release.workflow.prompt.md`
 
 **Future Workflows:**
 - When adding new workflows (e.g., `release.yml`, `deploy.yml`), create corresponding:
