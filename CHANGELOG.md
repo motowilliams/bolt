@@ -189,14 +189,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ❌ **Failed**: Used alias export before `Export-ModuleMember` in generated module
   - `Set-Alias` must be called before `Export-ModuleMember`
   - Aliases defined after export are not visible to module users
-- ❌ **Failed**: Passed arguments as array to bolt-core.ps1 instead of hashtable
+- ❌ **Failed**: Passed arguments as array to bolt.ps1 instead of hashtable
   - Array splatting doesn't work with parameter names
   - Resulted in positional parameter errors
 - ❌ **Failed**: Tab completion only registered for 'bolt.ps1' not module function
   - `Register-ArgumentCompleter` needs both 'Invoke-Bolt' and 'bolt' alias
   - Module mode had no tab completion initially
 - ✅ **Solution**: Environment variable `$env:BOLT_PROJECT_ROOT` for context passing
-  - Module sets variable before invoking bolt-core.ps1
+  - Module sets variable before invoking bolt.ps1
   - Core script checks variable and sets `$script:EffectiveScriptRoot`
   - All functions use `$script:EffectiveScriptRoot` instead of direct `$PSScriptRoot`
   - No function signature changes required

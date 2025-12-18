@@ -1092,7 +1092,7 @@ This creates a module in the user module path:
 The module includes:
 - **Module manifest** (`Bolt.psd1`) - Metadata and exports
 - **Module script** (`Bolt.psm1`) - Wrapper with upward directory search
-- **Core script** (`bolt-core.ps1`) - Copy of bolt.ps1
+- **Core script** (`bolt.ps1`) - Copy of bolt.ps1
 
 ### Using the Module
 

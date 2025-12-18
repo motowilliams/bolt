@@ -99,7 +99,7 @@ pwsh -File infra/New-BoltModule.ps1 -Install -NoImport -ModuleOutputPath $releas
 
 Uses the existing module installation script to create the module structure:
 - Creates `Bolt.psm1` (module script)
-- Copies `bolt-core.ps1` (orchestration engine)
+- Copies `bolt.ps1` (orchestration engine)
 - Generates module wrapper with upward directory search
 
 **Output**: `release/Bolt/` directory with module files
@@ -203,7 +203,7 @@ Each release includes:
 | `Bolt-{version}.zip.sha256` | SHA256 checksum for verification |
 
 **Module Package Contents**:
-- Core files: `Bolt.psm1`, `Bolt.psd1`, `bolt-core.ps1`
+- Core files: `Bolt.psm1`, `Bolt.psd1`, `bolt.ps1`
 - Documentation: README, LICENSE, CHANGELOG, CONTRIBUTING, SECURITY, IMPLEMENTATION
 - Config files: `bolt.config.schema.json`, `bolt.config.example.json`
 
