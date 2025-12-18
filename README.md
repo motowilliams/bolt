@@ -69,29 +69,93 @@ It's a solid name for a build orchestration tool that runs fast and efficiently!
 
 ### Installation
 
-**Option 1: Script Mode (Standalone)**
+**Option 1: Download from GitHub Releases (Recommended)**
 
-1. Clone or download this repository
+Get the latest stable version of Bolt from the [GitHub Releases page](https://github.com/motowilliams/bolt/releases). This ensures you're using a tested release without cloning the entire repository.
+
+1. **Go to the [Releases](https://github.com/motowilliams/bolt/releases) section:**
+   - Visit the repository's Releases tab to find pre-packaged versions of Bolt.
+
+2. **Download the most recent release:**
+   - Select the latest release (typically at the top).
+   - Note the version number (e.g., `v0.1.0`).
+   - Download using PowerShell (replace `v0.1.0` with the actual version):
+     ```powershell
+     # Download the release archive
+     Invoke-WebRequest -Uri https://github.com/motowilliams/bolt/releases/download/v0.1.0/Bolt-0.1.0.zip -OutFile bolt.zip
+     
+     # Download the checksum file
+     Invoke-WebRequest -Uri https://github.com/motowilliams/bolt/releases/download/v0.1.0/Bolt-0.1.0.zip.sha256 -OutFile bolt.hash
+     ```
+
+3. **Verify the checksum:**
+   - Validate the downloaded file matches the expected hash:
+     ```powershell
+     # Verify the checksum
+     (Get-FileHash -Algorithm SHA256 ./bolt.zip | Select-Object -ExpandProperty Hash) -eq ((Get-Content -Raw ./bolt.hash) -split " " | Select-Object -First 1)
+     ```
+   - If the command returns `True`, the download is verified and safe to use.
+
+4. **Extract the files:**
+   - Unpack the archive to the current directory and clean up:
+     ```powershell
+     # Extract the archive
+     Expand-Archive -Path ./bolt.zip -DestinationPath . -Force
+     
+     # Clean up downloaded files
+     Remove-Item ./bolt.zip, ./bolt.hash
+     ```
+
+5. **Set up your environment to run Bolt:**
+   - Ensure you have **PowerShell 7.0+** installed. Bolt requires PowerShell Core for cross-platform compatibility.
+   - Choose one of the installation modes below:
+
+   **For Local Use (Script Mode):**
+   ```powershell
+   # Navigate to the extracted directory
+   cd path/to/bolt
+   
+   # Verify installation
+   .\bolt.ps1 -Help
+   ```
+
+   **For Global Use (Module Mode - Recommended):**
+   ```powershell
+   # Navigate to the extracted directory
+   cd path/to/bolt
+   
+   # Install as a PowerShell module
+   .\New-BoltModule.ps1 -Install
+   
+   # Restart PowerShell or force import
+   Import-Module Bolt -Force
+   
+   # Now use 'bolt' from anywhere
+   cd ~/projects/myproject
+   bolt build
+   ```
+
+6. **Verify installation:**
+   - Test your installation by running:
+     ```powershell
+     # Script mode
+     .\bolt.ps1 -Help
+     
+     # Module mode
+     bolt -Help
+     ```
+
+**Tip:** Whenever a new version is published, repeat steps 1-4 to download the latest release. If using module mode, re-run `.\New-BoltModule.ps1 -Install` to update in place.
+
+**Option 2: Clone from Source**
+
+If you want the latest development version or plan to contribute:
+
+1. Clone this repository
 2. Ensure PowerShell 7.0+ is installed
 3. Navigate to the project directory and run `.\bolt.ps1`
 
-**Option 2: Module Mode (Global Command)**
-
-Install Bolt as a PowerShell module for global access:
-
-```powershell
-# From the Bolt repository directory
-.\New-BoltModule.ps1 -Install
-
-# Restart PowerShell or force import
-Import-Module Bolt -Force
-
-# Now use 'bolt' from anywhere
-cd ~/projects/myproject
-bolt build
-```
-
-**Module Benefits:**
+**Module Mode Benefits:**
 - 🌍 Run `bolt` from any directory (no need for `.\bolt.ps1`)
 - 🔍 Automatic upward search for `.build/` folders (like git)
 - ⚡ Use from subdirectories within your projects
@@ -1028,7 +1092,7 @@ This creates a module in the user module path:
 The module includes:
 - **Module manifest** (`Bolt.psd1`) - Metadata and exports
 - **Module script** (`Bolt.psm1`) - Wrapper with upward directory search
-- **Core script** (`bolt-core.ps1`) - Copy of bolt.ps1
+- **Core script** (`bolt.ps1`) - Copy of bolt.ps1
 
 ### Using the Module
 

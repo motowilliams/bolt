@@ -1520,7 +1520,7 @@ Add a **`### Technical Notes`** subsection within relevant changelog entries to 
     - Required massive refactoring of all functions
     - Made function signatures inconsistent and hard to maintain
   - ✅ **Solution**: Used environment variable `$env:BOLT_PROJECT_ROOT` to pass context
-    - Module sets variable before invoking bolt-core.ps1
+    - Module sets variable before invoking bolt.ps1
     - Core script checks variable and sets `$script:EffectiveScriptRoot`
     - All functions use `$script:EffectiveScriptRoot` instead of `$PSScriptRoot`
 ```

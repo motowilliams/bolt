@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Installation Instructions**: Updated README installation section to prioritize GitHub Releases as the primary installation method
+  - Added comprehensive, version-agnostic step-by-step instructions for downloading from GitHub Releases
+  - Covers both local (script mode) and module mode installation from releases
+  - Added PowerShell commands for downloading release archive and checksum file using `Invoke-WebRequest`
+  - Included checksum verification step with validation command
+  - Added commands for extracting archive and cleaning up downloaded files
+  - Moved clone-from-source option to Option 2 for development use
+  - Added helpful tips for updating installations
+- **Module Packaging**: Renamed `bolt-core.ps1` to `bolt.ps1` in module package
+  - Module now contains `bolt.ps1` instead of `bolt-core.ps1` for consistency
+  - Updated `New-BoltModule.ps1` to copy `bolt.ps1` as `bolt.ps1` (not `bolt-core.ps1`)
+  - Updated module wrapper to reference `bolt.ps1` instead of `bolt-core.ps1`
+  - Updated tests to verify `bolt.ps1` exists in module package
+
 ## [0.1.0] - 2025-12-16
 
 ### Added
@@ -174,14 +189,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ❌ **Failed**: Used alias export before `Export-ModuleMember` in generated module
   - `Set-Alias` must be called before `Export-ModuleMember`
   - Aliases defined after export are not visible to module users
-- ❌ **Failed**: Passed arguments as array to bolt-core.ps1 instead of hashtable
+- ❌ **Failed**: Passed arguments as array to bolt.ps1 instead of hashtable
   - Array splatting doesn't work with parameter names
   - Resulted in positional parameter errors
 - ❌ **Failed**: Tab completion only registered for 'bolt.ps1' not module function
   - `Register-ArgumentCompleter` needs both 'Invoke-Bolt' and 'bolt' alias
   - Module mode had no tab completion initially
 - ✅ **Solution**: Environment variable `$env:BOLT_PROJECT_ROOT` for context passing
-  - Module sets variable before invoking bolt-core.ps1
+  - Module sets variable before invoking bolt.ps1
   - Core script checks variable and sets `$script:EffectiveScriptRoot`
   - All functions use `$script:EffectiveScriptRoot` instead of direct `$PSScriptRoot`
   - No function signature changes required
