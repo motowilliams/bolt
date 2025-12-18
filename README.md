@@ -69,29 +69,70 @@ It's a solid name for a build orchestration tool that runs fast and efficiently!
 
 ### Installation
 
-**Option 1: Script Mode (Standalone)**
+**Option 1: Download from GitHub Releases (Recommended)**
 
-1. Clone or download this repository
+Get the latest stable version of Bolt from the [GitHub Releases page](https://github.com/motowilliams/bolt/releases). This ensures you're using a tested release without cloning the entire repository.
+
+1. **Go to the [Releases](https://github.com/motowilliams/bolt/releases) section:**
+   - Visit the repository's Releases tab to find pre-packaged versions of Bolt.
+
+2. **Download the most recent release:**
+   - Select the latest release (typically at the top).
+   - Download the `.zip` archive.
+
+3. **Extract the files:**
+   - Unpack the archive to a suitable location on your machine (e.g., your Projects, Tools, or Scripts directory).
+
+4. **Set up your environment to run Bolt:**
+   - Ensure you have **PowerShell 7.0+** installed. Bolt requires PowerShell Core for cross-platform compatibility.
+   - Choose one of the installation modes below:
+
+   **For Local Use (Script Mode):**
+   ```powershell
+   # Navigate to the extracted directory
+   cd path/to/bolt
+   
+   # Verify installation
+   .\bolt.ps1 -Help
+   ```
+
+   **For Global Use (Module Mode - Recommended):**
+   ```powershell
+   # Navigate to the extracted directory
+   cd path/to/bolt
+   
+   # Install as a PowerShell module
+   .\New-BoltModule.ps1 -Install
+   
+   # Restart PowerShell or force import
+   Import-Module Bolt -Force
+   
+   # Now use 'bolt' from anywhere
+   cd ~/projects/myproject
+   bolt build
+   ```
+
+5. **Verify installation:**
+   - Test your installation by running:
+     ```powershell
+     # Script mode
+     .\bolt.ps1 -Help
+     
+     # Module mode
+     bolt -Help
+     ```
+
+**Tip:** Whenever a new version is published, repeat steps 1-3 to download the latest release. If using module mode, re-run `.\New-BoltModule.ps1 -Install` to update in place.
+
+**Option 2: Clone from Source**
+
+If you want the latest development version or plan to contribute:
+
+1. Clone this repository
 2. Ensure PowerShell 7.0+ is installed
 3. Navigate to the project directory and run `.\bolt.ps1`
 
-**Option 2: Module Mode (Global Command)**
-
-Install Bolt as a PowerShell module for global access:
-
-```powershell
-# From the Bolt repository directory
-.\New-BoltModule.ps1 -Install
-
-# Restart PowerShell or force import
-Import-Module Bolt -Force
-
-# Now use 'bolt' from anywhere
-cd ~/projects/myproject
-bolt build
-```
-
-**Module Benefits:**
+**Module Mode Benefits:**
 - 🌍 Run `bolt` from any directory (no need for `.\bolt.ps1`)
 - 🔍 Automatic upward search for `.build/` folders (like git)
 - ⚡ Use from subdirectories within your projects
