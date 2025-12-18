@@ -78,12 +78,35 @@ Get the latest stable version of Bolt from the [GitHub Releases page](https://gi
 
 2. **Download the most recent release:**
    - Select the latest release (typically at the top).
-   - Download the `.zip` archive.
+   - Note the version number (e.g., `v0.1.0`).
+   - Download using PowerShell (replace `v0.1.0` with the actual version):
+     ```powershell
+     # Download the release archive
+     Invoke-WebRequest -Uri https://github.com/motowilliams/bolt/releases/download/v0.1.0/Bolt-0.1.0.zip -OutFile bolt.zip
+     
+     # Download the checksum file
+     Invoke-WebRequest -Uri https://github.com/motowilliams/bolt/releases/download/v0.1.0/Bolt-0.1.0.zip.sha256 -OutFile bolt.hash
+     ```
 
-3. **Extract the files:**
-   - Unpack the archive to a suitable location on your machine (e.g., your Projects, Tools, or Scripts directory).
+3. **Verify the checksum:**
+   - Validate the downloaded file matches the expected hash:
+     ```powershell
+     # Verify the checksum
+     (Get-FileHash -Algorithm SHA256 ./bolt.zip | Select-Object -ExpandProperty Hash) -eq ((Get-Content -Raw ./bolt.hash) -split " " | Select-Object -First 1)
+     ```
+   - If the command returns `True`, the download is verified and safe to use.
 
-4. **Set up your environment to run Bolt:**
+4. **Extract the files:**
+   - Unpack the archive to the current directory and clean up:
+     ```powershell
+     # Extract the archive
+     Expand-Archive -Path ./bolt.zip -DestinationPath . -Force
+     
+     # Clean up downloaded files
+     Remove-Item ./bolt.zip, ./bolt.hash
+     ```
+
+5. **Set up your environment to run Bolt:**
    - Ensure you have **PowerShell 7.0+** installed. Bolt requires PowerShell Core for cross-platform compatibility.
    - Choose one of the installation modes below:
 
@@ -112,7 +135,7 @@ Get the latest stable version of Bolt from the [GitHub Releases page](https://gi
    bolt build
    ```
 
-5. **Verify installation:**
+6. **Verify installation:**
    - Test your installation by running:
      ```powershell
      # Script mode
@@ -122,7 +145,7 @@ Get the latest stable version of Bolt from the [GitHub Releases page](https://gi
      bolt -Help
      ```
 
-**Tip:** Whenever a new version is published, repeat steps 1-3 to download the latest release. If using module mode, re-run `.\New-BoltModule.ps1 -Install` to update in place.
+**Tip:** Whenever a new version is published, repeat steps 1-4 to download the latest release. If using module mode, re-run `.\New-BoltModule.ps1 -Install` to update in place.
 
 **Option 2: Clone from Source**
 

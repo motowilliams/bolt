@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Installation Instructions**: Updated README installation section to prioritize GitHub Releases as the primary installation method
   - Added comprehensive, version-agnostic step-by-step instructions for downloading from GitHub Releases
   - Covers both local (script mode) and module mode installation from releases
+  - Added PowerShell commands for downloading release archive and checksum file using `Invoke-WebRequest`
+  - Included checksum verification step with validation command
+  - Added commands for extracting archive and cleaning up downloaded files
   - Moved clone-from-source option to Option 2 for development use
   - Added helpful tips for updating installations
 
