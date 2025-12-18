@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added commands for extracting archive and cleaning up downloaded files
   - Moved clone-from-source option to Option 2 for development use
   - Added helpful tips for updating installations
+- **Module Packaging**: Renamed `bolt-core.ps1` to `bolt.ps1` in module package
+  - Module now contains `bolt.ps1` instead of `bolt-core.ps1` for consistency
+  - Updated `New-BoltModule.ps1` to copy `bolt.ps1` as `bolt.ps1` (not `bolt-core.ps1`)
+  - Updated module wrapper to reference `bolt.ps1` instead of `bolt-core.ps1`
+  - Updated tests to verify `bolt.ps1` exists in module package
 
 ## [0.1.0] - 2025-12-16
 

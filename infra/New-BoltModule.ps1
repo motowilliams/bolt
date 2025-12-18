@@ -124,9 +124,9 @@ function Install-BoltModule {
         return $false
     }
 
-    $boltCorePath = Join-Path -Path $userModulePath -ChildPath "bolt-core.ps1"
-    Copy-Item -Path $boltScriptPath -Destination $boltCorePath -Force
-    Write-Host "Copied bolt core script to module" -ForegroundColor Gray
+    $boltModulePath = Join-Path -Path $userModulePath -ChildPath "bolt.ps1"
+    Copy-Item -Path $boltScriptPath -Destination $boltModulePath -Force
+    Write-Host "Copied bolt script to module" -ForegroundColor Gray
 
     # Generate module script (.psm1) that wraps bolt.ps1 with upward directory search
     $moduleScriptPath = Join-Path $userModulePath "$moduleName.psm1"
@@ -249,8 +249,8 @@ function Invoke-Bolt {
     Write-Verbose "Project root: `$projectRoot"
     Write-Verbose "Build path: `$buildPath"
 
-    # Get path to the bolt-core.ps1 script in this module
-    `$boltCorePath = Join-Path `$PSScriptRoot "bolt-core.ps1"
+    # Get path to the bolt.ps1 script in this module
+    `$boltScriptPath = Join-Path `$PSScriptRoot "bolt.ps1"
 
     # Build parameter hashtable for splatting
     `$boltParams = @{}
@@ -262,7 +262,7 @@ function Invoke-Bolt {
     if (`$NewTask) { `$boltParams['NewTask'] = `$NewTask }
     if (`$Arguments) { `$boltParams['Arguments'] = `$Arguments }
 
-    # Execute bolt-core.ps1 from the project root directory
+    # Execute bolt.ps1 from the project root directory
     # Set environment variable to signal module mode and pass the project root
     try {
         Push-Location `$projectRoot
@@ -271,7 +271,7 @@ function Invoke-Bolt {
         `$env:BOLT_PROJECT_ROOT = `$projectRoot
 
         # Execute bolt.ps1 with proper parameter splatting
-        & `$boltCorePath @boltParams
+        & `$boltScriptPath @boltParams
 
         # Propagate exit code
         if (`$LASTEXITCODE -ne 0 -and `$null -ne `$LASTEXITCODE) {
@@ -330,7 +330,7 @@ Export-ModuleMember -Function Invoke-Bolt -Alias bolt
         }
     }
 
-    # Core tasks (defined in bolt-core.ps1)
+    # Core tasks (defined in bolt.ps1)
     `$coreTasks = @('check-index', 'check')
 
     # Combine and get unique task names

@@ -89,7 +89,7 @@ Describe 'Module Installation' -Tag 'Core' {
             $modulePath | Should -Exist
             
             # Check that required files exist
-            Join-Path -Path $modulePath -ChildPath "bolt-core.ps1" | Should -Exist
+            Join-Path -Path $modulePath -ChildPath "bolt.ps1" | Should -Exist
             Join-Path -Path $modulePath -ChildPath "Bolt.psm1" | Should -Exist
         }
         finally {
@@ -97,18 +97,18 @@ Describe 'Module Installation' -Tag 'Core' {
         }
     }
 
-    It 'Should create bolt-core.ps1 from bolt.ps1' {
+    It 'Should create bolt.ps1 copy in module' {
         $tempPath = Get-TempModulePath
         try {
             & $script:NewBoltModulePath -Install -ModuleOutputPath $tempPath -NoImport 2>&1 | Out-Null
             
-            $boltCorePath = Join-Path -Path $tempPath -ChildPath "Bolt" | Join-Path -ChildPath "bolt-core.ps1"
-            $boltCorePath | Should -Exist
+            $boltModulePath = Join-Path -Path $tempPath -ChildPath "Bolt" | Join-Path -ChildPath "bolt.ps1"
+            $boltModulePath | Should -Exist
             
             # Verify it's a copy of bolt.ps1
             $originalContent = Get-Content -Path $script:BoltScriptPath -Raw
-            $coreContent = Get-Content -Path $boltCorePath -Raw
-            $coreContent | Should -Be $originalContent
+            $moduleContent = Get-Content -Path $boltModulePath -Raw
+            $moduleContent | Should -Be $originalContent
         }
         finally {
             Remove-TempModulePath -Path $tempPath
