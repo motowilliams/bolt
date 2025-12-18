@@ -756,7 +756,7 @@ function Invoke-Task {
 - [ ] Parameter sets are defined when multiple modes exist
 - [ ] Common parameters (`-Verbose`, `-Debug`) are tested and work correctly
 
-**Exceptions** (where CmdletBinding may be omitted)**:
+**Exceptions** (where CmdletBinding may be omitted):
 - **Simple script blocks** in pipeline operations: `Where-Object { }`, `ForEach-Object { }`
 - **Task scripts** in `.build/` directory that are invoked via `&` operator (not functions)
 - **Legacy scripts** being gradually migrated (should have tracking issue for migration)
