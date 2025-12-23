@@ -4,7 +4,7 @@
 
 > **Bolt** - Lightning-fast Build orchestration for PowerShell!
 
-A self-contained, cross-platform PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by PSake, Make and Rake. Just PowerShell with no external dependencies - just PowerShell Core 7.0+.
+A self-contained, cross-platform PowerShell build system with extensible task orchestration and automatic dependency resolution. Inspired by PSake, Make and Rake. Just PowerShell with no external dependencies - you bring PowerShell (Core), that's it!
 
 **Perfect for any build workflow** - infrastructure-as-code, application builds, testing pipelines, deployment automation, and more. Runs on Windows, Linux, and macOS.
 
@@ -38,8 +38,6 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 
 **Bolt** represents lightning-fast task execution ⚡ - a quick, powerful strike that gets things done!
 
-It's a solid name for a build orchestration tool that runs fast and efficiently! 🚀
-
 ## ✨ Features
 
 - **🔍 Automatic Task Discovery**: Drop `.ps1` files in `.build/` with comment-based metadata
@@ -52,9 +50,7 @@ It's a solid name for a build orchestration tool that runs fast and efficiently!
 - **🎨 Colorized Output**: Consistent, readable task output
 - **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
-- **📦 Module Installation**: Install as PowerShell module via `New-BoltModule.ps1` for global access
-- **Module Uninstallation**: Remove Bolt from all installations via `New-BoltModule.ps1`
-- **Manifest Generation**: Dedicated tooling for creating PowerShell module manifests (`.psd1`)
+- **📦 Module Installation and Removal**: Install as PowerShell module via `New-BoltModule.ps1` for global access
 - **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
 - **⬆️ Upward Directory Search**: Module mode finds `.build/` by searching parent directories
 - **🔧 Parameter Sets**: PowerShell parameter sets prevent invalid combinations and improve UX
