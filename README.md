@@ -143,7 +143,15 @@ Get the latest stable version of Bolt from the [GitHub Releases page](https://gi
 
 **Tip:** Whenever a new version is published, repeat steps 1-4 to download the latest release. If using module mode, re-run `.\New-BoltModule.ps1 -Install` to update in place.
 
-**Option 2: Clone from Source**
+**Option 2: Use the download script**
+
+Use the download script to list out the latest release and download and extract the file for you.
+
+Is this safe? No. Do I use it? Yes. Read and understand the script before you execute it.
+
+`irm https://raw.githubusercontent.com/motowilliams/bolt/refs/heads/main/download.ps1 | iex`
+
+**Option 3: Clone from Source**
 
 If you want the latest development version or plan to contribute:
 
