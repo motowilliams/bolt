@@ -19,12 +19,10 @@ try {
     $releasesResponse = Invoke-RestMethod -Uri "$ProjectUri/releases" -ErrorAction Stop
 } catch {
     Write-Error "Failed to fetch releases from GitHub: $_"
-    exit 1
 }
 
 if (-not $releasesResponse -or $releasesResponse.Count -eq 0) {
     Write-Error "No releases found"
-    exit 1
 }
 
 # Sort releases by name ascending (oldest first, newest last)
@@ -41,7 +39,6 @@ if ($PSCmdlet.ParameterSetName -eq 'AutoDownload') {
 
     if ($stableReleases.Count -eq 0) {
         Write-Error "No stable releases found"
-        exit 1
     }
 
     $selectedRelease = $stableReleases[0]
@@ -113,7 +110,6 @@ if ($PSCmdlet.ParameterSetName -eq 'AutoDownload') {
             Write-Host "Invalid selection. Please enter a number between 1 and $($menuItems.Count)." -ForegroundColor Yellow
         } else {
             Write-Error "Invalid selection after $maxAttempts attempts. Exiting."
-            exit 1
         }
     }
 }
@@ -123,7 +119,6 @@ $extractPath = Join-Path -Path $PWD -ChildPath "Bolt"
 
 if (Test-Path -Path $extractPath) {
     Write-Error "Directory '$extractPath' already exists. Please remove it or run this script from a different location."
-    exit 1
 }
 
 # Find the zip and sha256 assets
@@ -132,12 +127,10 @@ $shaAsset = $selectedRelease.assets | Where-Object { $_.name -like "*.zip.sha256
 
 if (-not $zipAsset) {
     Write-Error "No zip file found in release assets"
-    exit 1
 }
 
 if (-not $shaAsset) {
     Write-Error "No SHA256 checksum file found in release assets. Cannot proceed without validation."
-    exit 1
 }
 
 # Create temporary directory for downloads
@@ -153,7 +146,6 @@ try {
         Invoke-WebRequest -Uri $zipAsset.browser_download_url -OutFile $zipPath -ErrorAction Stop
     } catch {
         Write-Error "Failed to download zip file: $_"
-        exit 1
     }
 
     Write-Banner -Color Green "✓ Downloaded $($zipAsset.name)"
@@ -166,7 +158,6 @@ try {
         Invoke-WebRequest -Uri $shaAsset.browser_download_url -OutFile $shaPath -ErrorAction Stop
     } catch {
         Write-Error "Failed to download SHA256 file: $_"
-        exit 1
     }
 
     Write-Banner -Color Green "✓ Downloaded $($shaAsset.name)"
@@ -180,7 +171,6 @@ try {
 
     if ($actualHash -ne $expectedHash) {
         Write-Error "SHA256 checksum validation failed!`nExpected: $expectedHash`nActual:   $actualHash"
-        exit 1
     }
 
     Write-Banner -Color Green "✓ SHA256 checksum validated successfully"
@@ -192,7 +182,6 @@ try {
         Expand-Archive -Path $zipPath -DestinationPath $PWD -ErrorAction Stop
     } catch {
         Write-Error "Failed to extract archive: $_"
-        exit 1
     }
 
     Write-Banner -Color Green "✓ Extracted to: $extractPath"
@@ -203,8 +192,6 @@ try {
     Write-Host "  1. cd Bolt" -ForegroundColor White
     Write-Host "  2. .\New-BoltModule.ps1 -Install" -ForegroundColor White
     Write-Host ""
-
-    exit 0
 } finally {
     # Cleanup temporary directory
     if (Test-Path -Path $tempDir) {
