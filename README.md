@@ -145,11 +145,11 @@ Get the latest stable version of Bolt from the [GitHub Releases page](https://gi
 
 **Option 2: Use the download script**
 
-Use the download script to list out the latest release and download and extract the file for you.
+Use the download script to list the latest releases and download and extract the selected file for you.
 
 Is this safe? No. Do I use it? Yes. Read and understand the script before you execute it.
 
-`irm https://raw.githubusercontent.com/motowilliams/bolt/refs/heads/main/download.ps1 | iex`
+`irm https://raw.githubusercontent.com/motowilliams/bolt/refs/heads/main/Download.ps1 | iex`
 
 **Option 3: Clone from Source**
 
