@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-12-24
+
+### Added
+- **Download Script**: New `Download.ps1` script for streamlined release installation
+  - Interactive menu displaying all GitHub releases sorted by version (oldest first, newest last)
+  - Shows release name, update date (ISO format), and prerelease indicators
+  - Automatic default selection for newest stable (non-prerelease) release
+  - Supports `-Latest` switch for non-interactive installation of latest stable release
+  - Downloads release zip and SHA256 checksum files to temporary directory
+  - Validates SHA256 checksum before extraction (fails if checksum file missing)
+  - Extracts to current directory creating `./Bolt/` subdirectory
+  - Automatic cleanup of temporary download files
+  - Designed for remote invocation via `Invoke-Expression` for easy installation:
+    ```powershell
+    iex (irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download.ps1)
+    ```
+  - Includes coding standard exceptions for exit codes and CmdletBinding to support remote execution
+  
+### Changed
+- **Installation Documentation**: Updated README to include Download.ps1 usage instructions
+  - Added remote installation one-liner command
+  - Documented both interactive and auto-install modes
+  - Clarified next steps after download (navigate to Bolt/ and run installation)
+
 ## [0.1.1] - 2025-12-18
 
 ### Changed
