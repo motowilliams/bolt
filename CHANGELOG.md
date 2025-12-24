@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-12-24
+
+### Fixed
+- **Release Packaging**: Corrected Download.ps1 path in Copy-Documentation.ps1
+  - Fixed incorrect path from `.scripts/release/Download.ps1` to `Download.ps1`
+  - Ensures Download.ps1 is correctly included in release packages
+
 ## [0.2.1] - 2025-12-24
 
 ### Changed
