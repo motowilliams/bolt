@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-12-24
+
+### Changed
+- **Release Packaging**: Updated release workflow to include Download.ps1 in module packages
+  - Modified `.scripts/release/Copy-Documentation.ps1` to copy Download.ps1 to module directory
+  - Updated release documentation to reflect Download.ps1 inclusion in packages
+  - Fixed README.md URL for Download.ps1 remote invocation (removed `refs/heads/` from path)
+
 ## [0.2.0] - 2025-12-24
 
 ### Added
