@@ -206,6 +206,7 @@ Each release includes:
 - Core files: `Bolt.psm1`, `Bolt.psd1`, `bolt.ps1`
 - Documentation: README, LICENSE, CHANGELOG, CONTRIBUTING, SECURITY, IMPLEMENTATION
 - Config files: `bolt.config.schema.json`, `bolt.config.example.json`
+- Utility Scripts: `Download.ps1`
 
 **Package Size**: ~96 KB compressed
 

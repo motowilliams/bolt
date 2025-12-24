@@ -41,4 +41,13 @@ foreach ($file in $docFiles) {
 Copy-Item -Path "bolt.config.schema.json" -Destination $moduleDir -Force -ErrorAction SilentlyContinue
 Copy-Item -Path "bolt.config.example.json" -Destination $moduleDir -Force -ErrorAction SilentlyContinue
 
+# Copy Download.ps1 script
+$downloadScript = ".scripts/release/Download.ps1"
+if (Test-Path -Path $downloadScript) {
+    Copy-Item -Path $downloadScript -Destination $moduleDir -Force
+    Write-Host "  ✓ Copied: Download.ps1" -ForegroundColor Gray
+} else {
+    Write-Host "  ⚠ Not found: Download.ps1" -ForegroundColor Yellow
+}
+
 Write-Host "✓ Documentation files copied" -ForegroundColor Green
