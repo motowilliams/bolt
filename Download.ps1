@@ -51,7 +51,7 @@ if ($PSCmdlet.ParameterSetName -eq 'AutoDownload') {
     # -Latest mode: Filter to stable releases and select first (newest)
     Write-Host "Finding latest stable release..." -ForegroundColor Cyan
 
-    $stableReleases = $sortedReleases | Where-Object { -not $_.prerelease }
+    $stableReleases = $sortedReleases | Where-Object -FilterScript { -not $_.prerelease }
 
     if ($stableReleases.Count -eq 0) {
         Write-Error "No stable releases found"
@@ -95,7 +95,6 @@ if ($PSCmdlet.ParameterSetName -eq 'AutoDownload') {
     }
 
     # Prompt for selection
-    $selection = $null
     $attempts = 0
     $maxAttempts = 2
 
@@ -106,15 +105,15 @@ if ($PSCmdlet.ParameterSetName -eq 'AutoDownload') {
         } else {
             "`nEnter the number of the release to download (1-$($menuItems.Count))"
         }
-        $input = Read-Host $promptText
+        $userInput = Read-Host $promptText
 
         # Use default if user pressed Enter without input
-        if ([string]::IsNullOrWhiteSpace($input) -and $defaultIndex) {
-            $input = $defaultIndex.ToString()
+        if ([string]::IsNullOrWhiteSpace($userInput) -and $defaultIndex) {
+            $userInput = $defaultIndex.ToString()
         }
 
-        if ($input -match '^\d+$') {
-            $selectionNumber = [int]$input
+        if ($userInput -match '^\d+$') {
+            $selectionNumber = [int]$userInput
 
             if ($selectionNumber -ge 1 -and $selectionNumber -le $menuItems.Count) {
                 $selectedRelease = $menuItems[$selectionNumber - 1].Release
@@ -138,8 +137,8 @@ if (Test-Path -Path $extractPath) {
 }
 
 # Find the zip and sha256 assets
-$zipAsset = $selectedRelease.assets | Where-Object { $_.name -like "*.zip" -and $_.name -notlike "*.sha256" } | Select-Object -First 1
-$shaAsset = $selectedRelease.assets | Where-Object { $_.name -like "*.zip.sha256" } | Select-Object -First 1
+$zipAsset = $selectedRelease.assets | Where-Object -FilterScript { $_.name -like "*.zip" -and $_.name -notlike "*.sha256" } | Select-Object -First 1
+$shaAsset = $selectedRelease.assets | Where-Object -FilterScript { $_.name -like "*.zip.sha256" } | Select-Object -First 1
 
 if (-not $zipAsset) {
     Write-Error "No zip file found in release assets"
