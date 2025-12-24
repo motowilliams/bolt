@@ -1,3 +1,19 @@
+# ==============================================================================
+# CODING STANDARD EXCEPTION - EXIT CODES
+# ==============================================================================
+# This script intentionally does NOT use explicit exit codes (exit 0/exit 1)
+# to support remote invocation via Invoke-Expression:
+#   iex (irm https://github.com/motowilliams/bolt/.../Download.ps1)
+#
+# Also [CmdletBinding()] attribute is not used to avoid issues with remote execution
+#
+# Errors are handled via Write-Error which propagates correctly in both
+# local and remote execution contexts.
+#
+# Approved by: motowilliams on 2025-12-24
+# Reason: Remote installation support
+# ==============================================================================
+
 $ProjectUri = "https://api.github.com/repos/motowilliams/bolt"
 function Write-Banner {
     param (
