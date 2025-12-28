@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2025-12-27
+
+### Changed
+- **Release Packaging**: Renamed Copy-Documentation.ps1 to Copy-AdditionalModuleFiles.ps1
+  - Better reflects the script's purpose of copying various essential module files
+  - Now includes New-BoltModule.ps1 from infra/ directory in release packages
+  - Ensures all necessary files for module installation are packaged together
+  - Updated release workflow to use renamed script
+
+### Added
+- **Module Installation**: Added New-BoltModule.ps1 to project root
+  - Provides module builder and installer for Bolt PowerShell module
+  - Enables global 'bolt' command when installed as a module
+  - Cross-platform support (Windows, Linux, macOS)
+  - Supports custom installation paths via -ModuleOutputPath parameter
+  - Includes -NoImport flag for build/release scenarios
+  - Manages uninstallation with automatic detection of all installed versions
+
 ## [0.2.2] - 2025-12-24
 
 ### Fixed
