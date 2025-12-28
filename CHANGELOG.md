@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.2] - 2025-12-24
 
 ### Fixed
-- **Release Packaging**: Corrected Download.ps1 path in Copy-Documentation.ps1
+- **Release Packaging**: Corrected Download.ps1 path in Copy-AdditionalModuleFiles.ps1
   - Fixed incorrect path from `.scripts/release/Download.ps1` to `Download.ps1`
   - Ensures Download.ps1 is correctly included in release packages
 
@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Release Packaging**: Updated release workflow to include Download.ps1 in module packages
-  - Modified `.scripts/release/Copy-Documentation.ps1` to copy Download.ps1 to module directory
+  - Modified `.scripts/release/Copy-AdditionalModuleFiles.ps1` to copy Download.ps1 to module directory
   - Updated release documentation to reflect Download.ps1 inclusion in packages
   - Fixed README.md URL for Download.ps1 remote invocation (removed `refs/heads/` from path)
 
