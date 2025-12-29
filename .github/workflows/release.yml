@@ -65,6 +65,12 @@ jobs:
           & .scripts/release/Create-Archive.ps1 `
             -Version "${{ steps.version.outputs.VERSION }}"
 
+      - name: Build starter package archives
+        shell: pwsh
+        run: |
+          & .scripts/release/Build-PackageArchives.ps1 `
+            -Version "${{ steps.version.outputs.VERSION }}"
+
       - name: Generate release notes
         id: release_notes
         shell: pwsh
@@ -79,6 +85,8 @@ jobs:
           files: |
             release/Bolt-${{ steps.version.outputs.VERSION }}.zip
             release/Bolt-${{ steps.version.outputs.VERSION }}.zip.sha256
+            release/bolt-starter-*.zip
+            release/bolt-starter-*.zip.sha256
           draft: false
           prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
           fail_on_unmatched_files: true
