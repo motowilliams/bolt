@@ -28,6 +28,7 @@ Write-Host "Copying additional files to module..." -ForegroundColor Cyan
     "bolt.config.schema.json",
     "bolt.config.example.json",
     "Download.ps1",
+    "Download-Starter.ps1",
     "New-BoltModule.ps1"
 ) | ForEach-Object {
     $file = $_
