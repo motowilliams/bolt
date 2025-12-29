@@ -57,7 +57,7 @@ jobs:
       - name: Copy documentation files
         shell: pwsh
         run: |
-          & .scripts/release/Copy-Documentation.ps1
+          & .scripts/release/Copy-AdditionalModuleFiles.ps1
 
       - name: Create release archive
         shell: pwsh

@@ -7,10 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2025-12-27
+
+### Changed
+- **Release Packaging**: Renamed Copy-Documentation.ps1 to Copy-AdditionalModuleFiles.ps1
+  - Better reflects the script's purpose of copying various essential module files
+  - Now includes New-BoltModule.ps1 from project root in release packages
+  - Ensures all necessary files for module installation are packaged together
+  - Updated release workflow to use renamed script
+
+### Added
+- **Module Installation**: Added New-BoltModule.ps1 to project root
+  - Provides module builder and installer for Bolt PowerShell module
+  - Enables global 'bolt' command when installed as a module
+  - Cross-platform support (Windows, Linux, macOS)
+  - Supports custom installation paths via -ModuleOutputPath parameter
+  - Includes -NoImport flag for build/release scenarios
+  - Manages uninstallation with automatic detection of all installed versions
+
 ## [0.2.2] - 2025-12-24
 
 ### Fixed
-- **Release Packaging**: Corrected Download.ps1 path in Copy-Documentation.ps1
+- **Release Packaging**: Corrected Download.ps1 path in Copy-AdditionalModuleFiles.ps1
   - Fixed incorrect path from `.scripts/release/Download.ps1` to `Download.ps1`
   - Ensures Download.ps1 is correctly included in release packages
 
@@ -18,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Release Packaging**: Updated release workflow to include Download.ps1 in module packages
-  - Modified `.scripts/release/Copy-Documentation.ps1` to copy Download.ps1 to module directory
+  - Modified `.scripts/release/Copy-AdditionalModuleFiles.ps1` to copy Download.ps1 to module directory
   - Updated release documentation to reflect Download.ps1 inclusion in packages
   - Fixed README.md URL for Download.ps1 remote invocation (removed `refs/heads/` from path)
 
