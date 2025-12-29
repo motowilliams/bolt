@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Release Packaging**: Renamed Copy-Documentation.ps1 to Copy-AdditionalModuleFiles.ps1
   - Better reflects the script's purpose of copying various essential module files
-  - Now includes New-BoltModule.ps1 from infra/ directory in release packages
+  - Now includes New-BoltModule.ps1 from project root in release packages
   - Ensures all necessary files for module installation are packaged together
   - Updated release workflow to use renamed script
 

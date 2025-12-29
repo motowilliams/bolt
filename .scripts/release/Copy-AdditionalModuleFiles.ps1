@@ -25,10 +25,10 @@ Write-Host "Copying additional files to module..." -ForegroundColor Cyan
     "CONTRIBUTING.md",
     "SECURITY.md",
     "IMPLEMENTATION.md",
-    "bolt.config.schema.json" ,
+    "bolt.config.schema.json",
     "bolt.config.example.json",
     "Download.ps1",
-    "infra\New-BoltModule.ps1"
+    "New-BoltModule.ps1"
 ) | ForEach-Object {
     $file = $_
     if (Test-Path -Path $file) {
