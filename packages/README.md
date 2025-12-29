@@ -64,8 +64,39 @@ Want to contribute a package starter? Here's the pattern:
 4. **Add tests**: Include `tests/` directory with Pester tests
 5. **Document requirements**: Specify external tool dependencies
 6. **Add examples**: Include sample files for testing
+7. **Create release script** (optional): Add `Create-Release.ps1` for automatic release packaging
 
 See `.build-bicep/` as a reference implementation.
+
+### Release Script Convention
+
+To include your package starter in GitHub releases, add a `Create-Release.ps1` script:
+
+```powershell
+#Requires -Version 7.0
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$Version,
+    
+    [Parameter(Mandatory = $false)]
+    [string]$OutputDirectory = "release"
+)
+
+# Package task files into zip
+# Generate SHA256 checksum
+# Exit 0 on success, 1 on failure
+```
+
+**Requirements**:
+- Accept `-Version` and `-OutputDirectory` parameters
+- Create archive: `bolt-starter-{toolchain}-{version}.zip`
+- Generate checksum: `bolt-starter-{toolchain}-{version}.zip.sha256`
+- Exit with 0 on success, 1 on failure
+
+**Example**: See `packages/.build-bicep/Create-Release.ps1`
+
+When present, your package will be automatically built and included in GitHub releases with the same version as the main Bolt module.
 
 ## Package Starter vs. Project Tasks
 
