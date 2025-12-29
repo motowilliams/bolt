@@ -327,9 +327,8 @@ Typical release workflow runtime:
 | Documentation Bundling | ~1s |
 | Archive Creation | ~2s |
 | Starter Package Archives | ~5s |
-| Archive Creation | ~2s |
 | Release Publishing | ~10s |
-| **Total** | **~35s** |
+| **Total** | **~40s** |
 
 ## Troubleshooting
 

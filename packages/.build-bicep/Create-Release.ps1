@@ -53,9 +53,11 @@ New-Item -Path $stagingDir -ItemType Directory -Force | Out-Null
 Write-Host "  Staging package contents..." -ForegroundColor Gray
 
 # Copy task files (Invoke-*.ps1) - exclude test files
+# Following Bolt convention: task files must be named Invoke-*.ps1
 $taskFiles = Get-ChildItem -Path $packageDir -Filter "Invoke-*.ps1" -File
 if ($taskFiles.Count -eq 0) {
-    Write-Error "❌ No task files found in $packageDir"
+    Write-Error "❌ No task files found matching 'Invoke-*.ps1' pattern in $packageDir"
+    Write-Host "   Bolt convention requires task files to follow 'Invoke-*.ps1' naming pattern" -ForegroundColor Gray
     exit 1
 }
 

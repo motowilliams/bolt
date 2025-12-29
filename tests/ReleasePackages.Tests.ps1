@@ -21,8 +21,7 @@ BeforeAll {
 
     # Helper function to get a temp directory
     function Get-TempTestPath {
-        $tempDir = if ($env:TEMP) { $env:TEMP } else { "/tmp" }
-        $tempPath = Join-Path -Path $tempDir -ChildPath "BoltReleaseTest_$(Get-Random)"
+        $tempPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "BoltReleaseTest_$(Get-Random)"
         if (-not (Test-Path -Path $tempPath)) {
             New-Item -Path $tempPath -ItemType Directory -Force | Out-Null
         }
