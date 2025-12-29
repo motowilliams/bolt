@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-12-29
+
+### Added
+- **Starter Package Release Automation**: Convention-based system for packaging starter packages as separate release assets
+  - New orchestration script: `.scripts/release/Build-PackageArchives.ps1` discovers and builds all packages with `Create-Release.ps1` scripts
+  - Package-specific script: `packages/.build-bicep/Create-Release.ps1` creates zip archives for Bicep starter package
+  - All packages use the same version as Bolt core module
+  - Automatic discovery of `packages/.build-*` directories with release scripts
+  - Sequential execution with fail-fast error handling (one error stops all)
+  - Archive naming convention: `bolt-starter-{toolchain}-{version}.zip`
+  - SHA256 checksum generation for all package archives
+  - Comprehensive test suite: 20 Pester tests covering validation, functionality, and convention compliance
+- **Release Assets Enhancement**: GitHub releases now include starter package archives
+  - Updated release workflow to build and publish starter package archives
+  - New release assets: `bolt-starter-bicep-{version}.zip` (~3 KB) and checksum
+  - Wildcard pattern matching for automatic inclusion of all starter packages
+  - Documentation updates in `.github/workflows/release.md` covering new workflow step
+- **Package Development Guide**: Added comprehensive documentation for creating starter packages
+  - Convention requirements for `Create-Release.ps1` scripts in packages README
+  - Instructions for adding new starter packages (TypeScript, Python, Docker, etc.)
+  - Local testing procedures for package release scripts
+  - Examples and validation requirements
+
+### Changed
+- **Release Workflow**: Enhanced release pipeline to support multiple package types
+  - Added "Build starter package archives" step after core archive creation
+  - Updated release asset file patterns to include starter packages
+  - Performance metrics updated to reflect starter package build time (~5s additional)
+  - Total release workflow time increased to ~40s
+
 ## [0.2.3] - 2025-12-27
 
 ### Changed
@@ -344,6 +374,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - EditorConfig for consistent code formatting
 
-[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/motowilliams/bolt/compare/v0.2.3...v0.3.0
+[0.2.3]: https://github.com/motowilliams/bolt/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/motowilliams/bolt/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/motowilliams/bolt/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/motowilliams/bolt/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/motowilliams/bolt/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/motowilliams/bolt/releases/tag/v0.1.0
