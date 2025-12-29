@@ -17,8 +17,14 @@ Infrastructure-as-Code tasks for Azure Bicep workflows.
 - Azure Bicep CLI: `winget install Microsoft.Bicep` (Windows) or https://aka.ms/bicep-install
 
 **Installation:**
-Copy the task files from `packages/.build-bicep/` to your project's `.build/` directory:
 
+**Option 1: Download from GitHub Releases (recommended)**
+```powershell
+# Interactive script to download and install starter packages
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
+```
+
+**Option 2: Manual copy from source (for development)**
 ```powershell
 # From your project root
 Copy-Item -Path "packages/.build-bicep/Invoke-*.ps1" -Destination ".build/" -Force
