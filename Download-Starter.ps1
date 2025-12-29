@@ -202,11 +202,16 @@ while ($attempts -lt $maxAttempts) {
     }
 }
 
-# Check if output directory already exists
+# Prepare extraction directory
 $extractPath = Join-Path -Path $PWD -ChildPath ".build"
 
-if (Test-Path -Path $extractPath) {
-    Write-Error "Directory '$extractPath' already exists. This script installs starter packages to a '.build/' directory. Please remove it or run this script from a different location."
+# Create .build directory if it doesn't exist
+if (-not (Test-Path -Path $extractPath)) {
+    Write-Host "Creating .build/ directory..." -ForegroundColor Cyan
+    New-Item -Path $extractPath -ItemType Directory -Force | Out-Null
+} else {
+    Write-Host "Using existing .build/ directory..." -ForegroundColor Cyan
+    Write-Host "⚠ Note: Existing task files with the same names will be overwritten" -ForegroundColor Yellow
 }
 
 # Find the sha256 checksum for selected starter
@@ -265,7 +270,7 @@ try {
     Write-Host "`nExtracting to .build/ directory..." -ForegroundColor Cyan
 
     try {
-        Expand-Archive -Path $zipPath -DestinationPath $PWD -ErrorAction Stop
+        Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force -ErrorAction Stop
     } catch {
         Write-Error "Failed to extract archive: $_"
     }
