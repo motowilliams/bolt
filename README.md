@@ -149,7 +149,9 @@ Use the download script to list the latest releases and download and extract the
 
 Is this safe? No. Do I use it? Yes. Read and understand the script before you execute it.
 
-`irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download.ps1 | iex`
+```powershell
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download.ps1 | iex
+```
 
 **Option 3: Clone from Source**
 
