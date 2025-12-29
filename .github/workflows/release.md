@@ -160,7 +160,34 @@ $hash = Get-FileHash -Path $zipPath -Algorithm SHA256
 
 Creates `Bolt-{version}.zip.sha256` for verification.
 
-### 8. Release Notes Extraction
+### 8. Starter Package Archive Creation
+
+```powershell
+& .scripts/release/Build-PackageArchives.ps1 `
+  -Version "${{ steps.version.outputs.VERSION }}"
+```
+
+Discovers and builds archives for all starter packages following the convention:
+
+**Convention**: Each `packages/.build-*` directory can include a `Create-Release.ps1` script that:
+- Accepts `-Version` and `-OutputDirectory` parameters
+- Creates a zip archive: `bolt-starter-{name}-{version}.zip`
+- Generates SHA256 checksum
+- Exits with 0 on success, 1 on failure
+
+**Discovery Process**:
+1. Scans `packages/` directory for `.build-*` subdirectories
+2. Checks each for `Create-Release.ps1` script
+3. Executes scripts in sequence with the same version as Bolt
+4. Stops on first failure (one error stops all)
+
+**Package Naming**: `bolt-starter-{toolchain}-{version}.zip`
+- Example: `bolt-starter-bicep-0.1.0.zip`
+
+**Current Packages**:
+- `bolt-starter-bicep-{version}.zip` - Bicep IaC tasks (format, lint, build)
+
+### 9. Release Notes Extraction
 
 ```powershell
 $pattern = "(?s)## \[$version\].*?(?=## \[|\z)"
@@ -173,7 +200,7 @@ Extracts the relevant section from CHANGELOG.md for this version.
 
 **Fallback**: If extraction fails, links to full CHANGELOG.md.
 
-### 9. GitHub Release Creation
+### 10. GitHub Release Creation
 
 ```yaml
 - uses: softprops/action-gh-release@v2
@@ -182,6 +209,8 @@ Extracts the relevant section from CHANGELOG.md for this version.
     files: |
       release/Bolt-${{ steps.version.outputs.VERSION }}.zip
       release/Bolt-${{ steps.version.outputs.VERSION }}.zip.sha256
+      release/bolt-starter-*.zip
+      release/bolt-starter-*.zip.sha256
     draft: false
     prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
 ```
@@ -189,6 +218,7 @@ Extracts the relevant section from CHANGELOG.md for this version.
 Creates the GitHub release with:
 - Release notes from CHANGELOG.md
 - Module zip and checksum files
+- Starter package zips and checksums (if any exist)
 - Pre-release flag based on version format
 
 **Pre-release Detection**: Versions containing `-` are marked as pre-releases.
@@ -201,6 +231,8 @@ Each release includes:
 |-------|-------------|
 | `Bolt-{version}.zip` | Complete module package with all files |
 | `Bolt-{version}.zip.sha256` | SHA256 checksum for verification |
+| `bolt-starter-{name}-{version}.zip` | Starter package for specific toolchain (e.g., bicep) |
+| `bolt-starter-{name}-{version}.zip.sha256` | SHA256 checksum for starter package |
 
 **Module Package Contents**:
 - Core files: `Bolt.psm1`, `Bolt.psd1`, `bolt.ps1`
@@ -208,7 +240,15 @@ Each release includes:
 - Config files: `bolt.config.schema.json`, `bolt.config.example.json`
 - Utility Scripts: `Download.ps1`
 
-**Package Size**: ~96 KB compressed
+**Starter Package Contents** (e.g., `bolt-starter-bicep-{version}.zip`):
+- Task scripts: `Invoke-*.ps1` files for the specific toolchain
+- Package README (if present)
+
+**Package Sizes**:
+- Core module: ~96 KB compressed
+- Bicep starter: ~3 KB compressed
+
+**Note**: The core module excludes starter packages to minimize package size.
 
 ## Exit Codes
 
@@ -255,6 +295,26 @@ bolt -ListTasks
 
 Verifies the module loads and functions correctly.
 
+### 5. Test Starter Package Archives
+
+```powershell
+pwsh -File .scripts/release/Build-PackageArchives.ps1 `
+  -Version "0.1.0" `
+  -OutputDirectory "./test-release"
+```
+
+Verifies starter package archives are created with correct naming and checksums.
+
+**Verify Package Contents**:
+```powershell
+# List contents of created package
+unzip -l ./test-release/bolt-starter-bicep-0.1.0.zip
+
+# Verify checksum
+$hash = Get-FileHash -Path "./test-release/bolt-starter-bicep-0.1.0.zip" -Algorithm SHA256
+Get-Content "./test-release/bolt-starter-bicep-0.1.0.zip.sha256"
+```
+
 ## Performance
 
 Typical release workflow runtime:
@@ -265,6 +325,8 @@ Typical release workflow runtime:
 | Module Building | ~5s |
 | Manifest Generation | ~5s |
 | Documentation Bundling | ~1s |
+| Archive Creation | ~2s |
+| Starter Package Archives | ~5s |
 | Archive Creation | ~2s |
 | Release Publishing | ~10s |
 | **Total** | **~35s** |
@@ -350,7 +412,7 @@ The release workflow:
 - ✅ Validates changelog entries before releasing
 - ✅ Tests manifest validity before packaging
 - ✅ Generates SHA256 checksums for verification
-- ✅ Excludes starter packages (reduces attack surface)
+- ✅ Packages starter toolchains separately from core module
 - ✅ Uses official GitHub Actions (no third-party code execution)
 
 ## Maintenance
@@ -367,6 +429,37 @@ The workflow uses these external actions:
 2. Update version tags in `.github/workflows/release.yml`
 3. Test with a pre-release tag
 4. Update this documentation if behavior changes
+
+### Adding New Starter Packages
+
+To add a new starter package (e.g., for TypeScript, Python, Docker):
+
+1. **Create package directory**: `packages/.build-{toolchain}/`
+2. **Add task scripts**: Follow `Invoke-*.ps1` naming convention
+3. **Create release script**: `packages/.build-{toolchain}/Create-Release.ps1`
+   ```powershell
+   #Requires -Version 7.0
+   [CmdletBinding()]
+   param(
+       [Parameter(Mandatory = $true)]
+       [string]$Version,
+       [string]$OutputDirectory = "release"
+   )
+   
+   # Package-specific logic to create archive
+   # Must exit 0 on success, 1 on failure
+   ```
+4. **Test locally**:
+   ```powershell
+   pwsh -File packages/.build-{toolchain}/Create-Release.ps1 -Version "0.1.0"
+   ```
+5. **Verify in release workflow**: Package will be automatically discovered and built
+
+**Convention Requirements**:
+- Script must accept `-Version` and `-OutputDirectory` parameters
+- Archive naming: `bolt-starter-{toolchain}-{version}.zip`
+- Generate SHA256 checksum with `.sha256` extension
+- Exit with 0 on success, 1 on failure (one error stops all)
 
 ### Adding New Assets
 
