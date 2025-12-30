@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-12-29
+
+### Added
+- **Download-Starter.ps1**: Interactive script for downloading and installing Bolt starter packages from GitHub releases
+  - Two-level menu system: Release selection followed by starter package selection
+  - Filters releases to only show versions containing starter packages (bolt-starter-*.zip)
+  - Displays available starters for each release (bicep, typescript, etc.)
+  - SHA256 checksum validation for secure downloads
+  - Extracts packages directly to .build/ directory
+  - Handles existing .build/ directories with overwrite warnings
+  - Supports remote execution via `iex (irm ...)` pattern
+  - No exit codes or CmdletBinding attribute for remote execution compatibility
+  - Feature parity with Download.ps1 (interactive menus, prerelease support, default selection)
+
+### Changed
+- **Release Packaging**: Updated Copy-AdditionalModuleFiles.ps1 to include Download-Starter.ps1 in module releases
+- **Documentation**: Added Download-Starter.ps1 installation option to Package Starters section in README
+
+### Fixed
+- **Download-Starter.ps1**: Extraction now works with existing .build/ directories instead of failing
+  - Removed blocking error check that prevented execution if .build/ exists
+  - Added creation of .build/ directory if missing
+  - Added warning messages when using existing directory
+  - Uses -Force flag with Expand-Archive to allow overwriting existing files
+
 ## [0.3.0] - 2025-12-29
 
 ### Added
@@ -374,7 +399,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - EditorConfig for consistent code formatting
 
-[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/motowilliams/bolt/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/motowilliams/bolt/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/motowilliams/bolt/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/motowilliams/bolt/compare/v0.2.1...v0.2.2
