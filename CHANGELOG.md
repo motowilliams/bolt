@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2025-12-30
+
+### Changed
+- **Variable Listing**: Enhanced `-ListVariables` output with usage helper text
+  - Added inline documentation showing script usage syntax: `$BoltConfig.VariableName`
+  - Improved clarity for accessing configuration variables in task scripts
+  - Cleaned up whitespace formatting for better readability
+
 ## [0.4.0] - 2025-12-29
 
 ### Added

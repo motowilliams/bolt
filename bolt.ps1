@@ -1056,7 +1056,8 @@ function Show-BoltVariables {
         [string]$TaskDirectory = ".build"
     )
 
-    Write-Host "`nBolt Configuration Variables`n" -ForegroundColor Cyan
+    Write-Host "`nBolt Configuration Variables" -ForegroundColor Cyan
+    Write-Host "Script usage: `$BoltConfig.VariableName`n" -ForegroundColor Cyan
 
     # Get full config
     $config = Get-BoltConfig -ScriptRoot $ScriptRoot -TaskDirectory $TaskDirectory
@@ -1112,8 +1113,6 @@ function Show-BoltVariables {
         }
     }
 
-    Write-Host ""
-
     # Display user-defined variables
     Write-Host "User-Defined Variables:" -ForegroundColor Yellow
     if ($userVars.Count -eq 0) {
@@ -1137,8 +1136,6 @@ function Show-BoltVariables {
             }
         }
     }
-
-    Write-Host ""
 }
 
 
