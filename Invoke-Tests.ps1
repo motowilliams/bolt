@@ -16,13 +16,19 @@
     maintaining test decoupling for future starter package separation.
 
 .PARAMETER Tag
-    Run only tests with the specified tag(s). Common tags:
+    Run only tests with the specified tag(s). Available tags:
     - Core: Fast core orchestration tests (no external dependencies)
+    - Security: Security validation tests (includes all security-related tests)
     - Bicep-Tasks: Bicep starter package tests (requires Bicep CLI)
-    - Security: Security validation tests
+    - SecurityLogging: Security event logging tests
+    - SecurityTxt: RFC 9116 compliance tests
+    - OutputValidation: Output sanitization tests
+    - Variables: Variable system tests
+    - Perf: Performance baseline tests
+    - Release: Release packaging tests
 
 .PARAMETER ExcludeTag
-    Exclude tests with the specified tag(s).
+    Exclude tests with the specified tag(s). Same tag values as Tag parameter.
 
 .PARAMETER Output
     Output verbosity level: None, Normal, Detailed, or Diagnostic.
@@ -55,9 +61,11 @@
 [CmdletBinding()]
 param(
     [Parameter()]
+    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$Tag,
 
     [Parameter()]
+    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$ExcludeTag,
 
     [Parameter()]
