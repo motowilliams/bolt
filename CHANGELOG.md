@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2025-12-31
+
+### Added
+- **Invoke-Tests.ps1**: Wrapper script for comprehensive test execution with recursive discovery
+  - Automatically discovers tests in both `tests/` (310 tests) and `packages/` (16 tests) directories
+  - Supports tag filtering (`-Tag Core`, `-Tag Bicep-Tasks`, `-Tag Security`)
+  - Includes `-Output` parameter for verbosity control (None, Normal, Detailed, Diagnostic)
+  - Includes `-PassThru` parameter to return result object for automation
+  - Total of 326 tests discovered across project
+
+### Changed
+- **Testing Documentation**: Updated README.md and CONTRIBUTING.md to document new test workflow
+  - Documented `Invoke-Tests.ps1` as recommended test runner for comprehensive test execution
+  - Maintained backward compatibility with direct `Invoke-Pester` usage
+  - Added note about test organization for future starter package separation
+
+### Technical Notes
+- Tests for starter packages live within their package directories (e.g., `packages/.build-bicep/tests/`)
+- This structure supports future separation of starter packages into separate repositories
+- `Invoke-Pester` without arguments still works but only discovers tests in `tests/` directory
+- CI workflows continue to use tag-based filtering for selective test execution
+
 ## [0.4.1] - 2025-12-30
 
 ### Changed
