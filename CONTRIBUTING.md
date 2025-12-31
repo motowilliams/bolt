@@ -352,11 +352,12 @@ $subscriptionId = if ($env:AZURE_SUBSCRIPTION_ID) {
 
 Before submitting changes:
 
-- **Run the test suite**: `Invoke-Pester` to ensure all tests pass
+- **Run the complete test suite**: Use `.\Invoke-Tests.ps1` to run all tests (includes starter packages)
+  - Alternative: `Invoke-Pester` (discovers tests in `tests/` only, requires explicit paths for starter packages)
 - **Use test tags for faster feedback**:
-  - `Invoke-Pester -Tag Core` - Quick orchestration tests (fast, ~1s)
-  - `Invoke-Pester -Tag Security` - Security validation tests (moderate, ~10s)
-  - `Invoke-Pester -Tag Bicep-Tasks` - Bicep starter package validation tests (slower, ~22s)
+  - `.\Invoke-Tests.ps1 -Tag Core` - Quick orchestration tests (fast, ~1s)
+  - `.\Invoke-Tests.ps1 -Tag Security` - Security validation tests (moderate, ~10s)
+  - `.\Invoke-Tests.ps1 -Tag Bicep-Tasks` - Bicep starter package validation tests (slower, ~22s)
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
 - **Test with custom directories**: Verify `-TaskDirectory` parameter works correctly
@@ -367,6 +368,8 @@ Before submitting changes:
   - **Security changes** → `tests/security/Security.Tests.ps1` (validates security fixes, tag with `Security`)
   - **New Bicep starter package tasks** → `packages/.build-bicep/tests/Tasks.Tests.ps1` (validates task structure, tag with `Bicep-Tasks`)
   - **Bicep starter package integrations** → `packages/.build-bicep/tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Bicep-Tasks`)
+
+> **Note**: Tests for starter packages live within their package directories (e.g., `packages/.build-bicep/tests/`). This supports future separation of starter packages into their own repositories. The `Invoke-Tests.ps1` script automatically discovers tests in both `tests/` and `packages/` directories.
 
 ### Cross-Platform Guidelines
 

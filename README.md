@@ -884,14 +884,31 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 
 ### Running Tests
 
+**Recommended**: Use the `Invoke-Tests.ps1` wrapper script to run all tests, including those in starter packages:
+
 ```powershell
-# Run all tests (auto-discovers test files)
-Invoke-Pester
+# Run all tests (discovers tests in tests/ and packages/)
+.\Invoke-Tests.ps1
 
 # Run with detailed output
-Invoke-Pester -Output Detailed
+.\Invoke-Tests.ps1 -Output Detailed
 
-# Run specific test file
+# Run tests by tag
+.\Invoke-Tests.ps1 -Tag Core          # Fast core tests (~1s)
+.\Invoke-Tests.ps1 -Tag Security      # Security validation (~10s)
+.\Invoke-Tests.ps1 -Tag Bicep-Tasks   # Bicep starter package (~22s)
+
+# Return result object for automation
+.\Invoke-Tests.ps1 -PassThru
+```
+
+**Alternative**: Use `Invoke-Pester` directly (requires explicit paths for starter packages):
+
+```powershell
+# Run core tests only (default Pester behavior)
+Invoke-Pester
+
+# Run specific test locations
 Invoke-Pester -Path tests/bolt.Tests.ps1
 Invoke-Pester -Path packages/.build-bicep/tests/
 
@@ -900,6 +917,8 @@ Invoke-Pester -Tag Core
 Invoke-Pester -Tag Security
 Invoke-Pester -Tag Bicep-Tasks
 ```
+
+> **Note**: `Invoke-Tests.ps1` automatically discovers tests in both `tests/` and `packages/` directories, making it easier to run the complete test suite.
 
 ### Test Tags
 
