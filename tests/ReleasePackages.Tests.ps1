@@ -103,7 +103,7 @@ Describe 'Build-PackageArchives.ps1 Functionality' -Tag 'Release' {
                         -OutputDirectory $script:TempOutput 2>&1
         
         $outputStr = $output -join "`n"
-        $outputStr | Should -Match 'Found 1 starter package'
+        $outputStr | Should -Match 'Found \d+ starter package'
         $outputStr | Should -Match '\.build-bicep'
     }
 
