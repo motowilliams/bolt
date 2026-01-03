@@ -292,6 +292,47 @@ Copy-Item -Path "packages/.build-bicep/Invoke-*.ps1" -Destination ".build/" -For
 .\bolt.ps1 build   # Full pipeline: format → lint → build
 ```
 
+#### Golang Starter Package (`packages/.build-golang`)
+
+Go application development tasks for building, testing, and formatting Go code.
+
+**Included Tasks:**
+- **`format`** (alias `fmt`) - Formats Go files using `go fmt`
+- **`lint`** - Validates Go code using `go vet`
+- **`test`** - Runs Go tests using `go test`
+- **`build`** - Builds Go application (depends on format → lint → test)
+
+**Requirements:** Go 1.21+ CLI - https://go.dev/doc/install
+
+**Installation:**
+
+Option 1: Use the download script (recommended for released versions)
+```powershell
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
+```
+
+Option 2: Manual copy from source (for development)
+```powershell
+# Copy tasks from package starter to your project
+Copy-Item -Path "packages/.build-golang/Invoke-*.ps1" -Destination ".build/" -Force
+```
+
+**Usage:**
+```powershell
+.\bolt.ps1 format  # Format Go files (or use alias: fmt)
+.\bolt.ps1 lint    # Validate Go code
+.\bolt.ps1 test    # Run tests
+.\bolt.ps1 build   # Full pipeline: format → lint → test → build
+```
+
+**Configuration:**
+Customize the Go project path via `bolt.config.json`:
+```json
+{
+  "GoPath": "cmd/myapp/"
+}
+```
+
 ### More Package Starters Coming Soon
 
 We're working on additional package starters for popular toolchains:

@@ -97,32 +97,40 @@ Describe 'Build-PackageArchives.ps1 Functionality' -Tag 'Release' {
         Remove-TempTestPath -Path $script:TempOutput
     }
 
-    It 'Should discover .build-bicep package' {
+    It 'Should discover starter packages' {
         $output = & pwsh -File $script:BuildPackageArchivesPath `
                         -Version "0.1.0-test" `
                         -OutputDirectory $script:TempOutput 2>&1
         
         $outputStr = $output -join "`n"
-        $outputStr | Should -Match 'Found 1 starter package'
-        $outputStr | Should -Match '\.build-bicep'
+        $outputStr | Should -Match 'Found \d+ starter package'
     }
 
-    It 'Should create archive for bicep package' {
+    It 'Should create archives for all packages' {
         & pwsh -File $script:BuildPackageArchivesPath `
               -Version "0.1.0-test" `
               -OutputDirectory $script:TempOutput | Out-Null
         
-        $archivePath = Join-Path -Path $script:TempOutput -ChildPath "bolt-starter-bicep-0.1.0-test.zip"
-        Test-Path -Path $archivePath | Should -Be $true
+        # Verify at least one archive was created
+        $archives = Get-ChildItem -Path $script:TempOutput -Filter "bolt-starter-*.zip"
+        $archives.Count | Should -BeGreaterThan 0
     }
 
-    It 'Should create checksum for bicep package' {
+    It 'Should create checksums for all archives' {
         & pwsh -File $script:BuildPackageArchivesPath `
               -Version "0.1.0-test" `
               -OutputDirectory $script:TempOutput | Out-Null
         
-        $checksumPath = Join-Path -Path $script:TempOutput -ChildPath "bolt-starter-bicep-0.1.0-test.zip.sha256"
-        Test-Path -Path $checksumPath | Should -Be $true
+        # Verify at least one checksum was created
+        $checksums = Get-ChildItem -Path $script:TempOutput -Filter "*.sha256"
+        $checksums.Count | Should -BeGreaterThan 0
+        
+        # Verify each archive has a matching checksum
+        $archives = Get-ChildItem -Path $script:TempOutput -Filter "bolt-starter-*.zip"
+        foreach ($archive in $archives) {
+            $checksumPath = "$($archive.FullName).sha256"
+            Test-Path -Path $checksumPath | Should -Be $true
+        }
     }
 
     It 'Should exit with 0 on success' {

@@ -9,6 +9,11 @@
 # Bicep files
 *.bicep text eol=lf
 
+# Golang files
+*.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
+
 # JSON files
 *.json text eol=lf
 

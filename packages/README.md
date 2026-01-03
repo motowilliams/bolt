@@ -50,6 +50,56 @@ The Bicep starter package includes comprehensive tests:
 
 Run tests with: `Invoke-Pester -Tag Bicep-Tasks`
 
+### `.build-golang` - Golang Starter Package
+
+Go application development tasks for building, testing, and formatting Go code.
+
+**Included Tasks:**
+- **`format`** - Formats Go files using `go fmt` (alias: `fmt`)
+- **`lint`** - Validates Go code using `go vet`
+- **`test`** - Runs Go tests using `go test`
+- **`build`** - Builds Go application (depends on format, lint, test)
+
+**Requirements:**
+- Go 1.21+ CLI: https://go.dev/doc/install
+
+**Installation:**
+
+**Option 1: Download from GitHub Releases (recommended)**
+```powershell
+# Interactive script to download and install starter packages
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
+```
+
+**Option 2: Manual copy from source (for development)**
+```powershell
+# From your project root
+Copy-Item -Path "packages/.build-golang/Invoke-*.ps1" -Destination ".build/" -Force
+```
+
+**Usage:**
+```powershell
+# Format all Go files
+.\bolt.ps1 format
+
+# Lint Go code
+.\bolt.ps1 lint
+
+# Run tests
+.\bolt.ps1 test
+
+# Full build pipeline (format → lint → test → build)
+.\bolt.ps1 build
+```
+
+**Testing:**
+The Golang starter package includes comprehensive tests:
+- `packages/.build-golang/tests/Tasks.Tests.ps1` - Task structure validation
+- `packages/.build-golang/tests/Integration.Tests.ps1` - End-to-end integration tests
+- `packages/.build-golang/tests/app/` - Example Go application
+
+Run tests with: `Invoke-Pester -Tag Golang-Tasks`
+
 ## More Package Starters Coming Soon
 
 We're working on additional package starters for popular toolchains:

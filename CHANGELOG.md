@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-01-02
+
+### Added
+- **Golang Starter Package**: Complete Go development workflow package (`packages/.build-golang`)
+  - **`format`** task - Formats Go source files using `go fmt` (alias: `fmt`)
+  - **`lint`** task - Validates Go code using `go vet`
+  - **`test`** task - Runs Go tests using `go test -v`
+  - **`build`** task - Builds Go application with automatic dependency resolution (format → lint → test → build)
+  - Configuration support via `bolt.config.json` with `GoPath` parameter for custom project paths
+  - Cross-platform binary naming (`.exe` suffix on Windows)
+  - Auto-detection of module name from `go.mod`
+  - Binary size reporting post-build
+  - Output directory: `bin/` in project root
+  - Example Go application with tests included at `tests/app/`
+  - Comprehensive test suite: 21 Pester tests (16 validation + 5 integration) tagged `Golang-Tasks`
+  - Package-specific README with configuration examples and troubleshooting
+  - Release packaging script (`Create-Release.ps1`) for GitHub releases
+  - Follows Bicep starter package conventions for consistency
+
+### Changed
+- **Release Tests**: Refactored `Build-PackageArchives.ps1 Functionality` tests to be package-agnostic
+  - Removed hard-coded Bicep-specific checks (package names, archive paths)
+  - Tests now verify generic behavior: discovery count, archive creation for all packages, checksums
+  - Package-specific tests remain in their respective test blocks
+  - Tests scale automatically with any number of starter packages
+- **Documentation**: Updated `packages/README.md` to document Golang starter package
+  - Installation instructions (GitHub releases and manual copy)
+  - Usage examples for all tasks
+  - Requirements (Go 1.21+)
+  - Testing instructions with tag filtering
+
+### Fixed
+- **Test Discovery**: Updated package discovery test to handle multiple starter packages
+  - Changed from expecting "Found 1 starter package" to "Found \d+ starter package"
+  - Prevents test failures as new package starters are added
+- **Line Endings**: Added LF normalization for Golang files in `.gitattributes`
+  - Ensures consistent line endings across platforms for Go source files
+
 ## [0.4.2] - 2025-12-31
 
 ### Added
