@@ -371,6 +371,431 @@ Before submitting changes:
 
 > **Note**: Tests for starter packages live within their package directories (e.g., `packages/.build-bicep/tests/`). This supports future separation of starter packages into their own repositories. The `Invoke-Tests.ps1` script automatically discovers tests in both `tests/` and `packages/` directories.
 
+### Adding New Starter Packages
+
+Want to contribute a starter package for a new toolchain (Python, Node.js, Docker, etc.)? Follow this comprehensive checklist based on the conventions established by the Bicep and Golang starter packages.
+
+#### 1. Create Package Directory Structure
+
+Create a new directory under `packages/` following the naming convention:
+
+```powershell
+packages/.build-<toolchain>/
+├── Invoke-Format.ps1          # Format source files
+├── Invoke-Lint.ps1            # Validate/lint code
+├── Invoke-Test.ps1            # Run tests (optional if toolchain supports testing)
+├── Invoke-Build.ps1           # Build application (with dependencies)
+├── Create-Release.ps1         # Release packaging script
+├── README.md                  # Package-specific documentation
+└── tests/
+    ├── Tasks.Tests.ps1        # Task validation tests
+    ├── Integration.Tests.ps1  # End-to-end integration tests
+    └── app/                   # Example application for testing
+```
+
+**Naming Convention**: Use `.build-<toolchain>` where `<toolchain>` is lowercase (e.g., `.build-python`, `.build-docker`, `.build-terraform`).
+
+#### 2. Implement Task Files
+
+Each task file should follow this structure:
+
+```powershell
+#Requires -Version 7.0
+
+# TASK: taskname, alias1, alias2
+# DESCRIPTION: Clear description of what the task does
+# DEPENDS: dependency1, dependency2
+
+[CmdletBinding()]
+param()
+
+# Check for required external tool
+$toolCmd = Get-Command <tool-name> -ErrorAction SilentlyContinue
+if (-not $toolCmd) {
+    Write-Error "<Tool> CLI not found. Please install: <installation-instructions>"
+    exit 1
+}
+
+# Use $BoltConfig for configuration
+$projectPath = if ($BoltConfig.<ToolchainPath>) {
+    Join-Path -Path $BoltConfig.ProjectRoot -ChildPath $BoltConfig.<ToolchainPath>
+} else {
+    # Default path for backward compatibility
+    Join-Path -Path $BoltConfig.ProjectRoot -ChildPath "tests/app"
+}
+
+# Task implementation
+Write-Host "Task Name" -ForegroundColor Cyan
+# ... your task logic ...
+
+# Always use explicit exit codes
+if ($success) {
+    Write-Host "✓ Task completed successfully" -ForegroundColor Green
+    exit 0
+} else {
+    Write-Host "✗ Task failed" -ForegroundColor Red
+    exit 1
+}
+```
+
+**Key Requirements:**
+- Include comment-based metadata (`# TASK:`, `# DESCRIPTION:`, `# DEPENDS:`)
+- Check for external tool availability before execution
+- Support configuration via `$BoltConfig.<ToolchainPath>` with sensible defaults
+- Use color conventions (Cyan for headers, Green/Red for status)
+- Always end with explicit `exit 0` or `exit 1`
+
+#### 3. Create Release Packaging Script
+
+Add `Create-Release.ps1` to enable automatic GitHub release packaging:
+
+```powershell
+#Requires -Version 7.0
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$Version,
+    
+    [Parameter(Mandatory = $false)]
+    [string]$OutputDirectory = "release"
+)
+
+$ErrorActionPreference = 'Stop'
+
+Write-Host "Creating <Toolchain> starter package archive..." -ForegroundColor Cyan
+
+# Resolve paths
+$packageRoot = Split-Path -Path $PSScriptRoot -Parent
+$packageName = Split-Path -Path $PSScriptRoot -Leaf
+$toolchainName = $packageName -replace '^\.build-', ''
+
+# Create output directory
+if (-not (Test-Path -Path $OutputDirectory)) {
+    New-Item -Path $OutputDirectory -ItemType Directory -Force | Out-Null
+}
+
+# Create staging directory
+$stagingDir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "bolt-staging-$toolchainName-$(Get-Random)"
+New-Item -Path $stagingDir -ItemType Directory -Force | Out-Null
+
+try {
+    # Copy task files
+    Write-Host "  Staging package contents..." -ForegroundColor Gray
+    $taskFiles = Get-ChildItem -Path $PSScriptRoot -Filter "Invoke-*.ps1" -File
+    foreach ($file in $taskFiles) {
+        Copy-Item -Path $file.FullName -Destination $stagingDir -Force
+        Write-Host "    Added: $($file.Name)" -ForegroundColor Gray
+    }
+    
+    # Copy README if exists
+    $readmePath = Join-Path -Path $PSScriptRoot -ChildPath "README.md"
+    if (Test-Path -Path $readmePath) {
+        Copy-Item -Path $readmePath -Destination $stagingDir -Force
+        Write-Host "    Added: README.md" -ForegroundColor Gray
+    }
+    
+    # Create archive
+    $archiveName = "bolt-starter-$toolchainName-$Version.zip"
+    $archivePath = Join-Path -Path $OutputDirectory -ChildPath $archiveName
+    Write-Host "  Creating archive: $archiveName" -ForegroundColor Gray
+    
+    Compress-Archive -Path "$stagingDir\*" -DestinationPath $archivePath -Force
+    $archiveSize = (Get-Item -Path $archivePath).Length / 1KB
+    Write-Host "✓ Created package archive: $archiveName ($([math]::Round($archiveSize, 2)) KB)" -ForegroundColor Green
+    
+    # Generate SHA256 checksum
+    Write-Host "  Generating checksum..." -ForegroundColor Gray
+    $hash = (Get-FileHash -Path $archivePath -Algorithm SHA256).Hash
+    $checksumPath = "$archivePath.sha256"
+    Set-Content -Path $checksumPath -Value "$hash  $archiveName" -NoNewline
+    Write-Host "✓ Generated checksum file: $([System.IO.Path]::GetFileName($checksumPath))" -ForegroundColor Green
+    Write-Host "  SHA256: $hash" -ForegroundColor Gray
+    
+    Write-Host "`n✓ <Toolchain> starter package release completed successfully" -ForegroundColor Green
+    exit 0
+}
+catch {
+    Write-Host "`n✗ Failed to create package archive" -ForegroundColor Red
+    Write-Host "  Error: $_" -ForegroundColor Red
+    exit 1
+}
+finally {
+    # Clean up staging directory
+    if (Test-Path -Path $stagingDir) {
+        Remove-Item -Path $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+```
+
+**Archive Naming Convention**: `bolt-starter-{toolchain}-{version}.zip`
+
+#### 4. Add Comprehensive Tests
+
+Create two test files in `tests/` subdirectory:
+
+**`Tasks.Tests.ps1` - Task structure validation:**
+
+```powershell
+#Requires -Version 7.0
+#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
+
+BeforeAll {
+    $moduleRoot = Resolve-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath "..")
+}
+
+Describe 'Task Validation' -Tag '<Toolchain>-Tasks' {
+    Context 'Format Task' {
+        It 'Should exist' {
+            $taskPath = Join-Path -Path $moduleRoot -ChildPath "Invoke-Format.ps1"
+            Test-Path -Path $taskPath | Should -Be $true
+        }
+        
+        It 'Should have valid PowerShell syntax' {
+            $taskPath = Join-Path -Path $moduleRoot -ChildPath "Invoke-Format.ps1"
+            $content = Get-Content -Path $taskPath -Raw -ErrorAction Stop
+            { $null = [System.Management.Automation.PSParser]::Tokenize($content, [ref]$null) } | Should -Not -Throw
+        }
+        
+        It 'Should have TASK metadata' {
+            $taskPath = Join-Path -Path $moduleRoot -ChildPath "Invoke-Format.ps1"
+            $content = Get-Content -Path $taskPath -Raw
+            $content | Should -Match '# TASK:'
+        }
+        
+        It 'Should have DESCRIPTION metadata' {
+            $taskPath = Join-Path -Path $moduleRoot -ChildPath "Invoke-Format.ps1"
+            $content = Get-Content -Path $taskPath -Raw
+            $content | Should -Match '# DESCRIPTION:'
+        }
+    }
+    
+    # Add similar contexts for Lint, Test, Build tasks
+}
+```
+
+**`Integration.Tests.ps1` - End-to-end execution:**
+
+```powershell
+#Requires -Version 7.0
+#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
+
+BeforeAll {
+    $moduleRoot = Resolve-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath "..")
+    $projectRoot = Resolve-Path -Path (Join-Path -Path $moduleRoot -ChildPath ".." | Join-Path -ChildPath "..")
+    $boltScript = Join-Path -Path $projectRoot -ChildPath "bolt.ps1"
+}
+
+Describe 'Task Integration Tests' -Tag '<Toolchain>-Tasks' {
+    It 'Should format files if <Tool> CLI is available' {
+        $toolCmd = Get-Command <tool-name> -ErrorAction SilentlyContinue
+        
+        if (-not $toolCmd) {
+            Set-ItResult -Skipped -Because "<Tool> CLI not installed"
+        }
+        
+        Push-Location -Path $moduleRoot
+        try {
+            & $boltScript format -Only
+            $LASTEXITCODE | Should -Be 0
+        }
+        finally {
+            Pop-Location
+        }
+    }
+    
+    # Add similar tests for lint, test, build tasks
+    # Add test for full pipeline with dependencies
+}
+```
+
+**Tag Convention**: Use `<Toolchain>-Tasks` (e.g., `Python-Tasks`, `Docker-Tasks`)
+
+#### 5. Create Package-Specific README
+
+Document your starter package in `README.md`:
+
+```markdown
+# <Toolchain> Starter Package for Bolt
+
+<Brief description of what the starter package provides>
+
+## Tasks
+
+- **`format`** - <Description>
+- **`lint`** - <Description>
+- **`test`** - <Description> (if applicable)
+- **`build`** - <Description> (with dependencies: format → lint → test → build)
+
+## Requirements
+
+- <Tool> CLI: <Installation instructions>
+- <Any other dependencies>
+
+## Installation
+
+### Option 1: Download from GitHub Releases (Recommended)
+
+```powershell
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
+```
+
+### Option 2: Manual Copy (Development)
+
+```powershell
+Copy-Item -Path "packages/.build-<toolchain>/Invoke-*.ps1" -Destination ".build/" -Force
+```
+
+## Usage
+
+```powershell
+# Format files
+.\bolt.ps1 format
+
+# Lint/validate
+.\bolt.ps1 lint
+
+# Run tests
+.\bolt.ps1 test
+
+# Full build pipeline
+.\bolt.ps1 build
+```
+
+## Configuration
+
+Customize paths via `bolt.config.json`:
+
+```json
+{
+  "<ToolchainPath>": "path/to/your/code"
+}
+```
+
+Default: `tests/app/` (for backward compatibility with examples)
+
+## Testing
+
+Run package tests:
+
+```powershell
+.\Invoke-Tests.ps1 -Tag <Toolchain>-Tasks
+```
+
+## Example Application
+
+See `tests/app/` for a working example.
+```
+
+#### 6. Update Test Infrastructure
+
+Add your new tag to `Invoke-Tests.ps1`:
+
+```powershell
+# Update ValidateSet in both -Tag and -ExcludeTag parameters
+[ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', '<Toolchain>-Tasks', ...)]
+
+# Add to test discovery paths
+$config.Run.Path = @(
+    'tests'
+    'packages/.build-bicep/tests'
+    'packages/.build-golang/tests'
+    'packages/.build-<toolchain>/tests'  # Add your package
+)
+
+# Update documentation comment
+.PARAMETER Tag
+    Run only tests with the specified tag(s). Available tags:
+    - <Toolchain>-Tasks: <Toolchain> starter package tests (requires <Tool> CLI)
+
+# Add discovery output
+Write-Host "  - packages/.build-<toolchain>/tests/" -ForegroundColor Gray
+```
+
+#### 7. Update Documentation
+
+**`packages/README.md`** - Add section for your starter:
+
+```markdown
+### `.build-<toolchain>` - <Toolchain> Starter Package
+
+<Brief description>
+
+**Included Tasks:**
+- **`format`** - <Description>
+- **`lint`** - <Description>
+- **`build`** - <Description>
+
+**Requirements:**
+- <Tool> CLI: <Installation instructions>
+
+**Installation:** (same as other packages)
+
+**Usage:** (examples)
+
+**Testing:**
+Run tests with: `Invoke-Pester -Tag <Toolchain>-Tasks`
+```
+
+**Main `README.md`** - Add to "Available Package Starters" section (follow Bicep/Golang pattern)
+
+**`CHANGELOG.md`** - Document in next release notes:
+
+```markdown
+### Added
+- **<Toolchain> Starter Package**: Complete workflow package (`packages/.build-<toolchain>`)
+  - Tasks: format, lint, test, build
+  - Configuration support via `bolt.config.json`
+  - Cross-platform support
+  - Test suite: XX tests tagged `<Toolchain>-Tasks`
+```
+
+#### 8. Testing Checklist
+
+Before submitting your PR:
+
+- [ ] All task files have proper metadata (`# TASK:`, `# DESCRIPTION:`, `# DEPENDS:`)
+- [ ] External tool check implemented in each task
+- [ ] Configuration support via `$BoltConfig.<ToolchainPath>`
+- [ ] Explicit exit codes in all tasks (`exit 0` / `exit 1`)
+- [ ] Color conventions followed (Cyan/Gray/Green/Red)
+- [ ] Cross-platform path handling (use `Join-Path`)
+- [ ] Release script creates proper archive and checksum
+- [ ] Task validation tests pass (`Tasks.Tests.ps1`)
+- [ ] Integration tests pass (`Integration.Tests.ps1`)
+- [ ] Tests tagged with `<Toolchain>-Tasks`
+- [ ] Package README documents all tasks and configuration
+- [ ] Test infrastructure updated (`Invoke-Tests.ps1`)
+- [ ] Main documentation updated (`README.md`, `packages/README.md`)
+- [ ] Example application included in `tests/app/`
+- [ ] All tests pass: `.\Invoke-Tests.ps1 -Tag <Toolchain>-Tasks`
+
+#### 9. Reference Implementations
+
+Study these existing packages as templates:
+
+- **Bicep Starter** (`packages/.build-bicep/`) - Infrastructure-as-Code toolchain
+- **Golang Starter** (`packages/.build-golang/`) - Application development with testing
+
+Both follow the same conventions and provide excellent examples of:
+- Task structure and metadata
+- External tool validation
+- Configuration handling
+- Test organization
+- Documentation patterns
+
+#### 10. Common Pitfalls to Avoid
+
+- ❌ Forgetting explicit `exit` statements in tasks
+- ❌ Hardcoding paths instead of using `$BoltConfig` and `Join-Path`
+- ❌ Missing external tool availability checks
+- ❌ Inconsistent color usage in output
+- ❌ Not testing cross-platform (Windows, Linux, macOS)
+- ❌ Forgetting to update `Invoke-Tests.ps1` validation sets
+- ❌ Missing package-specific README
+- ❌ Not providing example application in `tests/app/`
+- ❌ Archive naming doesn't follow `bolt-starter-{toolchain}-{version}.zip` pattern
+
 ### Cross-Platform Guidelines
 
 Bolt is **cross-platform by design**. Follow these patterns:
