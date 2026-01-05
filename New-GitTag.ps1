@@ -62,7 +62,7 @@ function Get-GitErrorOutput {
     )
 
     return $Output | Where-Object {
-        $_ -is [System.Management.Automation.ErrorRecord] -or $_ -match 'fatal|error'
+        $_ -is [System.Management.Automation.ErrorRecord] -or $_ -imatch 'fatal|error'
     }
 }
 
@@ -117,10 +117,10 @@ function Test-GitRepository {
     $lsRemoteOutput = git ls-remote --heads origin 2>&1
     if ($LASTEXITCODE -ne 0) {
         $errorOutput = Get-GitErrorOutput -Output $lsRemoteOutput
-        if ($errorOutput -match 'Could not resolve host|Connection.*refused|Network.*unreachable|timeout') {
+        if ($errorOutput -imatch 'Could not resolve host|Connection.*refused|Network.*unreachable|timeout') {
             throw "Unable to connect to remote repository. Please check your network connection and try again.`nError: $($errorOutput -join '; ')"
         }
-        elseif ($errorOutput -match 'Authentication failed|Permission denied|could not read') {
+        elseif ($errorOutput -imatch 'Authentication failed|Permission denied|could not read') {
             throw "Authentication failed when accessing remote repository. Please check your credentials and access permissions.`nError: $($errorOutput -join '; ')"
         }
         else {
