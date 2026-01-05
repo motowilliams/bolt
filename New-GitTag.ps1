@@ -84,6 +84,22 @@ function Test-GitRepository {
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($remotes)) {
         throw "No git remote configured. Please configure a remote repository."
     }
+
+    # Verify remote connectivity
+    Write-Verbose "Verifying remote connectivity..."
+    $lsRemoteOutput = git ls-remote --heads origin 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $errorOutput = $lsRemoteOutput | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] -or $_ -match 'fatal|error' }
+        if ($errorOutput -match 'Could not resolve host|Connection.*refused|Network.*unreachable|timeout') {
+            throw "Unable to connect to remote repository. Please check your network connection and try again.`nError: $($errorOutput -join '; ')"
+        }
+        elseif ($errorOutput -match 'Authentication failed|Permission denied|could not read') {
+            throw "Authentication failed when accessing remote repository. Please check your credentials and access permissions.`nError: $($errorOutput -join '; ')"
+        }
+        else {
+            throw "Unable to access remote repository. Please verify your remote configuration.`nError: $($errorOutput -join '; ')"
+        }
+    }
 }
 
 function Test-TagNameFormat {
@@ -117,7 +133,18 @@ function Test-TagExists {
 
     # Check remote tags (capture output once for efficiency)
     $remoteTags = git ls-remote --tags origin "refs/tags/$TagName" 2>&1
-    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($remoteTags)) {
+
+    # Check for errors vs. empty result
+    if ($LASTEXITCODE -ne 0) {
+        # git ls-remote failed - could be network, authentication, or other issues
+        $errorOutput = $remoteTags | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] -or $_ -match 'fatal|error' }
+        if ($errorOutput) {
+            Write-Warning "Unable to check remote tags: $($errorOutput -join '; '). Proceeding with local check only."
+        }
+        return $false
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($remoteTags)) {
         return $true
     }
 
@@ -190,7 +217,7 @@ try {
         Write-Host "  ✓ Tag pushed successfully" -ForegroundColor Green
         Write-Host ""
         Write-Host "✓ Tag '$tagName' created and pushed to remote" -ForegroundColor Green
-        
+
         if ($env:GITHUB_ACTIONS -eq 'true') {
             Write-Host "  GitHub Actions will now trigger the release workflow." -ForegroundColor Gray
         }
