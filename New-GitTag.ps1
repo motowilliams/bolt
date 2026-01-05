@@ -117,12 +117,15 @@ function Test-GitRepository {
     $lsRemoteOutput = git ls-remote --heads origin 2>&1
     if ($LASTEXITCODE -ne 0) {
         $errorOutput = Get-GitErrorOutput -Output $lsRemoteOutput
-        if ($errorOutput -imatch 'Could not resolve host|Connection.*refused|Network.*unreachable|timeout') {
+        # Network-related errors
+        if ($errorOutput -imatch 'Could not resolve host|Connection.*refused|Network.*unreachable|timeout|timed out|connection timeout') {
             throw "Unable to connect to remote repository. Please check your network connection and try again.`nError: $($errorOutput -join '; ')"
         }
-        elseif ($errorOutput -imatch 'Authentication failed|Permission denied|could not read') {
+        # Authentication-related errors
+        elseif ($errorOutput -imatch 'Authentication failed|Permission denied|could not read|access denied|unauthorized|invalid credentials') {
             throw "Authentication failed when accessing remote repository. Please check your credentials and access permissions.`nError: $($errorOutput -join '; ')"
         }
+        # Other errors
         else {
             throw "Unable to access remote repository. Please verify your remote configuration.`nError: $($errorOutput -join '; ')"
         }
@@ -141,6 +144,24 @@ function Test-TagNameFormat {
 }
 
 function Test-TagExists {
+    <#
+    .SYNOPSIS
+        Checks if a git tag exists locally or remotely.
+
+    .DESCRIPTION
+        Validates tag name format and checks for tag existence in both local
+        and remote repositories. If remote check fails due to network or
+        authentication issues, a warning is displayed and the function returns
+        false (indicating tag doesn't exist or couldn't verify).
+
+    .PARAMETER TagName
+        The name of the git tag to check (e.g., 'v1.0.0').
+
+    .NOTES
+        - Returns $true if tag exists locally or remotely
+        - Returns $false if tag doesn't exist or remote check fails
+        - Warning displayed if remote check encounters errors
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
