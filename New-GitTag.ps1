@@ -93,6 +93,23 @@ function Get-LatestVersionFromChangelog {
 }
 
 function Test-GitRepository {
+    <#
+    .SYNOPSIS
+        Validates the git repository environment and remote connectivity.
+
+    .DESCRIPTION
+        Checks that Git is installed, the current directory is in a git repository,
+        a remote is configured, and the remote is accessible. Provides specific
+        error messages for different types of failures.
+
+    .NOTES
+        - Validates Git command availability
+        - Verifies git repository status
+        - Checks remote configuration
+        - Tests remote connectivity
+        - Error patterns are based on common Git error messages (Git 2.x)
+        - May not match all variations across different Git versions or locales
+    #>
     [CmdletBinding()]
     param()
 
@@ -161,6 +178,11 @@ function Test-TagExists {
         - Returns $true if tag exists locally or remotely
         - Returns $false if tag doesn't exist or remote check fails
         - Warning displayed if remote check encounters errors
+        - Remote check failures are treated as "tag doesn't exist remotely" to allow
+          operations to proceed (fail-open behavior). This prevents network issues
+          from blocking tag creation entirely.
+        - Error patterns are based on common Git error messages (Git 2.x)
+        - May not match all variations across different Git versions or locales
     #>
     [CmdletBinding()]
     param(
