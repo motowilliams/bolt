@@ -39,6 +39,33 @@ param()
 # Strict error handling
 $ErrorActionPreference = 'Stop'
 
+function Get-GitErrorOutput {
+    <#
+    .SYNOPSIS
+        Filters and extracts error messages from git command output.
+
+    .DESCRIPTION
+        Processes git command output to identify error and fatal messages.
+        Used for consistent error handling across git operations.
+
+    .PARAMETER Output
+        The output from a git command (typically captured with 2>&1).
+
+    .NOTES
+        Error patterns are based on common Git error messages.
+        May not match all variations across different Git versions or locales.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [object[]]$Output
+    )
+
+    return $Output | Where-Object {
+        $_ -is [System.Management.Automation.ErrorRecord] -or $_ -imatch 'fatal|error'
+    }
+}
+
 function Get-LatestVersionFromChangelog {
     [CmdletBinding()]
     param(
@@ -66,6 +93,23 @@ function Get-LatestVersionFromChangelog {
 }
 
 function Test-GitRepository {
+    <#
+    .SYNOPSIS
+        Validates the git repository environment and remote connectivity.
+
+    .DESCRIPTION
+        Checks that Git is installed, the current directory is in a git repository,
+        a remote is configured, and the remote is accessible. Provides specific
+        error messages for different types of failures.
+
+    .NOTES
+        - Validates Git command availability
+        - Verifies git repository status
+        - Checks remote configuration
+        - Tests remote connectivity
+        - Error patterns are based on common Git error messages (Git 2.x)
+        - May not match all variations across different Git versions or locales
+    #>
     [CmdletBinding()]
     param()
 
@@ -84,6 +128,25 @@ function Test-GitRepository {
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($remotes)) {
         throw "No git remote configured. Please configure a remote repository."
     }
+
+    # Verify remote connectivity
+    Write-Verbose "Verifying remote connectivity..."
+    $lsRemoteOutput = git ls-remote --heads origin 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $errorOutput = Get-GitErrorOutput -Output $lsRemoteOutput
+        # Network-related errors
+        if ($errorOutput -imatch 'Could not resolve host|Connection.*refused|Network.*unreachable|timeout|timed out|connection timeout') {
+            throw "Unable to connect to remote repository. Please check your network connection and try again.`nError: $($errorOutput -join '; ')"
+        }
+        # Authentication-related errors
+        elseif ($errorOutput -imatch 'Authentication failed|Permission denied|could not read|access denied|unauthorized|invalid credentials') {
+            throw "Authentication failed when accessing remote repository. Please check your credentials and access permissions.`nError: $($errorOutput -join '; ')"
+        }
+        # Other errors
+        else {
+            throw "Unable to access remote repository. Please verify your remote configuration.`nError: $($errorOutput -join '; ')"
+        }
+    }
 }
 
 function Test-TagNameFormat {
@@ -98,6 +161,29 @@ function Test-TagNameFormat {
 }
 
 function Test-TagExists {
+    <#
+    .SYNOPSIS
+        Checks if a git tag exists locally or remotely.
+
+    .DESCRIPTION
+        Validates tag name format and checks for tag existence in both local
+        and remote repositories. If remote check fails due to network or
+        authentication issues, a warning is displayed and the function returns
+        false (indicating tag doesn't exist or couldn't verify).
+
+    .PARAMETER TagName
+        The name of the git tag to check (e.g., 'v1.0.0').
+
+    .NOTES
+        - Returns $true if tag exists locally or remotely
+        - Returns $false if tag doesn't exist or remote check fails
+        - Warning displayed if remote check encounters errors
+        - Remote check failures are treated as "tag doesn't exist remotely" to allow
+          operations to proceed (fail-open behavior). This prevents network issues
+          from blocking tag creation entirely.
+        - Error patterns are based on common Git error messages (Git 2.x)
+        - May not match all variations across different Git versions or locales
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
@@ -117,7 +203,18 @@ function Test-TagExists {
 
     # Check remote tags (capture output once for efficiency)
     $remoteTags = git ls-remote --tags origin "refs/tags/$TagName" 2>&1
-    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($remoteTags)) {
+
+    # Check for errors vs. empty result
+    if ($LASTEXITCODE -ne 0) {
+        # git ls-remote failed - could be network, authentication, or other issues
+        $errorOutput = Get-GitErrorOutput -Output $remoteTags
+        if ($errorOutput) {
+            Write-Warning "Unable to check remote tags: $($errorOutput -join '; '). Proceeding with local check only."
+        }
+        return $false
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($remoteTags)) {
         return $true
     }
 
@@ -190,7 +287,7 @@ try {
         Write-Host "  ✓ Tag pushed successfully" -ForegroundColor Green
         Write-Host ""
         Write-Host "✓ Tag '$tagName' created and pushed to remote" -ForegroundColor Green
-        
+
         if ($env:GITHUB_ACTIONS -eq 'true') {
             Write-Host "  GitHub Actions will now trigger the release workflow." -ForegroundColor Gray
         }
