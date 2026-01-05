@@ -86,6 +86,17 @@ function Test-GitRepository {
     }
 }
 
+function Test-TagNameFormat {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$TagName
+    )
+
+    $tagPattern = '^v\d+\.\d+\.\d+(-[\w.]+)?$'
+    return $TagName -match $tagPattern
+}
+
 function Test-TagExists {
     [CmdletBinding()]
     param(
@@ -94,8 +105,7 @@ function Test-TagExists {
     )
 
     # Validate tag name format to prevent command injection
-    $tagPattern = '^v\d+\.\d+\.\d+(-[\w.]+)?$'
-    if ($TagName -notmatch $tagPattern) {
+    if (-not (Test-TagNameFormat -TagName $TagName)) {
         throw "Invalid tag name format: '$TagName'. Expected format: v<major>.<minor>.<patch> or v<major>.<minor>.<patch>-<prerelease>"
     }
 
@@ -137,8 +147,7 @@ try {
     $tagName = "v$version"
 
     # Validate tag name format to prevent command injection or invalid tags
-    $tagPattern = '^v\d+\.\d+\.\d+(-[\w.]+)?$'
-    if ($tagName -notmatch $tagPattern) {
+    if (-not (Test-TagNameFormat -TagName $tagName)) {
         Write-Host "✗ Derived tag name '$tagName' is invalid." -ForegroundColor Red
         Write-Host "  Expected format: v<major>.<minor>.<patch> or v<major>.<minor>.<patch>-<prerelease>" -ForegroundColor Yellow
         Write-Host "  Parsed version from CHANGELOG.md: '$version'" -ForegroundColor Yellow
