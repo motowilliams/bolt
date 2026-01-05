@@ -110,7 +110,7 @@ function Test-TagExists {
     }
 
     # Check local tags
-    $localTag = git tag -l $TagName 2>&1
+    $localTag = git tag -l -- $TagName 2>&1
     if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($localTag)) {
         return $true
     }
@@ -164,7 +164,7 @@ try {
     # Create tag
     if ($PSCmdlet.ShouldProcess($tagName, "Create git tag")) {
         Write-Host "Creating tag: $tagName" -ForegroundColor Cyan
-        git tag $tagName
+        git tag -- $tagName
 
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to create git tag '$tagName'"
@@ -181,7 +181,7 @@ try {
     # Push tag to remote
     if ($PSCmdlet.ShouldProcess($tagName, "Push tag to remote")) {
         Write-Host "Pushing tag to remote..." -ForegroundColor Cyan
-        git push origin $tagName
+        git push origin -- $tagName
 
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to push tag '$tagName' to remote"
