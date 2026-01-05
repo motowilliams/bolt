@@ -39,6 +39,33 @@ param()
 # Strict error handling
 $ErrorActionPreference = 'Stop'
 
+function Get-GitErrorOutput {
+    <#
+    .SYNOPSIS
+        Filters and extracts error messages from git command output.
+
+    .DESCRIPTION
+        Processes git command output to identify error and fatal messages.
+        Used for consistent error handling across git operations.
+
+    .PARAMETER Output
+        The output from a git command (typically captured with 2>&1).
+
+    .NOTES
+        Error patterns are based on common Git error messages.
+        May not match all variations across different Git versions or locales.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [object[]]$Output
+    )
+
+    return $Output | Where-Object {
+        $_ -is [System.Management.Automation.ErrorRecord] -or $_ -match 'fatal|error'
+    }
+}
+
 function Get-LatestVersionFromChangelog {
     [CmdletBinding()]
     param(
@@ -89,7 +116,7 @@ function Test-GitRepository {
     Write-Verbose "Verifying remote connectivity..."
     $lsRemoteOutput = git ls-remote --heads origin 2>&1
     if ($LASTEXITCODE -ne 0) {
-        $errorOutput = $lsRemoteOutput | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] -or $_ -match 'fatal|error' }
+        $errorOutput = Get-GitErrorOutput -Output $lsRemoteOutput
         if ($errorOutput -match 'Could not resolve host|Connection.*refused|Network.*unreachable|timeout') {
             throw "Unable to connect to remote repository. Please check your network connection and try again.`nError: $($errorOutput -join '; ')"
         }
@@ -137,7 +164,7 @@ function Test-TagExists {
     # Check for errors vs. empty result
     if ($LASTEXITCODE -ne 0) {
         # git ls-remote failed - could be network, authentication, or other issues
-        $errorOutput = $remoteTags | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] -or $_ -match 'fatal|error' }
+        $errorOutput = Get-GitErrorOutput -Output $remoteTags
         if ($errorOutput) {
             Write-Warning "Unable to check remote tags: $($errorOutput -join '; '). Proceeding with local check only."
         }
