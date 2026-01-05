@@ -1409,7 +1409,8 @@ function Get-ProjectTasksFromMultipleDirectories {
         $namespace = $dir.Name.Substring(7)  # Remove '.build-' prefix
         
         # Validate namespace format (lowercase letters, numbers, hyphens only)
-        if ($namespace -match '^[a-z0-9][a-z0-9\-]*$') {
+        # Use -cmatch for case-sensitive matching
+        if ($namespace -cmatch '^[a-z0-9][a-z0-9\-]*$') {
             $buildDirectories += [PSCustomObject]@{
                 Path = $dir.FullName
                 Namespace = $namespace
