@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-01-05
+
+### Fixed
+- **Git Tag Creation Security**: Enhanced `New-GitTag.ps1` with comprehensive security and validation improvements
+  - Added input validation for tag names to prevent command injection vulnerabilities
+  - Tag names now validated against expected format pattern (`v<major>.<minor>.<patch>` or with pre-release suffix)
+  - Sanitized all git command inputs before execution
+  - Improved git command efficiency by capturing `ls-remote` output once instead of multiple calls
+  - Added security considerations to script documentation
+  - Made GitHub Actions success message conditional based on environment detection
+  - Updated error messages to include pre-release version format examples
+  - Improved regex pattern to use horizontal whitespace only, preventing unintended multi-line matches
+  - Fixed `Get-Command` to use named parameter (`-Name`) per project coding standards
+
 ## [0.5.0] - 2026-01-02
 
 ### Added
