@@ -24,6 +24,11 @@
     - Git to be installed and in PATH
     - CHANGELOG.md to exist in the repository root
     - Git repository to be properly configured with a remote
+
+    Security considerations:
+    - This script parses version information from CHANGELOG.md and uses it to create and push git tags.
+    - Ensure that CHANGELOG.md comes from a trusted source and has not been tampered with, especially in automated CI/CD environments.
+    - Run this script only in repositories and branches you trust, and consider validating the current commit or branch before use in pipelines.
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -47,15 +52,17 @@ function Get-LatestVersionFromChangelog {
 
     $content = Get-Content -Path $ChangelogPath -Raw
 
-    # Match version pattern: ## [X.Y.Z] - YYYY-MM-DD
+    # Match version pattern: ## [X.Y.Z] - YYYY-MM-DD or ## [X.Y.Z-suffix] - YYYY-MM-DD
     # This matches the first version section after [Unreleased]
-    $versionPattern = '##\s+\[(\d+\.\d+\.\d+(?:-[\w.]+)?)\]\s+-\s+\d{4}-\d{2}-\d{2}'
+    # Note: Uses horizontal whitespace ([ \t]) to prevent matching across multiple lines
+    # Expects well-formed CHANGELOG.md entries following the Keep a Changelog format
+    $versionPattern = '##[ \t]+\[(\d+\.\d+\.\d+(?:-[\w.]+)?)\][ \t]+-[ \t]+\d{4}-\d{2}-\d{2}'
 
     if ($content -match $versionPattern) {
         return $Matches[1]
     }
 
-    throw "No version found in CHANGELOG.md. Expected format: ## [X.Y.Z] - YYYY-MM-DD"
+    throw "No version found in CHANGELOG.md. Expected format: ## [X.Y.Z] - YYYY-MM-DD or ## [X.Y.Z-suffix] - YYYY-MM-DD"
 }
 
 function Test-GitRepository {
@@ -86,19 +93,22 @@ function Test-TagExists {
         [string]$TagName
     )
 
+    # Validate tag name format to prevent command injection
+    $tagPattern = '^v\d+\.\d+\.\d+(-[\w.]+)?$'
+    if ($TagName -notmatch $tagPattern) {
+        throw "Invalid tag name format: '$TagName'. Expected format: v<major>.<minor>.<patch> or v<major>.<minor>.<patch>-<prerelease>"
+    }
+
     # Check local tags
     $localTag = git tag -l $TagName 2>&1
     if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($localTag)) {
         return $true
     }
 
-    # Check remote tags
-    git ls-remote --tags origin "refs/tags/$TagName" 2>&1 | Out-Null
-    if ($LASTEXITCODE -eq 0) {
-        $remoteTags = git ls-remote --tags origin "refs/tags/$TagName" 2>&1
-        if (-not [string]::IsNullOrWhiteSpace($remoteTags)) {
-            return $true
-        }
+    # Check remote tags (capture output once for efficiency)
+    $remoteTags = git ls-remote --tags origin "refs/tags/$TagName" 2>&1
+    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($remoteTags)) {
+        return $true
     }
 
     return $false
@@ -125,6 +135,15 @@ try {
 
     # Construct tag name
     $tagName = "v$version"
+
+    # Validate tag name format to prevent command injection or invalid tags
+    $tagPattern = '^v\d+\.\d+\.\d+(-[\w.]+)?$'
+    if ($tagName -notmatch $tagPattern) {
+        Write-Host "✗ Derived tag name '$tagName' is invalid." -ForegroundColor Red
+        Write-Host "  Expected format: v<major>.<minor>.<patch> or v<major>.<minor>.<patch>-<prerelease>" -ForegroundColor Yellow
+        Write-Host "  Parsed version from CHANGELOG.md: '$version'" -ForegroundColor Yellow
+        exit 1
+    }
 
     # Check if tag already exists
     if (Test-TagExists -TagName $tagName) {
@@ -162,7 +181,13 @@ try {
         Write-Host "  ✓ Tag pushed successfully" -ForegroundColor Green
         Write-Host ""
         Write-Host "✓ Tag '$tagName' created and pushed to remote" -ForegroundColor Green
-        Write-Host "  GitHub Actions will now trigger the release workflow." -ForegroundColor Gray
+        
+        if ($env:GITHUB_ACTIONS -eq 'true') {
+            Write-Host "  GitHub Actions will now trigger the release workflow." -ForegroundColor Gray
+        }
+        else {
+            Write-Host "  Release workflows that watch this tag can now run." -ForegroundColor Gray
+        }
     }
     else {
         Write-Host "Would push tag to remote: $tagName" -ForegroundColor Yellow
