@@ -202,60 +202,7 @@ while ($attempts -lt $maxAttempts) {
     }
 }
 
-# Prompt for target directory
-Write-Host "`nTarget Directory Configuration:" -ForegroundColor Cyan
-Write-Host ("=" * 80) -ForegroundColor Gray
-Write-Host "Enter the target directory for starter package installation." -ForegroundColor White
-Write-Host "Examples: .build, .build/bicep, tasks/infra" -ForegroundColor Gray
-Write-Host ""
-
-$extractPath = $null
-$attempts = 0
-
-while ($attempts -lt $maxAttempts) {
-    $attempts++
-    $userInput = Read-Host "Target directory [default: .build]"
-
-    # Use default if user pressed Enter without input
-    if ([string]::IsNullOrWhiteSpace($userInput)) {
-        $userInput = ".build"
-    }
-
-    # Validate and resolve path
-    try {
-        # Remove any leading/trailing whitespace and normalize path separators
-        $userInput = $userInput.Trim()
-
-        # Build the full path relative to current directory
-        $extractPath = Join-Path -Path $PWD -ChildPath $userInput
-
-        # Validate the path doesn't escape the current directory
-        $resolvedExtractPath = [System.IO.Path]::GetFullPath($extractPath)
-        $resolvedPWD = [System.IO.Path]::GetFullPath($PWD)
-
-        if (-not $resolvedExtractPath.StartsWith($resolvedPWD, [StringComparison]::OrdinalIgnoreCase)) {
-            throw "Target directory must be within the current directory"
-        }
-
-        Write-Host "Target directory: $extractPath" -ForegroundColor Green
-        break
-    } catch {
-        if ($attempts -lt $maxAttempts) {
-            Write-Host "Invalid directory path: $_" -ForegroundColor Yellow
-            $extractPath = $null
-        } else {
-            Write-Error "Invalid directory path after $maxAttempts attempts: $_"
-        }
-    }
-}
-
-# Check for existing files that would conflict
-Write-Host "`nChecking for file conflicts..." -ForegroundColor Cyan
-
-# First, we need to check if the package already exists locally
-# If it does, we can check for conflicts without downloading
-# If not, we'll need to download and check before extracting
-
+# Download and validate the selected starter package
 $zipAsset = $selectedStarter.Asset
 $shaAsset = $selectedRelease.assets | Where-Object -FilterScript {
     $_.name -eq "$($zipAsset.name).sha256"
@@ -309,18 +256,105 @@ try {
 
     Write-Banner -Color Green "✓ SHA256 checksum validated successfully"
 
-    # Extract to temporary location to check for conflicts
-    Write-Host "`nChecking for file conflicts..." -ForegroundColor Cyan
+    # Extract to temporary location to inspect contents
+    Write-Host "`nExtracting package contents..." -ForegroundColor Cyan
     $tempExtractPath = Join-Path -Path $tempDir -ChildPath "extract"
 
     try {
         Expand-Archive -Path $zipPath -DestinationPath $tempExtractPath -ErrorAction Stop
     } catch {
-        Write-Error "Failed to extract archive for conflict check: $_"
+        Write-Error "Failed to extract archive: $_"
     }
 
-    # Get list of files that would be extracted
+    # Get list of files in the package
     $filesToExtract = Get-ChildItem -Path $tempExtractPath -Recurse -File
+
+    # Display package contents
+    Write-Host "`nPackage contents ($($filesToExtract.Count) files):" -ForegroundColor Cyan
+    $filesToExtract | Select-Object -First 5 | ForEach-Object {
+        $relativePath = $_.FullName.Substring($tempExtractPath.Length).TrimStart([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+        Write-Host "  - $relativePath" -ForegroundColor Gray
+    }
+    if ($filesToExtract.Count -gt 5) {
+        Write-Host "  ... and $($filesToExtract.Count - 5) more files" -ForegroundColor Gray
+    }
+
+    # Prompt for target directory
+    Write-Host "`nTarget Directory Configuration:" -ForegroundColor Cyan
+    Write-Host ("=" * 80) -ForegroundColor Gray
+    Write-Host "Enter the target directory for starter package installation." -ForegroundColor White
+
+    # Build smart examples and default based on starter name and existing directories
+    $starterName = $selectedStarter.Name
+    $smartExamples = @()
+    $smartDefault = $null
+
+    # Add starter-specific example
+    $smartExamples += ".build/$starterName"
+
+    # Check for existing .build subdirectories
+    $buildPath = Join-Path -Path $PWD -ChildPath ".build"
+    if (Test-Path -Path $buildPath) {
+        $existingDirs = Get-ChildItem -Path $buildPath -Directory -ErrorAction SilentlyContinue | Select-Object -First 3
+        foreach ($dir in $existingDirs) {
+            $example = ".build/$($dir.Name)"
+            if ($smartExamples -notcontains $example) {
+                $smartExamples += $example
+            }
+        }
+        # If .build exists, use starter-specific subdirectory as default
+        $smartDefault = ".build/$starterName"
+    } else {
+        # If .build doesn't exist, use it as default
+        $smartDefault = ".build"
+        $smartExamples = @(".build", ".build/$starterName") + $smartExamples[1..($smartExamples.Count-1)]
+    }
+
+    Write-Host "Examples: $($smartExamples -join ', ')" -ForegroundColor Gray
+    Write-Host ""
+
+    $extractPath = $null
+    $attempts = 0
+
+    while ($attempts -lt $maxAttempts) {
+        $attempts++
+        $userInput = Read-Host "Target directory [default: $smartDefault]"
+
+        # Use default if user pressed Enter without input
+        if ([string]::IsNullOrWhiteSpace($userInput)) {
+            $userInput = $smartDefault
+        }
+
+        # Validate and resolve path
+        try {
+            # Remove any leading/trailing whitespace and normalize path separators
+            $userInput = $userInput.Trim()
+
+            # Build the full path relative to current directory
+            $extractPath = Join-Path -Path $PWD -ChildPath $userInput
+
+            # Validate the path doesn't escape the current directory
+            $resolvedExtractPath = [System.IO.Path]::GetFullPath($extractPath)
+            $resolvedPWD = [System.IO.Path]::GetFullPath($PWD)
+
+            if (-not $resolvedExtractPath.StartsWith($resolvedPWD, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Target directory must be within the current directory"
+            }
+
+            Write-Host "Target directory: $extractPath" -ForegroundColor Green
+            break
+        } catch {
+            if ($attempts -lt $maxAttempts) {
+                Write-Host "Invalid directory path: $_" -ForegroundColor Yellow
+                $extractPath = $null
+            } else {
+                Write-Error "Invalid directory path after $maxAttempts attempts: $_"
+            }
+        }
+    }
+
+    # Check for file conflicts with the selected target directory
+    Write-Host "`nChecking for file conflicts..." -ForegroundColor Cyan
 
     # Check which files already exist in target directory
     $conflictingFiles = @()
