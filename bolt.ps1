@@ -1681,11 +1681,35 @@ function Invoke-Task {
         } else {
             Write-Host "Dependencies for '$primaryName': $($TaskInfo.Dependencies -join ', ')" -ForegroundColor Gray
             foreach ($dep in $TaskInfo.Dependencies) {
-                if ($AllTasks.ContainsKey($dep)) {
-                    Write-Host "`nExecuting dependency: $dep" -ForegroundColor Yellow
-                    $depResult = Invoke-Task -TaskInfo $AllTasks[$dep] -AllTasks $AllTasks -Arguments $Arguments -ExecutedTasks $ExecutedTasks
+                # Resolve dependency with namespace priority
+                # If current task has a namespace, first try namespace-prefixed dependency
+                $resolvedDep = $null
+                $depTaskInfo = $null
+
+                if ($TaskInfo.Namespace) {
+                    # Try namespace-prefixed dependency first (e.g., golang-format)
+                    $namespacedDep = "$($TaskInfo.Namespace)-$dep"
+                    if ($AllTasks.ContainsKey($namespacedDep)) {
+                        $resolvedDep = $namespacedDep
+                        $depTaskInfo = $AllTasks[$namespacedDep]
+                        Write-Verbose "Resolved dependency '$dep' to namespaced task '$namespacedDep'"
+                    }
+                }
+
+                # Fall back to non-namespaced dependency if not found in namespace
+                if (-not $resolvedDep -and $AllTasks.ContainsKey($dep)) {
+                    $resolvedDep = $dep
+                    $depTaskInfo = $AllTasks[$dep]
+                    if ($TaskInfo.Namespace) {
+                        Write-Verbose "Dependency '$dep' not found in namespace '$($TaskInfo.Namespace)', using root-level task"
+                    }
+                }
+
+                if ($depTaskInfo) {
+                    Write-Host "`nExecuting dependency: $resolvedDep" -ForegroundColor Yellow
+                    $depResult = Invoke-Task -TaskInfo $depTaskInfo -AllTasks $AllTasks -Arguments $Arguments -ExecutedTasks $ExecutedTasks
                     if (-not $depResult) {
-                        Write-Host "Dependency '$dep' failed" -ForegroundColor Red
+                        Write-Host "Dependency '$resolvedDep' failed" -ForegroundColor Red
                         # Stop on dependency failure unless ErrorAction permits continuing
                         if ($ErrorActionPreference -eq 'Stop') {
                             return $false
