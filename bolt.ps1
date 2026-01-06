@@ -186,7 +186,7 @@ $taskCompleter = {
 
     # Extract the script path from the command abstract syntax tree (AST)
     $scriptPath = $commandAst.CommandElements[0].Value
-    $scriptDir = Split-Path -Parent (Resolve-Path $scriptPath -ErrorAction SilentlyContinue)
+    $scriptDir = Split-Path -Parent (Resolve-Path -Path $scriptPath -ErrorAction SilentlyContinue)
 
     if (-not $scriptDir) { return }
 
@@ -196,29 +196,95 @@ $taskCompleter = {
         $taskDir = $fakeBoundParameters['TaskDirectory']
     }
 
-    # Scan for project-specific tasks in task directory
+    # Scan for project-specific tasks
     $projectTasks = @()
-    $buildPath = Join-Path $scriptDir $taskDir
-    if (Test-Path $buildPath) {
-        $buildFiles = Get-ChildItem $buildPath -Filter "*.ps1" -File -Force
-        foreach ($file in $buildFiles) {
-            # Extract task name from file
-            $lines = Get-Content $file.FullName -First 20 -ErrorAction SilentlyContinue
-            $content = $lines -join "`n"
-            if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
-                $taskNames = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
-                $projectTasks += $taskNames
-            } else {
-                # if there is no TASK tag, use the noun portion of the filename as the task name
-                # Extract task name: Invoke-My-Custom-Task -> my-custom-task
-                # Split on '-', skip first part (verb), join remaining with '-', convert to lowercase
-                $parts = $file.BaseName -split '-'
-                if ($parts.Count -gt 1) {
-                    $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+    
+    # If using default .build directory, scan all namespaced subdirectories
+    if ($taskDir -eq ".build") {
+        # Scan default .build directory for root-level tasks
+        $buildPath = Join-Path -Path $scriptDir -ChildPath '.build'
+        if (Test-Path -Path $buildPath) {
+            $buildFiles = Get-ChildItem -Path $buildPath -Filter "*.ps1" -File -Force
+            foreach ($file in $buildFiles) {
+                # Extract task name from file
+                $lines = Get-Content -Path $file.FullName -First 20 -ErrorAction SilentlyContinue
+                $content = $lines -join "`n"
+                if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
+                    $taskNames = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
+                    $projectTasks += $taskNames
                 } else {
-                    $taskName = $parts[0].ToLower()
+                    # if there is no TASK tag, use the noun portion of the filename as the task name
+                    # Extract task name: Invoke-My-Custom-Task -> my-custom-task
+                    # Split on '-', skip first part (verb), join remaining with '-', convert to lowercase
+                    $parts = $file.BaseName -split '-'
+                    if ($parts.Count -gt 1) {
+                        $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+                    } else {
+                        $taskName = $parts[0].ToLower()
+                    }
+                    $projectTasks += $taskName
                 }
-                $projectTasks += $taskName
+            }
+        }
+        
+        # Scan all subdirectories under .build/ as namespaces
+        if (Test-Path -Path $buildPath) {
+            $namespacedDirs = Get-ChildItem -Path $buildPath -Directory -Force -ErrorAction SilentlyContinue
+            foreach ($dir in $namespacedDirs) {
+                $namespace = $dir.Name
+                # Validate namespace format
+                if ($namespace -cmatch '^[a-z0-9][a-z0-9\-]*$') {
+                    $buildFiles = Get-ChildItem -Path $dir.FullName -Filter "*.ps1" -File -Force -ErrorAction SilentlyContinue
+                    foreach ($file in $buildFiles) {
+                        # Extract task name from file
+                        $lines = Get-Content -Path $file.FullName -First 20 -ErrorAction SilentlyContinue
+                        $content = $lines -join "`n"
+                        if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
+                            $taskNames = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
+                            # Prefix each task name with namespace
+                            foreach ($taskName in $taskNames) {
+                                $projectTasks += "$namespace-$taskName"
+                            }
+                        } else {
+                            # if there is no TASK tag, use the noun portion of the filename as the task name
+                            $parts = $file.BaseName -split '-'
+                            if ($parts.Count -gt 1) {
+                                $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+                            } else {
+                                $taskName = $parts[0].ToLower()
+                            }
+                            # Prefix with namespace
+                            $projectTasks += "$namespace-$taskName"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        # Custom directory specified - scan only that directory
+        $buildPath = Join-Path -Path $scriptDir -ChildPath $taskDir
+        if (Test-Path -Path $buildPath) {
+            $buildFiles = Get-ChildItem -Path $buildPath -Filter "*.ps1" -File -Force
+            foreach ($file in $buildFiles) {
+                # Extract task name from file
+                $lines = Get-Content -Path $file.FullName -First 20 -ErrorAction SilentlyContinue
+                $content = $lines -join "`n"
+                if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
+                    $taskNames = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
+                    $projectTasks += $taskNames
+                } else {
+                    # if there is no TASK tag, use the noun portion of the filename as the task name
+                    # Extract task name: Invoke-My-Custom-Task -> my-custom-task
+                    # Split on '-', skip first part (verb), join remaining with '-', convert to lowercase
+                    $parts = $file.BaseName -split '-'
+                    if ($parts.Count -gt 1) {
+                        $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+                    } else {
+                        $taskName = $parts[0].ToLower()
+                    }
+                    $projectTasks += $taskName
+                }
             }
         }
     }
@@ -1209,20 +1275,24 @@ function Get-ProjectTasks {
         Discovers and loads project-specific tasks from .build directory
     #>
     param(
-        [string]$BuildPath
+        [string]$BuildPath,
+        [string]$Namespace = $null
     )
 
     $tasks = @{}
 
-    if (-not (Test-Path $BuildPath)) {
+    if (-not (Test-Path -Path $BuildPath)) {
         return $tasks
     }
 
     # Function to parse task metadata from script files
     function Get-TaskMetadata {
-        param($FilePath)
+        param(
+            $FilePath,
+            $TaskNamespace
+        )
 
-        $lines = Get-Content $FilePath -First 30 -ErrorAction SilentlyContinue
+        $lines = Get-Content -Path $FilePath -First 30 -ErrorAction SilentlyContinue
         $content = $lines -join "`n"
         $metadata = @{
             Names                  = @()
@@ -1231,6 +1301,7 @@ function Get-ProjectTasks {
             ScriptPath             = $FilePath
             IsCore                 = $false
             UsedFilenameFallback   = $false
+            Namespace              = $TaskNamespace
         }
 
         # Extract task names
@@ -1260,7 +1331,7 @@ function Get-ProjectTasks {
             # if there is no TASK tag, use the noun portion of the filename as the task name
             # Extract task name: Invoke-My-Custom-Task -> my-custom-task
             # Split on '-', skip first part (verb), join remaining with '-', convert to lowercase
-            $parts = (Get-Item $FilePath).BaseName -split '-'
+            $parts = (Get-Item -Path $FilePath).BaseName -split '-'
             if ($parts.Count -gt 1) {
                 $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
             } else {
@@ -1273,7 +1344,7 @@ function Get-ProjectTasks {
 
             # Warn about filename fallback unless disabled via environment variable
             if (-not $env:BOLT_NO_FALLBACK_WARNINGS) {
-                $fileName = Split-Path $FilePath -Leaf
+                $fileName = Split-Path -Path $FilePath -Leaf
                 Write-Warning "Task file '$fileName' does not have a # TASK: metadata tag. Using filename fallback to derive task name '$taskName'. To disable this warning, set: `$env:BOLT_NO_FALLBACK_WARNINGS = 1"
             }
         }
@@ -1295,9 +1366,9 @@ function Get-ProjectTasks {
     }
 
     # Load tasks from directory (exclude test files)
-    $buildFiles = Get-ChildItem $BuildPath -Filter "*.ps1" -File -Force | Where-Object { $_.Name -notmatch '\.Tests\.ps1$' }
+    $buildFiles = Get-ChildItem -Path $BuildPath -Filter "*.ps1" -File -Force | Where-Object { $_.Name -notmatch '\.Tests\.ps1$' }
     foreach ($file in $buildFiles) {
-        $metadata = Get-TaskMetadata $file.FullName
+        $metadata = Get-TaskMetadata -FilePath $file.FullName -TaskNamespace $Namespace
         foreach ($name in $metadata.Names) {
             $tasks[$name] = $metadata
         }
@@ -1306,10 +1377,78 @@ function Get-ProjectTasks {
     return $tasks
 }
 
+function Get-ProjectTasksFromMultipleDirectories {
+    <#
+    .SYNOPSIS
+        Discovers tasks from multiple namespaced subdirectories under .build/
+    .DESCRIPTION
+        Scans for subdirectories under .build/ (e.g., .build/bicep, .build/golang), extracts namespace from
+        subdirectory names, and collects all tasks with namespace-prefixed names (e.g., bicep-lint, golang-test).
+    .PARAMETER ScriptRoot
+        The root directory to scan for build directories
+    .RETURNS
+        Hashtable of tasks with namespace-prefixed names
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ScriptRoot
+    )
+
+    $allProjectTasks = @{}
+
+    # Check if .build directory exists
+    $defaultBuildPath = Join-Path -Path $ScriptRoot -ChildPath '.build'
+    if (-not (Test-Path -Path $defaultBuildPath -PathType Container)) {
+        return $allProjectTasks
+    }
+
+    # First, scan for tasks directly in .build/ (root level, no namespace)
+    $rootTasks = Get-ProjectTasks -BuildPath $defaultBuildPath -Namespace $null
+    foreach ($taskName in $rootTasks.Keys) {
+        $allProjectTasks[$taskName] = $rootTasks[$taskName]
+    }
+
+    # Find all subdirectories under .build/ as namespaces
+    $namespacedDirs = Get-ChildItem -Path $defaultBuildPath -Directory -Force -ErrorAction SilentlyContinue
+    foreach ($dir in $namespacedDirs) {
+        # Extract namespace from directory name (bicep, golang, etc.)
+        $namespace = $dir.Name
+        
+        # Validate namespace format (lowercase letters, numbers, hyphens only)
+        # Use -cmatch for case-sensitive matching
+        if ($namespace -cmatch '^[a-z0-9][a-z0-9\-]*$') {
+            # Get tasks from this namespace directory
+            $tasks = Get-ProjectTasks -BuildPath $dir.FullName -Namespace $namespace
+            
+            # Prefix each task name with namespace
+            foreach ($taskName in $tasks.Keys) {
+                $taskMetadata = $tasks[$taskName]
+                $prefixedTaskName = "$namespace-$taskName"
+                
+                # Update the task metadata to include the prefixed name
+                $taskMetadata.Names = @($prefixedTaskName)
+                
+                # Add to all tasks with prefixed name
+                $allProjectTasks[$prefixedTaskName] = $taskMetadata
+            }
+        }
+        else {
+            Write-Warning "Skipping directory '$($dir.Name)' - namespace contains invalid characters (only lowercase letters, numbers, and hyphens allowed)"
+        }
+    }
+
+    return $allProjectTasks
+}
+
 function Get-AllTasks {
     <#
     .SYNOPSIS
         Returns all available tasks (core + project-specific)
+    .DESCRIPTION
+        When using the default '.build' directory, automatically discovers tasks from
+        all namespaced directories (.build, .build-bicep, .build-golang, etc.).
+        When using a custom -TaskDirectory, only loads tasks from that specific directory.
     #>
     param(
         [string]$TaskDirectory,
@@ -1324,31 +1463,41 @@ function Get-AllTasks {
         $allTasks[$key] = $coreTasks[$key]
     }
 
-    # Get project-specific tasks from specified directory
-    # SECURITY: Runtime path validation (P1 - Runtime Path Validation)
-    # This is defense-in-depth: parameter validation should catch most issues,
-    # but we validate again at runtime to ensure resolved paths stay within project
+    # Determine if we're using the default .build directory or a custom directory
+    $isDefaultDirectory = ($TaskDirectory -eq '.build')
 
-    # Resolve the full path
-    if ([System.IO.Path]::IsPathRooted($TaskDirectory)) {
-        $buildPath = $TaskDirectory
-    } else {
-        $buildPath = Join-Path $ScriptRoot $TaskDirectory
+    if ($isDefaultDirectory) {
+        # Use multi-directory discovery for default .build
+        # This automatically scans .build, .build-bicep, .build-golang, etc.
+        $projectTasks = Get-ProjectTasksFromMultipleDirectories -ScriptRoot $ScriptRoot
     }
+    else {
+        # Custom directory specified - use single directory discovery
+        # SECURITY: Runtime path validation (P1 - Runtime Path Validation)
+        # This is defense-in-depth: parameter validation should catch most issues,
+        # but we validate again at runtime to ensure resolved paths stay within project
 
-    # Get the resolved absolute paths for comparison
-    $resolvedPath = [System.IO.Path]::GetFullPath($buildPath)
-    $projectRoot = [System.IO.Path]::GetFullPath($ScriptRoot)
+        # Resolve the full path
+        if ([System.IO.Path]::IsPathRooted($TaskDirectory)) {
+            $buildPath = $TaskDirectory
+        } else {
+            $buildPath = Join-Path -Path $ScriptRoot -ChildPath $TaskDirectory
+        }
 
-    # Ensure the resolved path is within project directory
-    if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnoreCase)) {
-        Write-Warning "TaskDirectory resolves outside project directory: $TaskDirectory"
-        Write-Warning "Project root: $projectRoot"
-        Write-Warning "Resolved path: $resolvedPath"
-        throw "TaskDirectory must resolve to a path within the project directory"
+        # Get the resolved absolute paths for comparison
+        $resolvedPath = [System.IO.Path]::GetFullPath($buildPath)
+        $projectRoot = [System.IO.Path]::GetFullPath($ScriptRoot)
+
+        # Ensure the resolved path is within project directory
+        if (-not $resolvedPath.StartsWith($projectRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            Write-Warning "TaskDirectory resolves outside project directory: $TaskDirectory"
+            Write-Warning "Project root: $projectRoot"
+            Write-Warning "Resolved path: $resolvedPath"
+            throw "TaskDirectory must resolve to a path within the project directory"
+        }
+
+        $projectTasks = Get-ProjectTasks -BuildPath $resolvedPath -Namespace $null
     }
-
-    $projectTasks = Get-ProjectTasks -BuildPath $resolvedPath
 
     # Project tasks override core tasks if there's a naming conflict
     foreach ($key in $projectTasks.Keys) {
@@ -1701,25 +1850,52 @@ if ($TaskDirectory -ne ".build") {
 if ($PSCmdlet.ParameterSetName -eq 'CreateTask') {
     Write-Host "Creating new task: $NewTask" -ForegroundColor Cyan
 
+    # Detect namespace prefix if task name contains dashes
+    $namespace = $null
+    $taskBaseName = $NewTask.ToLower()
+    $targetDirectory = $TaskDirectory
+    
+    # Check if task name has a namespace prefix (e.g., bicep-all → namespace: bicep, task: all)
+    # Use non-greedy match to only capture the first segment before the first dash
+    if ($NewTask -match '^([a-z0-9][a-z0-9\-]*?)-(.+)$') {
+        $potentialNamespace = $Matches[1]
+        $potentialTaskName = $Matches[2]
+        
+        # Check if this namespace exists as a subdirectory under .build/
+        if ($TaskDirectory -eq ".build") {
+            $namespacePath = Join-Path -Path $EffectiveScriptRoot -ChildPath ".build" | Join-Path -ChildPath $potentialNamespace
+            if (Test-Path -Path $namespacePath -PathType Container) {
+                # Namespace subdirectory exists, use it
+                $namespace = $potentialNamespace
+                $taskBaseName = $potentialTaskName
+                $targetDirectory = Join-Path -Path ".build" -ChildPath $namespace
+                Write-Host "Detected namespace '$namespace' - creating task in .build/$namespace/" -ForegroundColor Gray
+            }
+        }
+    }
+
     # Ensure task directory exists
-    $buildPath = Join-Path $EffectiveScriptRoot $TaskDirectory
-    if (-not (Test-Path $buildPath)) {
-        New-Item -Path $buildPath -ItemType Directory | Out-Null
-        Write-Host "Created $TaskDirectory directory" -ForegroundColor Gray
+    $buildPath = Join-Path -Path $EffectiveScriptRoot -ChildPath $targetDirectory
+    if (-not (Test-Path -Path $buildPath)) {
+        New-Item -Path $buildPath -ItemType Directory -Force | Out-Null
+        Write-Host "Created $targetDirectory directory" -ForegroundColor Gray
     }
 
     # Generate filename: Invoke-TaskName.ps1 (with proper capitalization)
-    $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($NewTask.ToLower())
+    $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($taskBaseName)
     $fileName = "Invoke-$taskNameCapitalized.ps1"
-    $filePath = Join-Path $buildPath $fileName
+    $filePath = Join-Path -Path $buildPath -ChildPath $fileName
+
+    # Determine the full task name (with namespace prefix if applicable)
+    $fullTaskName = if ($namespace) { "$namespace-$taskBaseName" } else { $taskBaseName }
 
     # Create task file template
     $template = @"
-# TASK: $($NewTask.ToLower())
+# TASK: $taskBaseName
 # DESCRIPTION: TODO: Add description for this task
 # DEPENDS:
 
-Write-Host "Running $($NewTask.ToLower()) task..." -ForegroundColor Cyan
+Write-Host "Running $taskBaseName task..." -ForegroundColor Cyan
 
 # TODO: Implement task logic here
 
@@ -1733,7 +1909,7 @@ exit 0
         $template | Out-File -FilePath $filePath -Encoding UTF8 -NoClobber -ErrorAction Stop
 
         # SECURITY: Log file creation event (P0 - Security Event Logging)
-        Write-SecurityLog -Event "FileCreation" -Details "Created task file: $fileName in $TaskDirectory" -Severity "Info"
+        Write-SecurityLog -Event "FileCreation" -Details "Created task file: $fileName in $targetDirectory" -Severity "Info"
     }
     catch [System.IO.IOException] {
         Write-Error "Task file already exists: $fileName"
@@ -1747,11 +1923,15 @@ exit 0
     Write-Host ""
     Write-Host "✓ Created task file: $fileName" -ForegroundColor Green
     Write-Host "  Location: $filePath" -ForegroundColor Gray
+    if ($namespace) {
+        Write-Host "  Namespace: $namespace" -ForegroundColor Gray
+        Write-Host "  Full task name: $fullTaskName" -ForegroundColor Gray
+    }
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
     Write-Host "  1. Edit $fileName to implement your task logic" -ForegroundColor Gray
     Write-Host "  2. Update the DESCRIPTION and DEPENDS metadata as needed" -ForegroundColor Gray
-    Write-Host "  3. Run '.\bolt.ps1 $($NewTask.ToLower())' to execute your task" -ForegroundColor Gray
+    Write-Host "  3. Run '.\bolt.ps1 $fullTaskName' to execute your task" -ForegroundColor Gray
     Write-Host "  4. Restart PowerShell to enable tab completion for the new task" -ForegroundColor Gray
 
     exit 0
@@ -1829,7 +2009,17 @@ if ($PSCmdlet.ParameterSetName -eq 'ListTasks' -or $ListTasks) {
     foreach ($taskName in ($uniqueTasks.Keys | Sort-Object)) {
         $taskInfo = $uniqueTasks[$taskName]
         $aliases = $taskInfo['Names'] | Where-Object { $_ -ne $taskName }
-        $source = if ($taskInfo['IsCore']) { "core" } else { "project" }
+        
+        # Determine source label
+        if ($taskInfo['IsCore']) {
+            $source = "core"
+        }
+        elseif ($taskInfo['Namespace']) {
+            $source = "project:$($taskInfo['Namespace'])"
+        }
+        else {
+            $source = "project"
+        }
 
         Write-Host "  $taskName" -ForegroundColor Green -NoNewline
         if ($aliases.Count -gt 0) {

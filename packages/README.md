@@ -100,6 +100,77 @@ The Golang starter package includes comprehensive tests:
 
 Run tests with: `Invoke-Pester -Tag Golang-Tasks`
 
+## Using Multiple Package Starters (Multi-Namespace)
+
+**New in Bolt v0.6.0**: You can install multiple package starters simultaneously by organizing them as namespace subdirectories under `.build/`.
+
+### Installation Pattern
+
+Instead of copying tasks directly to `.build/`, create namespace subdirectories:
+
+```powershell
+# Create namespace subdirectories
+New-Item -ItemType Directory -Path ".build/bicep" -Force
+New-Item -ItemType Directory -Path ".build/golang" -Force
+
+# Install Bicep package starter
+Copy-Item -Path "packages/.build-bicep/Invoke-*.ps1" -Destination ".build/bicep/" -Force
+
+# Install Golang package starter
+Copy-Item -Path "packages/.build-golang/Invoke-*.ps1" -Destination ".build/golang/" -Force
+```
+
+### Task Naming with Namespaces
+
+Tasks in namespace subdirectories are automatically prefixed:
+
+**Directory structure:**
+```
+.build/
+  ├── bicep/
+  │   ├── Invoke-Lint.ps1     (TASK: lint)
+  │   ├── Invoke-Format.ps1   (TASK: format)
+  │   └── Invoke-Build.ps1    (TASK: build)
+  └── golang/
+      ├── Invoke-Lint.ps1     (TASK: lint)
+      ├── Invoke-Test.ps1     (TASK: test)
+      └── Invoke-Build.ps1    (TASK: build)
+```
+
+**Task names in Bolt:**
+- `bicep-lint`, `bicep-format`, `bicep-build` (from `.build/bicep/`)
+- `golang-lint`, `golang-test`, `golang-build` (from `.build/golang/`)
+
+### Usage Example
+
+```powershell
+# List all tasks (shows both namespaces)
+.\bolt.ps1 -ListTasks
+
+# Run Bicep tasks
+.\bolt.ps1 bicep-lint
+.\bolt.ps1 bicep-build
+
+# Run Golang tasks
+.\bolt.ps1 golang-test
+.\bolt.ps1 golang-build
+
+# Create new namespaced tasks
+.\bolt.ps1 -NewTask bicep-deploy      # Creates .build/bicep/Invoke-Deploy.ps1
+.\bolt.ps1 -NewTask golang-benchmark  # Creates .build/golang/Invoke-Benchmark.ps1
+```
+
+### Benefits
+
+- ✅ **No Conflicts**: Each namespace has its own tasks (no `lint` collision between Bicep and Golang)
+- ✅ **Clear Organization**: Related tasks grouped by toolchain
+- ✅ **Easy Management**: Add/remove toolchains by managing subdirectories
+- ✅ **Smart Task Creation**: `-NewTask` automatically detects namespace from task name
+
+### Backward Compatibility
+
+Tasks in the root `.build/` directory (not in subdirectories) continue to work as before without namespace prefixes. This maintains full backward compatibility with existing projects.
+
 ## More Package Starters Coming Soon
 
 We're working on additional package starters for popular toolchains:

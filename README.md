@@ -41,6 +41,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 ## ✨ Features
 
 - **🔍 Automatic Task Discovery**: Drop `.ps1` files in `.build/` with comment-based metadata
+- **📦 Multi-Namespace Support**: Use multiple package starters simultaneously with namespace-prefixed tasks
 - **🔗 Dependency Resolution**: Tasks declare dependencies via `# DEPENDS:` header
 - **🚫 Circular Dependency Prevention**: Prevents infinite loops by tracking executed tasks
 - **✅ Exit Code Propagation**: Proper CI/CD integration via `$LASTEXITCODE`
@@ -48,7 +49,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **⏩ Skip Dependencies**: Use `-Only` flag for faster iteration
 - **🎯 Tab Completion**: Task names auto-complete in PowerShell (script and module mode)
 - **🎨 Colorized Output**: Consistent, readable task output
-- **🆕 Task Generator**: Create new task stubs with `-NewTask` parameter
+- **🆕 Smart Task Generator**: Create new task stubs with `-NewTask` parameter (namespace-aware)
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
 - **📦 Module Installation and Removal**: Install as PowerShell module via `New-BoltModule.ps1` for global access
 - **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
@@ -343,6 +344,78 @@ We're working on additional package starters for popular toolchains:
 - **Terraform** - Format, validate, plan infrastructure
 
 See [`packages/README.md`](packages/README.md) for details on available package starters and how to create your own.
+
+### Using Multiple Package Starters (Multi-Namespace)
+
+**New in v0.6.0**: You can now use multiple package starters simultaneously in the same project by organizing them in namespace subdirectories under `.build/`.
+
+**Directory Structure:**
+```
+.build/
+  ├── bicep/              # Bicep tasks
+  │   ├── Invoke-Lint.ps1
+  │   ├── Invoke-Format.ps1
+  │   └── Invoke-Build.ps1
+  └── golang/             # Golang tasks
+      ├── Invoke-Lint.ps1
+      ├── Invoke-Test.ps1
+      └── Invoke-Build.ps1
+```
+
+**Installation:**
+```powershell
+# Create namespace subdirectories
+New-Item -ItemType Directory -Path ".build/bicep" -Force
+New-Item -ItemType Directory -Path ".build/golang" -Force
+
+# Install Bicep tasks
+Copy-Item -Path "packages/.build-bicep/Invoke-*.ps1" -Destination ".build/bicep/" -Force
+
+# Install Golang tasks  
+Copy-Item -Path "packages/.build-golang/Invoke-*.ps1" -Destination ".build/golang/" -Force
+```
+
+**Task Naming:**
+Tasks are automatically prefixed with their namespace to prevent conflicts:
+```powershell
+# List all tasks - shows namespace prefixes
+.\bolt.ps1 -ListTasks
+
+# Output:
+#   bicep-build [project:bicep]
+#     Compiles Bicep to ARM JSON
+#   bicep-format [project:bicep]
+#     Formats Bicep files
+#   bicep-lint [project:bicep]
+#     Lints Bicep files
+#   golang-build [project:golang]
+#     Builds Go application
+#   golang-lint [project:golang]
+#     Lints Go code
+#   golang-test [project:golang]
+#     Runs Go tests
+```
+
+**Usage:**
+```powershell
+# Run Bicep tasks
+.\bolt.ps1 bicep-lint
+.\bolt.ps1 bicep-build
+
+# Run Golang tasks
+.\bolt.ps1 golang-test
+.\bolt.ps1 golang-build
+
+# Create new namespaced tasks (auto-detects namespace)
+.\bolt.ps1 -NewTask bicep-deploy      # Creates .build/bicep/Invoke-Deploy.ps1
+.\bolt.ps1 -NewTask golang-benchmark  # Creates .build/golang/Invoke-Benchmark.ps1
+```
+
+**Benefits:**
+- ✅ Use Bicep for infrastructure AND Golang for application code in the same repo
+- ✅ No task name conflicts between packages (automatic prefixing)
+- ✅ Clear separation of concerns by namespace
+- ✅ Works with tab completion and all Bolt features
 
 [toc](#-table-of-contents)
 

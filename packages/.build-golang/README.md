@@ -25,10 +25,22 @@ irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps
 
 ### Option 2: Manual Copy from Source
 
+**Single Package (Standard):**
 ```powershell
 # From your project root
 Copy-Item -Path "packages/.build-golang/Invoke-*.ps1" -Destination ".build/" -Force
 ```
+
+**Multi-Package (Namespaced) - New in Bolt v0.6.0:**
+```powershell
+# Create namespace subdirectory
+New-Item -ItemType Directory -Path ".build/golang" -Force
+
+# Copy tasks to namespace subdirectory
+Copy-Item -Path "packages/.build-golang/Invoke-*.ps1" -Destination ".build/golang/" -Force
+```
+
+With namespaced installation, tasks are prefixed: `golang-format`, `golang-lint`, `golang-test`, `golang-build`. This allows using multiple package starters (e.g., Bicep + Golang) without conflicts.
 
 ## Configuration
 
