@@ -62,20 +62,21 @@ Describe "Multi-Namespace Task Discovery" -Tag "Core", "Namespaces" {
     }
     
     Context "Single Namespace Discovery" {
-        It "Should discover tasks from .build-bicep directory" {
-            # Create .build-bicep directory with a task
-            $bicepPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-bicep'
+        It "Should discover tasks from .build/bicep subdirectory" {
+            # Create .build/bicep subdirectory with a task
+            $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
+            $bicepPath = Join-Path -Path $buildPath -ChildPath 'bicep'
             New-Item -ItemType Directory -Path $bicepPath -Force | Out-Null
             
             $taskContent = @'
-# TASK: bicep-format
+# TASK: format
 # DESCRIPTION: Formats Bicep files
 # DEPENDS: 
 
 Write-Host "Formatting Bicep files" -ForegroundColor Cyan
 exit 0
 '@
-            Set-Content -Path (Join-Path -Path $bicepPath -ChildPath 'Invoke-BicepFormat.ps1') -Value $taskContent
+            Set-Content -Path (Join-Path -Path $bicepPath -ChildPath 'Invoke-Format.ps1') -Value $taskContent
             
             $result = Invoke-Bolt -Arguments @('-ListTasks')
             
@@ -84,31 +85,33 @@ exit 0
             $result.ExitCode | Should -Be 0
         }
         
-        It "Should discover tasks from .build-golang directory" {
-            # Create .build-golang directory with a task
-            $golangPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-golang'
+        It "Should discover tasks from .build/golang subdirectory" {
+            # Create .build/golang subdirectory with a task
+            $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
+            $golangPath = Join-Path -Path $buildPath -ChildPath 'golang'
             New-Item -ItemType Directory -Path $golangPath -Force | Out-Null
             
             $taskContent = @'
-# TASK: go-test
+# TASK: test
 # DESCRIPTION: Runs Go tests
 # DEPENDS: 
 
 Write-Host "Running Go tests" -ForegroundColor Cyan
 exit 0
 '@
-            Set-Content -Path (Join-Path -Path $golangPath -ChildPath 'Invoke-GoTest.ps1') -Value $taskContent
+            Set-Content -Path (Join-Path -Path $golangPath -ChildPath 'Invoke-Test.ps1') -Value $taskContent
             
             $result = Invoke-Bolt -Arguments @('-ListTasks')
             
-            $result.Output | Should -Match 'go-test'
+            $result.Output | Should -Match 'golang-test'
             $result.Output | Should -Match '\[project:golang\]'
             $result.ExitCode | Should -Be 0
         }
         
-        It "Should execute tasks from namespaced directories" {
-            # Create .build-test directory with a task
-            $testPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-test'
+        It "Should execute tasks from namespaced subdirectories" {
+            # Create .build/test subdirectory with a task
+            $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
+            $testPath = Join-Path -Path $buildPath -ChildPath 'test'
             New-Item -ItemType Directory -Path $testPath -Force | Out-Null
             
             $taskContent = @'
@@ -121,7 +124,7 @@ exit 0
 '@
             Set-Content -Path (Join-Path -Path $testPath -ChildPath 'Invoke-Hello.ps1') -Value $taskContent
             
-            $result = Invoke-Bolt -Arguments @('hello')
+            $result = Invoke-Bolt -Arguments @('test-hello')
             
             $result.Output | Should -Match 'Hello from namespace!'
             $result.ExitCode | Should -Be 0
@@ -129,23 +132,24 @@ exit 0
     }
     
     Context "Multiple Namespace Discovery" {
-        It "Should discover tasks from multiple namespaced directories" {
-            # Create multiple namespaced directories
-            $bicepPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-bicep'
-            $golangPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-golang'
+        It "Should discover tasks from multiple namespaced subdirectories" {
+            # Create multiple namespaced subdirectories
+            $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
+            $bicepPath = Join-Path -Path $buildPath -ChildPath 'bicep'
+            $golangPath = Join-Path -Path $buildPath -ChildPath 'golang'
             New-Item -ItemType Directory -Path $bicepPath -Force | Out-Null
             New-Item -ItemType Directory -Path $golangPath -Force | Out-Null
             
             # Add tasks to each
             Set-Content -Path (Join-Path -Path $bicepPath -ChildPath 'Invoke-Format.ps1') -Value @'
-# TASK: bicep-format
+# TASK: format
 # DESCRIPTION: Formats Bicep files
 Write-Host "Bicep format" -ForegroundColor Cyan
 exit 0
 '@
             
             Set-Content -Path (Join-Path -Path $golangPath -ChildPath 'Invoke-Test.ps1') -Value @'
-# TASK: go-test
+# TASK: test
 # DESCRIPTION: Runs Go tests
 Write-Host "Go test" -ForegroundColor Cyan
 exit 0
@@ -154,14 +158,14 @@ exit 0
             $result = Invoke-Bolt -Arguments @('-ListTasks')
             
             $result.Output | Should -Match 'bicep-format.*\[project:bicep\]'
-            $result.Output | Should -Match 'go-test.*\[project:golang\]'
+            $result.Output | Should -Match 'golang-test.*\[project:golang\]'
             $result.ExitCode | Should -Be 0
         }
         
-        It "Should discover tasks from both .build and .build-* directories" {
-            # Create tasks in both .build and .build-test
+        It "Should discover tasks from both root .build and namespaced subdirectories" {
+            # Create tasks in both .build root and .build/test subdirectory
             $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
-            $testPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-test'
+            $testPath = Join-Path -Path $buildPath -ChildPath 'test'
             New-Item -ItemType Directory -Path $buildPath -Force | Out-Null
             New-Item -ItemType Directory -Path $testPath -Force | Out-Null
             
@@ -172,8 +176,8 @@ Write-Host "Default task" -ForegroundColor Cyan
 exit 0
 '@
             
-            Set-Content -Path (Join-Path -Path $testPath -ChildPath 'Invoke-Test.ps1') -Value @'
-# TASK: test-task
+            Set-Content -Path (Join-Path -Path $testPath -ChildPath 'Invoke-TestTask.ps1') -Value @'
+# TASK: task
 # DESCRIPTION: Test task
 Write-Host "Test task" -ForegroundColor Cyan
 exit 0
@@ -187,11 +191,12 @@ exit 0
         }
     }
     
-    Context "Task Name Collision Detection" {
-        It "Should warn about task name collisions across namespaces" {
-            # Create same task name in multiple namespaces
-            $bicepPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-bicep'
-            $golangPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-golang'
+    Context "Task Name Prefixing" {
+        It "Should prefix task names with namespace" {
+            # Create same base task name in multiple namespaces
+            $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
+            $bicepPath = Join-Path -Path $buildPath -ChildPath 'bicep'
+            $golangPath = Join-Path -Path $buildPath -ChildPath 'golang'
             New-Item -ItemType Directory -Path $bicepPath -Force | Out-Null
             New-Item -ItemType Directory -Path $golangPath -Force | Out-Null
             
@@ -213,17 +218,17 @@ exit 0
             
             $result = Invoke-Bolt -Arguments @('-ListTasks')
             
-            # Warnings go to stderr in PowerShell
-            $combinedOutput = $result.Error + $result.Output
-            $combinedOutput | Should -Match "Task 'build' found in multiple namespaces"
-            $combinedOutput | Should -Match 'bicep.*golang'
+            # Should show both tasks with namespace prefixes
+            $result.Output | Should -Match 'bicep-build'
+            $result.Output | Should -Match 'golang-build'
             $result.ExitCode | Should -Be 0
         }
         
-        It "Should use first-found task when names collide" {
-            # Create colliding tasks (bicep comes before golang alphabetically)
-            $bicepPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-bicep'
-            $golangPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-golang'
+        It "Should execute correct namespaced task" {
+            # Create same base task name in multiple namespaces
+            $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
+            $bicepPath = Join-Path -Path $buildPath -ChildPath 'bicep'
+            $golangPath = Join-Path -Path $buildPath -ChildPath 'golang'
             New-Item -ItemType Directory -Path $bicepPath -Force | Out-Null
             New-Item -ItemType Directory -Path $golangPath -Force | Out-Null
             
@@ -241,18 +246,21 @@ Write-Host "Go build executed" -ForegroundColor Cyan
 exit 0
 '@
             
-            $result = Invoke-Bolt -Arguments @('build')
+            # Execute bicep-build
+            $result1 = Invoke-Bolt -Arguments @('bicep-build')
+            $result1.Output | Should -Match 'Bicep build executed'
+            $result1.Output | Should -Not -Match 'Go build executed'
             
-            # Should execute Bicep version (alphabetically first)
-            $result.Output | Should -Match 'Bicep build executed'
-            $result.Output | Should -Not -Match 'Go build executed'
-            $result.ExitCode | Should -Be 0
+            # Execute golang-build
+            $result2 = Invoke-Bolt -Arguments @('golang-build')
+            $result2.Output | Should -Match 'Go build executed'
+            $result2.Output | Should -Not -Match 'Bicep build executed'
         }
         
-        It "Should prioritize .build over .build-* directories" {
-            # Create same task in .build and .build-test
+        It "Should keep root-level tasks without prefix" {
+            # Create task in .build root and .build/test subdirectory with same base name
             $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
-            $testPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-test'
+            $testPath = Join-Path -Path $buildPath -ChildPath 'test'
             New-Item -ItemType Directory -Path $buildPath -Force | Out-Null
             New-Item -ItemType Directory -Path $testPath -Force | Out-Null
             
@@ -270,11 +278,11 @@ Write-Host "Test build executed" -ForegroundColor Cyan
 exit 0
 '@
             
-            $result = Invoke-Bolt -Arguments @('build')
+            $result = Invoke-Bolt -Arguments @('-ListTasks')
             
-            # Should execute .build version (higher priority)
-            $result.Output | Should -Match 'Default build executed'
-            $result.Output | Should -Not -Match 'Test build executed'
+            # Should have both 'build' (root) and 'test-build' (namespaced)
+            $result.Output | Should -Match '\bbuild\b(?!-)'  # 'build' without hyphen after
+            $result.Output | Should -Match 'test-build'
             $result.ExitCode | Should -Be 0
         }
     }
@@ -331,44 +339,48 @@ exit 0
     
     Context "Custom -TaskDirectory Parameter" {
         It "Should only scan specified directory when -TaskDirectory is used" {
-            # Create multiple namespaced directories
-            $bicepPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-bicep'
-            $golangPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-golang'
-            New-Item -ItemType Directory -Path $bicepPath -Force | Out-Null
-            New-Item -ItemType Directory -Path $golangPath -Force | Out-Null
+            # Create a custom task directory structure
+            $customPath = Join-Path -Path $script:TempTestRoot -ChildPath 'custom-tasks'
+            New-Item -ItemType Directory -Path $customPath -Force | Out-Null
             
-            Set-Content -Path (Join-Path -Path $bicepPath -ChildPath 'Invoke-Format.ps1') -Value @'
-# TASK: bicep-format
-# DESCRIPTION: Formats Bicep
-Write-Host "Bicep format" -ForegroundColor Cyan
+            Set-Content -Path (Join-Path -Path $customPath -ChildPath 'Invoke-Custom.ps1') -Value @'
+# TASK: custom-task
+# DESCRIPTION: Custom task
+Write-Host "Custom task" -ForegroundColor Cyan
 exit 0
 '@
             
-            Set-Content -Path (Join-Path -Path $golangPath -ChildPath 'Invoke-Test.ps1') -Value @'
-# TASK: go-test
-# DESCRIPTION: Go test
-Write-Host "Go test" -ForegroundColor Cyan
+            # Also create .build with a subdirectory to ensure it's not scanned
+            $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
+            $testPath = Join-Path -Path $buildPath -ChildPath 'test'
+            New-Item -ItemType Directory -Path $testPath -Force | Out-Null
+            
+            Set-Content -Path (Join-Path -Path $testPath -ChildPath 'Invoke-Test.ps1') -Value @'
+# TASK: test
+# DESCRIPTION: Test task
+Write-Host "Test" -ForegroundColor Cyan
 exit 0
 '@
             
-            # Use -TaskDirectory to point to specific directory
-            $result = Invoke-Bolt -Arguments @('-TaskDirectory', '.build-bicep', '-ListTasks')
+            # Use -TaskDirectory to point to custom directory
+            $result = Invoke-Bolt -Arguments @('-TaskDirectory', 'custom-tasks', '-ListTasks')
             
-            # Should only show bicep tasks
-            $result.Output | Should -Match 'bicep-format'
-            $result.Output | Should -Not -Match 'go-test'
+            # Should only show custom task, not namespaced test task
+            $result.Output | Should -Match 'custom-task'
+            $result.Output | Should -Not -Match 'test-test'
             $result.ExitCode | Should -Be 0
         }
     }
     
     Context "Namespace Validation" {
-        It "Should skip directories with invalid namespace names" {
-            # Create directory with invalid namespace (uppercase)
-            $invalidPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-INVALID'
+        It "Should skip subdirectories with invalid namespace names" {
+            # Create .build with invalid subdirectory (uppercase)
+            $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
+            $invalidPath = Join-Path -Path $buildPath -ChildPath 'INVALID'
             New-Item -ItemType Directory -Path $invalidPath -Force | Out-Null
             
             Set-Content -Path (Join-Path -Path $invalidPath -ChildPath 'Invoke-Test.ps1') -Value @'
-# TASK: invalid-task
+# TASK: task
 # DESCRIPTION: Invalid task
 Write-Host "Invalid" -ForegroundColor Cyan
 exit 0
@@ -379,17 +391,18 @@ exit 0
             # Should warn about invalid directory (warnings go to stderr)
             $combinedOutput = $result.Error + $result.Output
             $combinedOutput | Should -Match "Skipping directory.*invalid characters"
-            # Should not include the task
-            $result.Output | Should -Not -Match 'invalid-task'
+            # Should not include the task with INVALID prefix
+            $result.Output | Should -Not -Match 'INVALID-task'
             $result.ExitCode | Should -Be 0
         }
         
         It "Should accept valid lowercase namespaces with hyphens" {
-            $validPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build-my-namespace'
+            $buildPath = Join-Path -Path $script:TempTestRoot -ChildPath '.build'
+            $validPath = Join-Path -Path $buildPath -ChildPath 'my-namespace'
             New-Item -ItemType Directory -Path $validPath -Force | Out-Null
             
             Set-Content -Path (Join-Path -Path $validPath -ChildPath 'Invoke-Test.ps1') -Value @'
-# TASK: valid-task
+# TASK: task
 # DESCRIPTION: Valid task
 Write-Host "Valid" -ForegroundColor Cyan
 exit 0
@@ -397,7 +410,7 @@ exit 0
             
             $result = Invoke-Bolt -Arguments @('-ListTasks')
             
-            $result.Output | Should -Match 'valid-task.*\[project:my-namespace\]'
+            $result.Output | Should -Match 'my-namespace-task.*\[project:my-namespace\]'
             $result.ExitCode | Should -Be 0
         }
     }

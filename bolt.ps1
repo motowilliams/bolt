@@ -199,9 +199,9 @@ $taskCompleter = {
     # Scan for project-specific tasks
     $projectTasks = @()
     
-    # If using default .build directory, scan all namespaced directories
+    # If using default .build directory, scan all namespaced subdirectories
     if ($taskDir -eq ".build") {
-        # Scan default .build directory
+        # Scan default .build directory for root-level tasks
         $buildPath = Join-Path -Path $scriptDir -ChildPath '.build'
         if (Test-Path -Path $buildPath) {
             $buildFiles = Get-ChildItem -Path $buildPath -Filter "*.ps1" -File -Force
@@ -227,26 +227,36 @@ $taskCompleter = {
             }
         }
         
-        # Scan all .build-* directories
-        $namespacedDirs = Get-ChildItem -Path $scriptDir -Directory -Filter '.build-*' -Force -ErrorAction SilentlyContinue
-        foreach ($dir in $namespacedDirs) {
-            $buildFiles = Get-ChildItem -Path $dir.FullName -Filter "*.ps1" -File -Force -ErrorAction SilentlyContinue
-            foreach ($file in $buildFiles) {
-                # Extract task name from file
-                $lines = Get-Content -Path $file.FullName -First 20 -ErrorAction SilentlyContinue
-                $content = $lines -join "`n"
-                if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
-                    $taskNames = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
-                    $projectTasks += $taskNames
-                } else {
-                    # if there is no TASK tag, use the noun portion of the filename as the task name
-                    $parts = $file.BaseName -split '-'
-                    if ($parts.Count -gt 1) {
-                        $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
-                    } else {
-                        $taskName = $parts[0].ToLower()
+        # Scan all subdirectories under .build/ as namespaces
+        if (Test-Path -Path $buildPath) {
+            $namespacedDirs = Get-ChildItem -Path $buildPath -Directory -Force -ErrorAction SilentlyContinue
+            foreach ($dir in $namespacedDirs) {
+                $namespace = $dir.Name
+                # Validate namespace format
+                if ($namespace -cmatch '^[a-z0-9][a-z0-9\-]*$') {
+                    $buildFiles = Get-ChildItem -Path $dir.FullName -Filter "*.ps1" -File -Force -ErrorAction SilentlyContinue
+                    foreach ($file in $buildFiles) {
+                        # Extract task name from file
+                        $lines = Get-Content -Path $file.FullName -First 20 -ErrorAction SilentlyContinue
+                        $content = $lines -join "`n"
+                        if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
+                            $taskNames = $Matches[1] -split ',' | ForEach-Object { $_.Trim() }
+                            # Prefix each task name with namespace
+                            foreach ($taskName in $taskNames) {
+                                $projectTasks += "$namespace-$taskName"
+                            }
+                        } else {
+                            # if there is no TASK tag, use the noun portion of the filename as the task name
+                            $parts = $file.BaseName -split '-'
+                            if ($parts.Count -gt 1) {
+                                $taskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+                            } else {
+                                $taskName = $parts[0].ToLower()
+                            }
+                            # Prefix with namespace
+                            $projectTasks += "$namespace-$taskName"
+                        }
                     }
-                    $projectTasks += $taskName
                 }
             }
         }
@@ -1370,15 +1380,14 @@ function Get-ProjectTasks {
 function Get-ProjectTasksFromMultipleDirectories {
     <#
     .SYNOPSIS
-        Discovers tasks from multiple namespaced directories (.build, .build-bicep, .build-golang, etc.)
+        Discovers tasks from multiple namespaced subdirectories under .build/
     .DESCRIPTION
-        Scans for .build and .build-* directories in the project root, extracts namespace from
-        directory names, and collects all tasks with namespace tracking. Detects and warns about
-        task name collisions across namespaces.
+        Scans for subdirectories under .build/ (e.g., .build/bicep, .build/golang), extracts namespace from
+        subdirectory names, and collects all tasks with namespace-prefixed names (e.g., bicep-lint, golang-test).
     .PARAMETER ScriptRoot
         The root directory to scan for build directories
     .RETURNS
-        Hashtable of tasks with collision tracking information
+        Hashtable of tasks with namespace-prefixed names
     #>
     [CmdletBinding()]
     param(
@@ -1387,84 +1396,45 @@ function Get-ProjectTasksFromMultipleDirectories {
     )
 
     $allProjectTasks = @{}
-    $collisions = @{}  # Track which namespaces have each task name
 
-    # Find all .build directories (both .build and .build-*)
-    $buildDirectories = @()
-    
-    # Add default .build directory first (for priority)
+    # Check if .build directory exists
     $defaultBuildPath = Join-Path -Path $ScriptRoot -ChildPath '.build'
-    if (Test-Path -Path $defaultBuildPath -PathType Container) {
-        $buildDirectories += [PSCustomObject]@{
-            Path = $defaultBuildPath
-            Namespace = $null  # No namespace for default .build
-            Name = '.build'
-        }
+    if (-not (Test-Path -Path $defaultBuildPath -PathType Container)) {
+        return $allProjectTasks
     }
 
-    # Find all .build-* directories
-    $namespacedDirs = Get-ChildItem -Path $ScriptRoot -Directory -Filter '.build-*' -Force -ErrorAction SilentlyContinue
+    # First, scan for tasks directly in .build/ (root level, no namespace)
+    $rootTasks = Get-ProjectTasks -BuildPath $defaultBuildPath -Namespace $null
+    foreach ($taskName in $rootTasks.Keys) {
+        $allProjectTasks[$taskName] = $rootTasks[$taskName]
+    }
+
+    # Find all subdirectories under .build/ as namespaces
+    $namespacedDirs = Get-ChildItem -Path $defaultBuildPath -Directory -Force -ErrorAction SilentlyContinue
     foreach ($dir in $namespacedDirs) {
-        # Extract namespace from directory name (.build-bicep -> bicep)
-        $namespace = $dir.Name.Substring(7)  # Remove '.build-' prefix
+        # Extract namespace from directory name (bicep, golang, etc.)
+        $namespace = $dir.Name
         
         # Validate namespace format (lowercase letters, numbers, hyphens only)
         # Use -cmatch for case-sensitive matching
         if ($namespace -cmatch '^[a-z0-9][a-z0-9\-]*$') {
-            $buildDirectories += [PSCustomObject]@{
-                Path = $dir.FullName
-                Namespace = $namespace
-                Name = $dir.Name
+            # Get tasks from this namespace directory
+            $tasks = Get-ProjectTasks -BuildPath $dir.FullName -Namespace $namespace
+            
+            # Prefix each task name with namespace
+            foreach ($taskName in $tasks.Keys) {
+                $taskMetadata = $tasks[$taskName]
+                $prefixedTaskName = "$namespace-$taskName"
+                
+                # Update the task metadata to include the prefixed name
+                $taskMetadata.Names = @($prefixedTaskName)
+                
+                # Add to all tasks with prefixed name
+                $allProjectTasks[$prefixedTaskName] = $taskMetadata
             }
         }
         else {
             Write-Warning "Skipping directory '$($dir.Name)' - namespace contains invalid characters (only lowercase letters, numbers, and hyphens allowed)"
-        }
-    }
-
-    # Collect tasks from all directories
-    foreach ($buildDir in $buildDirectories) {
-        $tasks = Get-ProjectTasks -BuildPath $buildDir.Path -Namespace $buildDir.Namespace
-        
-        foreach ($taskName in $tasks.Keys) {
-            $taskMetadata = $tasks[$taskName]
-            
-            # Track collisions
-            if (-not $collisions.ContainsKey($taskName)) {
-                $collisions[$taskName] = @()
-            }
-            
-            $collisionInfo = [PSCustomObject]@{
-                Namespace = $buildDir.Namespace
-                DirectoryName = $buildDir.Name
-                ScriptPath = $taskMetadata.ScriptPath
-            }
-            $collisions[$taskName] += $collisionInfo
-            
-            # First-found wins (default .build has priority, then alphabetical)
-            if (-not $allProjectTasks.ContainsKey($taskName)) {
-                $allProjectTasks[$taskName] = $taskMetadata
-            }
-        }
-    }
-
-    # Warn about collisions
-    foreach ($taskName in $collisions.Keys) {
-        $taskCollisions = $collisions[$taskName]
-        if ($taskCollisions.Count -gt 1) {
-            $namespaceList = $taskCollisions | ForEach-Object {
-                if ($null -eq $_.Namespace) {
-                    ".build"
-                }
-                else {
-                    $_.Namespace
-                }
-            }
-            
-            $winningNamespace = if ($null -eq $taskCollisions[0].Namespace) { ".build" } else { $taskCollisions[0].Namespace }
-            $otherNamespaces = $namespaceList | Select-Object -Skip 1
-            
-            Write-Warning "Task '$taskName' found in multiple namespaces: $($namespaceList -join ', '). Using '$winningNamespace'. To use an alternate version, copy the specific task file to .build/ or remove the conflicting task."
         }
     }
 
