@@ -225,18 +225,18 @@ while ($attempts -lt $maxAttempts) {
     try {
         # Remove any leading/trailing whitespace and normalize path separators
         $userInput = $userInput.Trim()
-        
+
         # Build the full path relative to current directory
         $extractPath = Join-Path -Path $PWD -ChildPath $userInput
-        
+
         # Validate the path doesn't escape the current directory
         $resolvedExtractPath = [System.IO.Path]::GetFullPath($extractPath)
         $resolvedPWD = [System.IO.Path]::GetFullPath($PWD)
-        
+
         if (-not $resolvedExtractPath.StartsWith($resolvedPWD, [StringComparison]::OrdinalIgnoreCase)) {
             throw "Target directory must be within the current directory"
         }
-        
+
         Write-Host "Target directory: $extractPath" -ForegroundColor Green
         break
     } catch {
@@ -312,7 +312,7 @@ try {
     # Extract to temporary location to check for conflicts
     Write-Host "`nChecking for file conflicts..." -ForegroundColor Cyan
     $tempExtractPath = Join-Path -Path $tempDir -ChildPath "extract"
-    
+
     try {
         Expand-Archive -Path $zipPath -DestinationPath $tempExtractPath -ErrorAction Stop
     } catch {
@@ -321,13 +321,13 @@ try {
 
     # Get list of files that would be extracted
     $filesToExtract = Get-ChildItem -Path $tempExtractPath -Recurse -File
-    
+
     # Check which files already exist in target directory
     $conflictingFiles = @()
     foreach ($file in $filesToExtract) {
         $relativePath = $file.FullName.Substring($tempExtractPath.Length).TrimStart([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
         $targetFile = Join-Path -Path $extractPath -ChildPath $relativePath
-        
+
         if (Test-Path -Path $targetFile) {
             $conflictingFiles += $relativePath
         }
@@ -339,42 +339,42 @@ try {
         Write-Host ("=" * 80) -ForegroundColor Gray
         Write-Host "The following files already exist in the target directory:" -ForegroundColor Yellow
         Write-Host ""
-        
+
         foreach ($file in $conflictingFiles) {
             Write-Host "  - $file" -ForegroundColor Gray
         }
-        
+
         Write-Host ""
         Write-Host ("=" * 80) -ForegroundColor Gray
         Write-Host "`nWhat would you like to do?" -ForegroundColor Cyan
         Write-Host "  1. Overwrite existing files" -ForegroundColor White
         Write-Host "  2. Cancel installation" -ForegroundColor White
         Write-Host ""
-        
+
         $userChoice = $null
         $attempts = 0
-        
+
         while ($attempts -lt $maxAttempts) {
             $attempts++
             $userInput = Read-Host "Enter your choice (1-2)"
-            
+
             if ($userInput -match '^[12]$') {
                 $userChoice = [int]$userInput
                 break
             }
-            
+
             if ($attempts -lt $maxAttempts) {
                 Write-Host "Invalid choice. Please enter 1 or 2." -ForegroundColor Yellow
             } else {
                 Write-Error "Invalid choice after $maxAttempts attempts. Cancelling installation."
             }
         }
-        
+
         if ($userChoice -eq 2) {
             Write-Host "`nInstallation cancelled by user." -ForegroundColor Yellow
             return
         }
-        
+
         Write-Host "`nProceeding with overwrite..." -ForegroundColor Cyan
     } else {
         Write-Host "✓ No file conflicts detected" -ForegroundColor Green
