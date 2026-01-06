@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-01-06
+
+### Added
+- **Multi-Namespace Task Discovery**: Support for multiple build package starters in a single project
+  - Namespaces organized as subdirectories under `.build/` (e.g., `.build/bicep/`, `.build/golang/`)
+  - Task names automatically prefixed with namespace (e.g., `lint` in `.build/bicep/` becomes `bicep-lint`)
+  - Enables using Bicep and Golang (or any combination of packages) simultaneously without conflicts
+  - Display shows namespace labels in task listings (`[project:bicep]`, `[project:golang]`)
+  - Tab completion includes namespace-prefixed tasks from all subdirectories
+  - Root-level `.build/` tasks remain unprefixed for backward compatibility
+- **Smart Task Creation with `-NewTask`**: Automatic namespace detection for nested task creation
+  - Parses task names for namespace prefix (e.g., `bolt -NewTask bicep-deploy` creates in `.build/bicep/`)
+  - Falls back to root `.build/` if namespace subdirectory doesn't exist
+  - Supports dash-named tasks using non-greedy regex matching (e.g., `bicep-build-all`)
+  - Displays namespace information and full task name when detected
+  - Maintains backward compatibility for non-namespaced task names
+
+### Changed
+- **Task Discovery Architecture**: `Get-ProjectTasksFromMultipleDirectories()` now scans subdirectories under `.build/`
+  - Namespace extracted from subdirectory name (`.build/bicep/` → `bicep`)
+  - Task metadata includes namespace field for tracking
+  - Custom `-TaskDirectory` parameter maintains original single-directory behavior
+- **Namespace Validation**: Case-sensitive subdirectory name validation
+  - Only lowercase letters, numbers, and hyphens allowed
+  - Invalid directories skipped with warning message
+- **Test Suite Expansion**: Added comprehensive namespace testing
+  - New test file `tests/Namespaces.Tests.ps1` with 13 tests
+  - Covers discovery, prefixing, validation, and backward compatibility
+  - Total test count increased from 92 to 105 tests
+
+### Technical Notes
+- **Namespace Directory Structure Change**: 
+  - ❌ **Old approach**: Top-level `.build-bicep`, `.build-golang` directories
+    - Caused clutter at project root
+    - Naming collisions with existing patterns
+  - ✅ **New approach**: Subdirectories under `.build/` (`.build/bicep/`, `.build/golang/`)
+    - Cleaner project structure
+    - Follows standard conventions (similar to `.github/workflows/`)
+    - Natural grouping of related tasks
+- **Task Naming Strategy**:
+  - Tasks automatically prefixed with namespace to prevent collisions
+  - Example: Both Bicep and Golang can have `lint` task (becomes `bicep-lint` and `golang-lint`)
+  - Root-level tasks remain unprefixed (e.g., `.build/Invoke-Build.ps1` → `build`)
+- **NewTask Regex Pattern**: Uses non-greedy match `^([a-z0-9][a-z0-9\-]*?)-(.+)$`
+  - Captures first segment before first dash as namespace
+  - Handles multi-dash names correctly (e.g., `bicep-build-all` → namespace: `bicep`, task: `build-all`)
+
 ## [0.5.1] - 2026-01-05
 
 ### Fixed
@@ -481,7 +528,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - EditorConfig for consistent code formatting
 
-[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/motowilliams/bolt/compare/v0.5.1...v0.6.0
+[0.5.1]: https://github.com/motowilliams/bolt/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/motowilliams/bolt/compare/v0.4.2...v0.5.0
+[0.4.2]: https://github.com/motowilliams/bolt/compare/v0.4.1...v0.4.2
+[0.4.1]: https://github.com/motowilliams/bolt/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/motowilliams/bolt/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/motowilliams/bolt/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/motowilliams/bolt/compare/v0.2.2...v0.2.3
