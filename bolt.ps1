@@ -1850,25 +1850,52 @@ if ($TaskDirectory -ne ".build") {
 if ($PSCmdlet.ParameterSetName -eq 'CreateTask') {
     Write-Host "Creating new task: $NewTask" -ForegroundColor Cyan
 
+    # Detect namespace prefix if task name contains dashes
+    $namespace = $null
+    $taskBaseName = $NewTask.ToLower()
+    $targetDirectory = $TaskDirectory
+    
+    # Check if task name has a namespace prefix (e.g., bicep-all → namespace: bicep, task: all)
+    # Use non-greedy match to only capture the first segment before the first dash
+    if ($NewTask -match '^([a-z0-9][a-z0-9\-]*?)-(.+)$') {
+        $potentialNamespace = $Matches[1]
+        $potentialTaskName = $Matches[2]
+        
+        # Check if this namespace exists as a subdirectory under .build/
+        if ($TaskDirectory -eq ".build") {
+            $namespacePath = Join-Path -Path $EffectiveScriptRoot -ChildPath ".build" | Join-Path -ChildPath $potentialNamespace
+            if (Test-Path -Path $namespacePath -PathType Container) {
+                # Namespace subdirectory exists, use it
+                $namespace = $potentialNamespace
+                $taskBaseName = $potentialTaskName
+                $targetDirectory = Join-Path -Path ".build" -ChildPath $namespace
+                Write-Host "Detected namespace '$namespace' - creating task in .build/$namespace/" -ForegroundColor Gray
+            }
+        }
+    }
+
     # Ensure task directory exists
-    $buildPath = Join-Path $EffectiveScriptRoot $TaskDirectory
-    if (-not (Test-Path $buildPath)) {
-        New-Item -Path $buildPath -ItemType Directory | Out-Null
-        Write-Host "Created $TaskDirectory directory" -ForegroundColor Gray
+    $buildPath = Join-Path -Path $EffectiveScriptRoot -ChildPath $targetDirectory
+    if (-not (Test-Path -Path $buildPath)) {
+        New-Item -Path $buildPath -ItemType Directory -Force | Out-Null
+        Write-Host "Created $targetDirectory directory" -ForegroundColor Gray
     }
 
     # Generate filename: Invoke-TaskName.ps1 (with proper capitalization)
-    $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($NewTask.ToLower())
+    $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($taskBaseName)
     $fileName = "Invoke-$taskNameCapitalized.ps1"
-    $filePath = Join-Path $buildPath $fileName
+    $filePath = Join-Path -Path $buildPath -ChildPath $fileName
+
+    # Determine the full task name (with namespace prefix if applicable)
+    $fullTaskName = if ($namespace) { "$namespace-$taskBaseName" } else { $taskBaseName }
 
     # Create task file template
     $template = @"
-# TASK: $($NewTask.ToLower())
+# TASK: $taskBaseName
 # DESCRIPTION: TODO: Add description for this task
 # DEPENDS:
 
-Write-Host "Running $($NewTask.ToLower()) task..." -ForegroundColor Cyan
+Write-Host "Running $taskBaseName task..." -ForegroundColor Cyan
 
 # TODO: Implement task logic here
 
@@ -1882,7 +1909,7 @@ exit 0
         $template | Out-File -FilePath $filePath -Encoding UTF8 -NoClobber -ErrorAction Stop
 
         # SECURITY: Log file creation event (P0 - Security Event Logging)
-        Write-SecurityLog -Event "FileCreation" -Details "Created task file: $fileName in $TaskDirectory" -Severity "Info"
+        Write-SecurityLog -Event "FileCreation" -Details "Created task file: $fileName in $targetDirectory" -Severity "Info"
     }
     catch [System.IO.IOException] {
         Write-Error "Task file already exists: $fileName"
@@ -1896,11 +1923,15 @@ exit 0
     Write-Host ""
     Write-Host "✓ Created task file: $fileName" -ForegroundColor Green
     Write-Host "  Location: $filePath" -ForegroundColor Gray
+    if ($namespace) {
+        Write-Host "  Namespace: $namespace" -ForegroundColor Gray
+        Write-Host "  Full task name: $fullTaskName" -ForegroundColor Gray
+    }
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
     Write-Host "  1. Edit $fileName to implement your task logic" -ForegroundColor Gray
     Write-Host "  2. Update the DESCRIPTION and DEPENDS metadata as needed" -ForegroundColor Gray
-    Write-Host "  3. Run '.\bolt.ps1 $($NewTask.ToLower())' to execute your task" -ForegroundColor Gray
+    Write-Host "  3. Run '.\bolt.ps1 $fullTaskName' to execute your task" -ForegroundColor Gray
     Write-Host "  4. Restart PowerShell to enable tab completion for the new task" -ForegroundColor Gray
 
     exit 0
