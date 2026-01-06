@@ -202,19 +202,60 @@ while ($attempts -lt $maxAttempts) {
     }
 }
 
-# Prepare extraction directory
-$extractPath = Join-Path -Path $PWD -ChildPath ".build"
+# Prompt for target directory
+Write-Host "`nTarget Directory Configuration:" -ForegroundColor Cyan
+Write-Host ("=" * 80) -ForegroundColor Gray
+Write-Host "Enter the target directory for starter package installation." -ForegroundColor White
+Write-Host "Examples: .build, .build/bicep, tasks/infra" -ForegroundColor Gray
+Write-Host ""
 
-# Create .build directory if it doesn't exist
-if (-not (Test-Path -Path $extractPath)) {
-    Write-Host "Creating .build/ directory..." -ForegroundColor Cyan
-    New-Item -Path $extractPath -ItemType Directory -Force | Out-Null
-} else {
-    Write-Host "Using existing .build/ directory..." -ForegroundColor Cyan
-    Write-Host "⚠ Note: Existing task files with the same names will be overwritten" -ForegroundColor Yellow
+$extractPath = $null
+$attempts = 0
+
+while ($attempts -lt $maxAttempts) {
+    $attempts++
+    $userInput = Read-Host "Target directory [default: .build]"
+
+    # Use default if user pressed Enter without input
+    if ([string]::IsNullOrWhiteSpace($userInput)) {
+        $userInput = ".build"
+    }
+
+    # Validate and resolve path
+    try {
+        # Remove any leading/trailing whitespace and normalize path separators
+        $userInput = $userInput.Trim()
+        
+        # Build the full path relative to current directory
+        $extractPath = Join-Path -Path $PWD -ChildPath $userInput
+        
+        # Validate the path doesn't escape the current directory
+        $resolvedExtractPath = [System.IO.Path]::GetFullPath($extractPath)
+        $resolvedPWD = [System.IO.Path]::GetFullPath($PWD)
+        
+        if (-not $resolvedExtractPath.StartsWith($resolvedPWD, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Target directory must be within the current directory"
+        }
+        
+        Write-Host "Target directory: $extractPath" -ForegroundColor Green
+        break
+    } catch {
+        if ($attempts -lt $maxAttempts) {
+            Write-Host "Invalid directory path: $_" -ForegroundColor Yellow
+            $extractPath = $null
+        } else {
+            Write-Error "Invalid directory path after $maxAttempts attempts: $_"
+        }
+    }
 }
 
-# Find the sha256 checksum for selected starter
+# Check for existing files that would conflict
+Write-Host "`nChecking for file conflicts..." -ForegroundColor Cyan
+
+# First, we need to check if the package already exists locally
+# If it does, we can check for conflicts without downloading
+# If not, we'll need to download and check before extracting
+
 $zipAsset = $selectedStarter.Asset
 $shaAsset = $selectedRelease.assets | Where-Object -FilterScript {
     $_.name -eq "$($zipAsset.name).sha256"
@@ -227,6 +268,8 @@ if (-not $shaAsset) {
 # Create temporary directory for downloads
 $tempDir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "bolt-starter-download-$([Guid]::NewGuid())"
 New-Item -Path $tempDir -ItemType Directory -Force | Out-Null
+
+Write-Host "Temporary directory: $tempDir" -ForegroundColor Gray
 
 try {
     # Download zip file
@@ -266,8 +309,85 @@ try {
 
     Write-Banner -Color Green "✓ SHA256 checksum validated successfully"
 
-    # Extract to .build directory
-    Write-Host "`nExtracting to .build/ directory..." -ForegroundColor Cyan
+    # Extract to temporary location to check for conflicts
+    Write-Host "`nChecking for file conflicts..." -ForegroundColor Cyan
+    $tempExtractPath = Join-Path -Path $tempDir -ChildPath "extract"
+    
+    try {
+        Expand-Archive -Path $zipPath -DestinationPath $tempExtractPath -ErrorAction Stop
+    } catch {
+        Write-Error "Failed to extract archive for conflict check: $_"
+    }
+
+    # Get list of files that would be extracted
+    $filesToExtract = Get-ChildItem -Path $tempExtractPath -Recurse -File
+    
+    # Check which files already exist in target directory
+    $conflictingFiles = @()
+    foreach ($file in $filesToExtract) {
+        $relativePath = $file.FullName.Substring($tempExtractPath.Length).TrimStart([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+        $targetFile = Join-Path -Path $extractPath -ChildPath $relativePath
+        
+        if (Test-Path -Path $targetFile) {
+            $conflictingFiles += $relativePath
+        }
+    }
+
+    # Handle conflicts if any exist
+    if ($conflictingFiles.Count -gt 0) {
+        Write-Host "`n⚠ File Conflicts Detected" -ForegroundColor Yellow
+        Write-Host ("=" * 80) -ForegroundColor Gray
+        Write-Host "The following files already exist in the target directory:" -ForegroundColor Yellow
+        Write-Host ""
+        
+        foreach ($file in $conflictingFiles) {
+            Write-Host "  - $file" -ForegroundColor Gray
+        }
+        
+        Write-Host ""
+        Write-Host ("=" * 80) -ForegroundColor Gray
+        Write-Host "`nWhat would you like to do?" -ForegroundColor Cyan
+        Write-Host "  1. Overwrite existing files" -ForegroundColor White
+        Write-Host "  2. Cancel installation" -ForegroundColor White
+        Write-Host ""
+        
+        $userChoice = $null
+        $attempts = 0
+        
+        while ($attempts -lt $maxAttempts) {
+            $attempts++
+            $userInput = Read-Host "Enter your choice (1-2)"
+            
+            if ($userInput -match '^[12]$') {
+                $userChoice = [int]$userInput
+                break
+            }
+            
+            if ($attempts -lt $maxAttempts) {
+                Write-Host "Invalid choice. Please enter 1 or 2." -ForegroundColor Yellow
+            } else {
+                Write-Error "Invalid choice after $maxAttempts attempts. Cancelling installation."
+            }
+        }
+        
+        if ($userChoice -eq 2) {
+            Write-Host "`nInstallation cancelled by user." -ForegroundColor Yellow
+            return
+        }
+        
+        Write-Host "`nProceeding with overwrite..." -ForegroundColor Cyan
+    } else {
+        Write-Host "✓ No file conflicts detected" -ForegroundColor Green
+    }
+
+    # Create target directory if it doesn't exist
+    if (-not (Test-Path -Path $extractPath)) {
+        Write-Host "`nCreating target directory: $extractPath" -ForegroundColor Cyan
+        New-Item -Path $extractPath -ItemType Directory -Force | Out-Null
+    }
+
+    # Extract to target directory
+    Write-Host "`nExtracting to target directory..." -ForegroundColor Cyan
 
     try {
         Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force -ErrorAction Stop
@@ -280,14 +400,26 @@ try {
     # Success message
     Write-Banner -Color Green "✓ Starter package download and installation completed successfully!"
     Write-Host "`nInstalled starter: $($selectedStarter.Name)" -ForegroundColor Cyan
+    Write-Host "Target directory: $extractPath" -ForegroundColor Cyan
     Write-Host "`nNext steps:" -ForegroundColor Cyan
-    Write-Host "  1. Review the tasks in .build/ directory" -ForegroundColor White
+    Write-Host "  1. Review the tasks in target directory" -ForegroundColor White
     Write-Host "  2. Run: .\bolt.ps1 -ListTasks" -ForegroundColor White
     Write-Host "  3. Execute tasks: .\bolt.ps1 <task-name>" -ForegroundColor White
     Write-Host ""
+} catch {
+    # Ensure error is visible
+    Write-Host "`n✗ Error occurred: $_" -ForegroundColor Red
+    throw
 } finally {
     # Cleanup temporary directory
     if (Test-Path -Path $tempDir) {
-        Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        try {
+            Remove-Item -Path $tempDir -Recurse -Force -ErrorAction Stop
+            Write-Host "`n✓ Temporary files cleaned up" -ForegroundColor Green
+        } catch {
+            Write-Host "`n⚠ Warning: Failed to clean up temporary directory" -ForegroundColor Yellow
+            Write-Host "Temporary files are located at: $tempDir" -ForegroundColor Yellow
+            Write-Host "You may need to manually delete this directory" -ForegroundColor Yellow
+        }
     }
 }
