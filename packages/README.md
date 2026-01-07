@@ -171,16 +171,6 @@ Tasks in namespace subdirectories are automatically prefixed:
 
 Tasks in the root `.build/` directory (not in subdirectories) continue to work as before without namespace prefixes. This maintains full backward compatibility with existing projects.
 
-## More Package Starters Coming Soon
-
-We're working on additional package starters for popular toolchains:
-
-- **TypeScript** - Build, lint, and test TypeScript projects
-- **Python** - Format (black/ruff), lint (pylint/flake8), test (pytest)
-- **Node.js** - Build, lint (ESLint), test (Jest/Mocha)
-- **Docker** - Build, tag, push container images
-- **Terraform** - Format, validate, plan infrastructure
-
 ## Creating Your Own Package Starter
 
 Want to contribute a package starter? We provide comprehensive guidance:
@@ -221,8 +211,8 @@ This comprehensive guide covers:
 ### Reference Implementations
 
 See existing package starters as examples:
-- `.build-bicep/` - Infrastructure-as-Code tasks for Azure Bicep
-- `.build-golang/` - Go application development tasks
+- [`.build-bicep/`](.build-bicep/README.md) - Infrastructure-as-Code tasks for Azure Bicep
+- [`.build-golang/`](.build-golang/README.md) - Go application development tasks
 
 ### Release Script Convention
 

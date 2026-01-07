@@ -283,15 +283,6 @@ Go application development tasks for building, testing, and formatting Go code.
 
 See [packages/.build-golang/README.md](packages/.build-golang/README.md) for detailed documentation, installation instructions, and usage examples.
 
-### More Package Starters Coming Soon
-
-We're working on additional package starters for popular toolchains:
-- **TypeScript** - Build, lint, and test TypeScript projects
-- **Python** - Format (black/ruff), lint (pylint/flake8), test (pytest)
-- **Node.js** - Build, lint (ESLint), test (Jest/Mocha)
-- **Docker** - Build, tag, push container images
-- **Terraform** - Format, validate, plan infrastructure
-
 See [`packages/README.md`](packages/README.md) for details on available package starters.
 
 **Want to create your own package starter?** See the comprehensive guides:

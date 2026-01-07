@@ -996,7 +996,7 @@ For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md)
 ## Next Steps / Enhancements
 
 Potential future improvements:
-- [ ] Add more package starters (TypeScript, Python, Docker, Terraform)
+- [ ] Add more package starters
 - [ ] Add `deploy` task for Azure deployment
 - [ ] Add `clean` task to remove compiled JSON files
 - [x] Add `test` task for infrastructure testing (✅ Completed with Pester)
