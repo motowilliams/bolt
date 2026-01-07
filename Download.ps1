@@ -152,6 +152,8 @@ if (-not $shaAsset) {
 $tempDir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "bolt-download-$([Guid]::NewGuid())"
 New-Item -Path $tempDir -ItemType Directory -Force | Out-Null
 
+Write-Host "Temporary directory: $tempDir" -ForegroundColor Gray
+
 try {
     # Download zip file
     $zipPath = Join-Path -Path $tempDir -ChildPath $zipAsset.name
@@ -207,9 +209,20 @@ try {
     Write-Host "  1. cd Bolt" -ForegroundColor White
     Write-Host "  2. .\New-BoltModule.ps1 -Install" -ForegroundColor White
     Write-Host ""
+} catch {
+    # Ensure error is visible
+    Write-Host "`n✗ Error occurred: $_" -ForegroundColor Red
+    throw
 } finally {
     # Cleanup temporary directory
     if (Test-Path -Path $tempDir) {
-        Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        try {
+            Remove-Item -Path $tempDir -Recurse -Force -ErrorAction Stop
+            Write-Host "`n✓ Temporary files cleaned up" -ForegroundColor Green
+        } catch {
+            Write-Host "`n⚠ Warning: Failed to clean up temporary directory" -ForegroundColor Yellow
+            Write-Host "Temporary files are located at: $tempDir" -ForegroundColor Yellow
+            Write-Host "You may need to manually delete this directory" -ForegroundColor Yellow
+        }
     }
 }

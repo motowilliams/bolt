@@ -42,6 +42,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 
 - **🔍 Automatic Task Discovery**: Drop `.ps1` files in `.build/` with comment-based metadata
 - **📦 Multi-Namespace Support**: Use multiple package starters simultaneously with namespace-prefixed tasks
+- **🔗 Namespace-Aware Dependency Resolution** (v0.7.0+): Dependencies resolve with namespace priority for proper task isolation
 - **🔗 Dependency Resolution**: Tasks declare dependencies via `# DEPENDS:` header
 - **🚫 Circular Dependency Prevention**: Prevents infinite loops by tracking executed tasks
 - **✅ Exit Code Propagation**: Proper CI/CD integration via `$LASTEXITCODE`
@@ -50,7 +51,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🎯 Tab Completion**: Task names auto-complete in PowerShell (script and module mode)
 - **🎨 Colorized Output**: Consistent, readable task output
 - **🆕 Smart Task Generator**: Create new task stubs with `-NewTask` parameter (namespace-aware)
-- **📊 Task Outline**: Preview dependency trees with `-Outline` flag (no execution)
+- **📊 Task Outline**: Preview dependency trees with `-Outline` flag (namespace-aware, no execution)
 - **📦 Module Installation and Removal**: Install as PowerShell module via `New-BoltModule.ps1` for global access
 - **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
 - **⬆️ Upward Directory Search**: Module mode finds `.build/` by searching parent directories
@@ -1926,10 +1927,22 @@ flowchart TD
     WarnSkip --> ExecTask
     ShowDeps --> LoopDeps{For each dependency}
     
-    LoopDeps --> DepExists{Dependency exists in AllTasks?}
+    LoopDeps --> HasNamespace{Current task has namespace?}
     
-    DepExists -->|No| WarnMissing[Warn: Dependency not found]
-    DepExists -->|Yes| RecurseInvoke[Recursively call Invoke-Task for dependency]
+    HasNamespace -->|Yes| TryNamespaced[Try {namespace}-{dependency}]
+    HasNamespace -->|No| TryDirect[Try {dependency} directly]
+    
+    TryNamespaced --> NamespacedExists{Namespaced dep exists?}
+    NamespacedExists -->|Yes| RecurseInvoke[Recursively call Invoke-Task for dependency]
+    NamespacedExists -->|No| FallbackRoot[Fall back to root-level {dependency}]
+    
+    FallbackRoot --> RootExists{Root dep exists?}
+    RootExists -->|Yes| RecurseInvoke
+    RootExists -->|No| WarnMissing[Warn: Dependency not found]
+    
+    TryDirect --> DepExists{Dependency exists in AllTasks?}
+    DepExists -->|No| WarnMissing
+    DepExists -->|Yes| RecurseInvoke
     
     RecurseInvoke --> DepResult{Dependency succeeded?}
     

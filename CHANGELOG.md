@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-01-07
+
+### Changed
+- **BREAKING: Namespace-Aware Dependency Resolution**: Task dependencies now resolve with namespace priority
+  - When a namespaced task (e.g., `golang-build` in `.build/golang/`) declares dependencies (e.g., `format, lint, test`), the system now:
+    1. First looks for namespace-prefixed tasks (e.g., `golang-format`, `golang-lint`, `golang-test`)
+    2. Falls back to root-level tasks if not found in namespace (e.g., `format`, `lint`, `test`)
+  - **Impact**: Starter packages in subdirectories now correctly use their own tasks instead of root-level tasks
+  - **Breaking Change**: Projects with both root-level and namespace-level tasks with the same name will see behavior change
+    - Before: Always used root-level task
+    - After: Uses namespace-level task when available (correct behavior)
+  - Example scenario:
+    ```
+    .build/golang/Invoke-Build.ps1   # DEPENDS: format, lint, test
+    .build/golang/Invoke-Format.ps1  → golang-format (now used ✓)
+    .build/Invoke-Format.ps1         → format (was used before ✗)
+    ```
+  - **Migration**: If you have root-level tasks that namespaced tasks were depending on, you may need to:
+    - Copy those tasks into the namespace directory, OR
+    - Explicitly reference root tasks by prefixing with root namespace (future enhancement)
+
+### Fixed
+- **Task Execution**: Dependency resolution now respects namespace context (commit 513da5f)
+  - Prevents incorrect execution of root-level tasks when namespace-local tasks exist
+  - Ensures proper task isolation between different starter packages
+- **`-Outline` Mode**: Outline now shows correct namespace dependencies (commit eed7e55)
+  - Added `Resolve-DependencyWithNamespace` helper function
+  - Updated `Get-ExecutionOrder` to use namespace-aware resolution
+  - Updated `Show-DependencyTree` to display correct namespace tasks
+  - `-Outline` now accurately previews what will actually execute
+
+### Technical Notes
+- **Dependency Resolution Algorithm**:
+  ```powershell
+  # For each dependency in task's DEPENDS list:
+  if (task has namespace) {
+      # Try namespace-prefixed first
+      if (exists: {namespace}-{dependency}) {
+          use {namespace}-{dependency}
+      }
+      else if (exists: {dependency}) {
+          use {dependency}  # Fall back to root
+      }
+      else {
+          warn: dependency not found
+      }
+  }
+  else {
+      # Root-level task, use standard resolution
+      if (exists: {dependency}) {
+          use {dependency}
+      }
+      else {
+          warn: dependency not found
+      }
+  }
+  ```
+- This fix ensures consistency between task execution and outline preview
+- All 74 core tests and 13 namespace tests pass
+- Backward compatible: root-level tasks continue to work unchanged
+
 ## [0.6.0] - 2026-01-06
 
 ### Added
@@ -528,7 +589,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - EditorConfig for consistent code formatting
 
-[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/motowilliams/bolt/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/motowilliams/bolt/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/motowilliams/bolt/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/motowilliams/bolt/compare/v0.4.2...v0.5.0

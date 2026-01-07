@@ -497,6 +497,120 @@ Execution order:
 - Verify execution order before running
 - Test `-Only` flag behavior without side effects
 
+## Namespace-Aware Dependency Resolution
+
+**Version 0.7.0+** introduces namespace-aware dependency resolution for better task isolation in multi-package projects.
+
+### How It Works
+
+When a namespaced task declares dependencies, Bolt now resolves them with **namespace priority**:
+
+1. **First**: Look for `{namespace}-{dependency}` in the same namespace
+2. **Fallback**: Use root-level `{dependency}` if not found
+
+### Example Scenario
+
+**Directory Structure:**
+```
+.build/
+├── Invoke-Format.ps1       # Root-level format task
+├── Invoke-Lint.ps1         # Root-level lint task
+└── golang/
+    ├── Invoke-Build.ps1    # DEPENDS: format, lint, test
+    ├── Invoke-Format.ps1   # golang-format task
+    ├── Invoke-Lint.ps1     # golang-lint task
+    └── Invoke-Test.ps1     # golang-test task
+```
+
+**Before v0.7.0 (Incorrect):**
+```powershell
+PS> .\bolt.ps1 golang-build
+
+Dependencies for 'golang-build': format, lint, test
+
+Executing dependency: format        # ✗ Root task executed (wrong!)
+Executing dependency: lint          # ✗ Root task executed (wrong!)
+WARNING: Dependency 'test' not found, skipping  # ✗ Missing!
+```
+
+**After v0.7.0 (Correct):**
+```powershell
+PS> .\bolt.ps1 golang-build
+
+Dependencies for 'golang-build': format, lint, test
+
+Executing dependency: golang-format  # ✓ Namespace task (correct!)
+Executing dependency: golang-lint    # ✓ Namespace task (correct!)
+Executing dependency: golang-test    # ✓ Namespace task (correct!)
+```
+
+### Outline Mode
+
+The `-Outline` flag also respects namespace-aware resolution:
+
+**Before v0.7.0:**
+```
+golang-build (Builds Go application)
+├── format (TODO: Add description)  ← Root task shown
+├── lint (TODO: Add description)    ← Root task shown
+└── test (NOT FOUND)                ← Missing!
+```
+
+**After v0.7.0:**
+```
+golang-build (Builds Go application)
+├── golang-format (Formats Go files)   ← Namespace task shown
+├── golang-lint (Lints Go files)       ← Namespace task shown
+└── golang-test (Tests Go files)       ← Namespace task shown
+```
+
+### Benefits
+
+- **Task Isolation**: Each starter package uses its own tasks
+- **Correct Behavior**: Dependencies resolve to the right tasks
+- **Accurate Previews**: `-Outline` shows what will actually execute
+- **Fallback Support**: Can still use root-level tasks when needed
+
+### Migration Guide
+
+**Scenario 1: Namespace tasks exist**
+- No changes needed - Bolt now correctly uses namespace tasks
+
+**Scenario 2: Only root tasks exist**
+- No changes needed - Bolt falls back to root tasks automatically
+
+**Scenario 3: Mixed (root + namespace, different behavior desired)**
+- If you want namespace task to use root task instead of its own:
+  - Option A: Remove the namespace task (falls back to root)
+  - Option B: Have namespace task call root task explicitly (future enhancement)
+
+### Technical Details
+
+**Resolution Algorithm:**
+```powershell
+function Resolve-Dependency($dep, $namespace, $allTasks) {
+    if ($namespace) {
+        # Try namespace-prefixed first
+        $namespacedDep = "$namespace-$dep"
+        if ($allTasks.ContainsKey($namespacedDep)) {
+            return $namespacedDep  # Use golang-format
+        }
+    }
+    
+    # Fall back to non-namespaced
+    if ($allTasks.ContainsKey($dep)) {
+        return $dep  # Use format
+    }
+    
+    # Not found
+    return $null
+}
+```
+
+**Applied in:**
+- `Invoke-Task` - Task execution (commit 513da5f)
+- `Show-TaskOutline` - `-Outline` mode (commit eed7e55)
+
 ## Task Dependency Chain
 
 ```

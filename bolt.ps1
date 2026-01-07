@@ -1521,6 +1521,34 @@ function Show-TaskOutline {
         [bool]$SkipDependencies = $false
     )
 
+    function Resolve-DependencyWithNamespace {
+        <#
+        .SYNOPSIS
+            Resolves a dependency name to an actual task, respecting namespace priority
+        #>
+        param(
+            [string]$DependencyName,
+            [string]$CurrentNamespace,
+            [hashtable]$Tasks
+        )
+
+        # If current task has a namespace, first try namespace-prefixed dependency
+        if ($CurrentNamespace) {
+            $namespacedDep = "$CurrentNamespace-$DependencyName"
+            if ($Tasks.ContainsKey($namespacedDep)) {
+                return $namespacedDep
+            }
+        }
+
+        # Fall back to non-namespaced dependency
+        if ($Tasks.ContainsKey($DependencyName)) {
+            return $DependencyName
+        }
+
+        # Not found
+        return $null
+    }
+
     function Get-ExecutionOrder {
         param(
             [string]$TaskName,
@@ -1538,10 +1566,11 @@ function Show-TaskOutline {
         if ($Tasks.ContainsKey($TaskName)) {
             $taskInfo = $Tasks[$TaskName]
 
-            # Process dependencies first
+            # Process dependencies first with namespace awareness
             foreach ($dep in $taskInfo.Dependencies) {
-                if ($Tasks.ContainsKey($dep)) {
-                    Get-ExecutionOrder -TaskName $dep -Tasks $Tasks -Visited $Visited -Order $Order
+                $resolvedDep = Resolve-DependencyWithNamespace -DependencyName $dep -CurrentNamespace $taskInfo.Namespace -Tasks $Tasks
+                if ($resolvedDep) {
+                    Get-ExecutionOrder -TaskName $resolvedDep -Tasks $Tasks -Visited $Visited -Order $Order
                 }
             }
 
@@ -1589,8 +1618,11 @@ function Show-TaskOutline {
                 $dep = $taskInfo.Dependencies[$i]
                 $isLastDep = ($i -eq $depCount - 1)
 
-                if ($Tasks.ContainsKey($dep)) {
-                    Show-DependencyTree -TaskName $dep -Tasks $Tasks -Indent ($Indent + 1) -IsLast $isLastDep -Prefix "$Prefix$connector"
+                # Resolve dependency with namespace awareness
+                $resolvedDep = Resolve-DependencyWithNamespace -DependencyName $dep -CurrentNamespace $taskInfo.Namespace -Tasks $Tasks
+
+                if ($resolvedDep) {
+                    Show-DependencyTree -TaskName $resolvedDep -Tasks $Tasks -Indent ($Indent + 1) -IsLast $isLastDep -Prefix "$Prefix$connector"
                 } else {
                     # Missing dependency
                     $depBranch = if ($isLastDep) { "└── " } else { "├── " }
@@ -1681,11 +1713,35 @@ function Invoke-Task {
         } else {
             Write-Host "Dependencies for '$primaryName': $($TaskInfo.Dependencies -join ', ')" -ForegroundColor Gray
             foreach ($dep in $TaskInfo.Dependencies) {
-                if ($AllTasks.ContainsKey($dep)) {
-                    Write-Host "`nExecuting dependency: $dep" -ForegroundColor Yellow
-                    $depResult = Invoke-Task -TaskInfo $AllTasks[$dep] -AllTasks $AllTasks -Arguments $Arguments -ExecutedTasks $ExecutedTasks
+                # Resolve dependency with namespace priority
+                # If current task has a namespace, first try namespace-prefixed dependency
+                $resolvedDep = $null
+                $depTaskInfo = $null
+
+                if ($TaskInfo.Namespace) {
+                    # Try namespace-prefixed dependency first (e.g., golang-format)
+                    $namespacedDep = "$($TaskInfo.Namespace)-$dep"
+                    if ($AllTasks.ContainsKey($namespacedDep)) {
+                        $resolvedDep = $namespacedDep
+                        $depTaskInfo = $AllTasks[$namespacedDep]
+                        Write-Verbose "Resolved dependency '$dep' to namespaced task '$namespacedDep'"
+                    }
+                }
+
+                # Fall back to non-namespaced dependency if not found in namespace
+                if (-not $resolvedDep -and $AllTasks.ContainsKey($dep)) {
+                    $resolvedDep = $dep
+                    $depTaskInfo = $AllTasks[$dep]
+                    if ($TaskInfo.Namespace) {
+                        Write-Verbose "Dependency '$dep' not found in namespace '$($TaskInfo.Namespace)', using root-level task"
+                    }
+                }
+
+                if ($depTaskInfo) {
+                    Write-Host "`nExecuting dependency: $resolvedDep" -ForegroundColor Yellow
+                    $depResult = Invoke-Task -TaskInfo $depTaskInfo -AllTasks $AllTasks -Arguments $Arguments -ExecutedTasks $ExecutedTasks
                     if (-not $depResult) {
-                        Write-Host "Dependency '$dep' failed" -ForegroundColor Red
+                        Write-Host "Dependency '$resolvedDep' failed" -ForegroundColor Red
                         # Stop on dependency failure unless ErrorAction permits continuing
                         if ($ErrorActionPreference -eq 'Stop') {
                             return $false
