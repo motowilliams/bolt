@@ -344,7 +344,12 @@ We're working on additional package starters for popular toolchains:
 - **Docker** - Build, tag, push container images
 - **Terraform** - Format, validate, plan infrastructure
 
-See [`packages/README.md`](packages/README.md) for details on available package starters and how to create your own.
+See [`packages/README.md`](packages/README.md) for details on available package starters.
+
+**Want to create your own package starter?** See the comprehensive guides:
+- **For AI-assisted development**: [`.github/prompts/create-package-starter.prompt.md`](.github/prompts/create-package-starter.prompt.md)
+- **For developer guidelines**: [`.github/instructions/package-starter-development.instructions.md`](.github/instructions/package-starter-development.instructions.md)
+- **Package details**: [`packages/README.md`](packages/README.md#creating-your-own-package-starter)
 
 ### Using Multiple Package Starters (Multi-Namespace)
 
@@ -1537,6 +1542,21 @@ Contributions welcome! This is a self-contained build system - keep it simple an
 2. **Modify tasks in `.build/`**: Edit existing tasks or add new ones
 3. **Install package starters**: Use pre-built task collections for your toolchain (see `packages/README.md`)
 4. **Update configuration**: Edit `bolt.config.json` for project-specific settings
+
+### Contributing Package Starters
+
+Want to create a package starter for a popular toolchain? We have comprehensive guides:
+
+- **AI-assisted creation**: Use [`.github/prompts/create-package-starter.prompt.md`](.github/prompts/create-package-starter.prompt.md) with AI tools
+- **Developer guidelines**: Follow [`.github/instructions/package-starter-development.instructions.md`](.github/instructions/package-starter-development.instructions.md) for patterns and requirements
+- **Package details**: See [`packages/README.md`](packages/README.md#creating-your-own-package-starter) for structure and examples
+
+These guides cover:
+- Directory structure and task file requirements
+- Testing patterns (structure and integration tests)
+- Release script conventions
+- Cross-platform compatibility
+- Output formatting and error handling
 
 ### Adding a New Task
 
