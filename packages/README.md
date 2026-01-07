@@ -183,7 +183,32 @@ We're working on additional package starters for popular toolchains:
 
 ## Creating Your Own Package Starter
 
-Want to contribute a package starter? Here's the pattern:
+Want to contribute a package starter? We provide comprehensive guidance:
+
+### Quick Start
+
+For AI-assisted development, use the package starter creation prompt:
+```
+See: .github/prompts/create-package-starter.prompt.md
+```
+
+### Detailed Development Guide
+
+For complete developer guidelines, patterns, and requirements:
+```
+See: .github/instructions/package-starter-development.instructions.md
+```
+
+This comprehensive guide covers:
+- Directory structure and file organization
+- Task file requirements and metadata format
+- Cross-platform compatibility requirements
+- Testing patterns (structure and integration tests)
+- Release script conventions
+- Output formatting standards
+- Common patterns and examples
+
+### Quick Pattern Overview
 
 1. **Create a directory**: `packages/.build-<toolchain>/`
 2. **Add task files**: Follow the `Invoke-<TaskName>.ps1` naming convention
@@ -191,9 +216,13 @@ Want to contribute a package starter? Here's the pattern:
 4. **Add tests**: Include `tests/` directory with Pester tests
 5. **Document requirements**: Specify external tool dependencies
 6. **Add examples**: Include sample files for testing
-7. **Create release script** (optional): Add `Create-Release.ps1` for automatic release packaging
+7. **Create release script**: Add `Create-Release.ps1` for automatic release packaging
 
-See `.build-bicep/` as a reference implementation.
+### Reference Implementations
+
+See existing package starters as examples:
+- `.build-bicep/` - Infrastructure-as-Code tasks for Azure Bicep
+- `.build-golang/` - Go application development tasks
 
 ### Release Script Convention
 
@@ -258,8 +287,13 @@ We welcome contributions! If you've created a package starter for a popular tool
 
 1. Fork the repository
 2. Create a new package starter directory under `packages/`
-3. Add comprehensive tests
-4. Update this README with your package starter
-5. Submit a pull request
+3. Follow the development guidelines: [.github/instructions/package-starter-development.instructions.md](../.github/instructions/package-starter-development.instructions.md)
+4. Add comprehensive tests (structure and integration)
+5. Update this README with your package starter
+6. Submit a pull request
 
-For guidelines, see [CONTRIBUTING.md](../CONTRIBUTING.md)
+For general contribution guidelines, see [CONTRIBUTING.md](../CONTRIBUTING.md)
+
+### Using the AI Prompt
+
+For AI-assisted development, use: [.github/prompts/create-package-starter.prompt.md](../.github/prompts/create-package-starter.prompt.md)
