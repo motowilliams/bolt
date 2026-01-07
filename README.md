@@ -263,88 +263,32 @@ cd ~/projects/bolt
 
 ### Available Package Starters
 
-#### Bicep Starter Package (`packages/.build-bicep`)
+#### Bicep Starter Package
 
 Infrastructure-as-Code tasks for Azure Bicep workflows.
 
-**Included Tasks:**
-- **`format`** - Formats Bicep files using `bicep format`
-- **`lint`** - Validates Bicep syntax using `bicep lint`
-- **`build`** - Compiles Bicep files to ARM JSON templates
+**Included Tasks:** `format`, `lint`, `build`
 
-**Requirements:** Azure Bicep CLI - `winget install Microsoft.Bicep` (Windows) or https://aka.ms/bicep-install
+**Requirements:** Azure Bicep CLI ([Installation](https://aka.ms/bicep-install))
 
-**Installation:**
+See [packages/.build-bicep/README.md](packages/.build-bicep/README.md) for detailed documentation, installation instructions, and usage examples.
 
-Option 1: Use the download script (recommended for released versions)
-```powershell
-irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
-```
-
-Option 2: Manual copy from source (for development)
-```powershell
-# Copy tasks from package starter to your project
-Copy-Item -Path "packages/.build-bicep/Invoke-*.ps1" -Destination ".build/" -Force
-```
-
-**Usage:**
-```powershell
-.\bolt.ps1 format  # Format Bicep files
-.\bolt.ps1 lint    # Validate syntax
-.\bolt.ps1 build   # Full pipeline: format → lint → build
-```
-
-#### Golang Starter Package (`packages/.build-golang`)
+#### Golang Starter Package
 
 Go application development tasks for building, testing, and formatting Go code.
 
-**Included Tasks:**
-- **`format`** (alias `fmt`) - Formats Go files using `go fmt`
-- **`lint`** - Validates Go code using `go vet`
-- **`test`** - Runs Go tests using `go test`
-- **`build`** - Builds Go application (depends on format → lint → test)
+**Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
 
-**Requirements:** Go 1.21+ CLI - https://go.dev/doc/install
+**Requirements:** Go 1.21+ CLI ([Installation](https://go.dev/doc/install))
 
-**Installation:**
+See [packages/.build-golang/README.md](packages/.build-golang/README.md) for detailed documentation, installation instructions, and usage examples.
 
-Option 1: Use the download script (recommended for released versions)
-```powershell
-irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
-```
+See [`packages/README.md`](packages/README.md) for details on available package starters.
 
-Option 2: Manual copy from source (for development)
-```powershell
-# Copy tasks from package starter to your project
-Copy-Item -Path "packages/.build-golang/Invoke-*.ps1" -Destination ".build/" -Force
-```
-
-**Usage:**
-```powershell
-.\bolt.ps1 format  # Format Go files (or use alias: fmt)
-.\bolt.ps1 lint    # Validate Go code
-.\bolt.ps1 test    # Run tests
-.\bolt.ps1 build   # Full pipeline: format → lint → test → build
-```
-
-**Configuration:**
-Customize the Go project path via `bolt.config.json`:
-```json
-{
-  "GoPath": "cmd/myapp/"
-}
-```
-
-### More Package Starters Coming Soon
-
-We're working on additional package starters for popular toolchains:
-- **TypeScript** - Build, lint, and test TypeScript projects
-- **Python** - Format (black/ruff), lint (pylint/flake8), test (pytest)
-- **Node.js** - Build, lint (ESLint), test (Jest/Mocha)
-- **Docker** - Build, tag, push container images
-- **Terraform** - Format, validate, plan infrastructure
-
-See [`packages/README.md`](packages/README.md) for details on available package starters and how to create your own.
+**Want to create your own package starter?** See the comprehensive guides:
+- **For AI-assisted development**: [`.github/prompts/create-package-starter.prompt.md`](.github/prompts/create-package-starter.prompt.md)
+- **For developer guidelines**: [`.github/instructions/package-starter-development.instructions.md`](.github/instructions/package-starter-development.instructions.md)
+- **Package details**: [`packages/README.md`](packages/README.md#creating-your-own-package-starter)
 
 ### Using Multiple Package Starters (Multi-Namespace)
 
@@ -987,7 +931,9 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
   - Validates length/line limits and malicious input handling
   - Tag: `OutputValidation`, `Security`
 
-**Bicep Module Tests** (`packages/.build-bicep/tests/` directory):
+**Package Starter Tests**:
+
+**Bicep Starter Package** (`packages/.build-bicep/tests/` directory):
 - **`packages/.build-bicep/tests/Tasks.Tests.ps1`** - Task validation
   - Validates structure and metadata of Bicep tasks
   - Tag: `Bicep-Tasks`
@@ -996,6 +942,16 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
   - Executes actual Bicep operations against real infrastructure files
   - Requires Bicep CLI to be installed
   - Tag: `Bicep-Tasks`
+
+**Golang Starter Package** (`packages/.build-golang/tests/` directory):
+- **`packages/.build-golang/tests/Tasks.Tests.ps1`** - Task validation
+  - Validates structure and metadata of Golang tasks
+  - Tag: `Golang-Tasks`
+  
+- **`packages/.build-golang/tests/Integration.Tests.ps1`** - Integration tests
+  - Executes actual Go operations against example Go application
+  - Requires Go CLI to be installed
+  - Tag: `Golang-Tasks`
 
 ### Running Tests
 
@@ -1537,6 +1493,21 @@ Contributions welcome! This is a self-contained build system - keep it simple an
 2. **Modify tasks in `.build/`**: Edit existing tasks or add new ones
 3. **Install package starters**: Use pre-built task collections for your toolchain (see `packages/README.md`)
 4. **Update configuration**: Edit `bolt.config.json` for project-specific settings
+
+### Contributing Package Starters
+
+Want to create a package starter for a popular toolchain? We have comprehensive guides:
+
+- **AI-assisted creation**: Use [`.github/prompts/create-package-starter.prompt.md`](.github/prompts/create-package-starter.prompt.md) with AI tools
+- **Developer guidelines**: Follow [`.github/instructions/package-starter-development.instructions.md`](.github/instructions/package-starter-development.instructions.md) for patterns and requirements
+- **Package details**: See [`packages/README.md`](packages/README.md#creating-your-own-package-starter) for structure and examples
+
+These guides cover:
+- Directory structure and task file requirements
+- Testing patterns (structure and integration tests)
+- Release script conventions
+- Cross-platform compatibility
+- Output formatting and error handling
 
 ### Adding a New Task
 

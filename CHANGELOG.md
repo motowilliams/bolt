@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-01-08
+
+### Added
+- **Package Starter Creation Documentation**: Comprehensive guides for developing new package starters
+  - **AI Agent Specification** (`.github/prompts/create-package-starter.prompt.md`): Complete specification for automated package starter creation with AI tools
+    - Requirements, patterns, and validation checklist
+    - Task structure templates and examples
+    - Testing requirements and release conventions
+  - **Developer Guidelines** (`.github/instructions/package-starter-development.instructions.md`): Detailed manual development guide
+    - Task file requirements and metadata format
+    - Cross-platform compatibility patterns (PowerShell cmdlets, path handling)
+    - Testing patterns (structure validation and integration tests)
+    - Release script conventions
+    - Common patterns, examples, and troubleshooting
+  - **Bicep Package README** (`packages/.build-bicep/README.md`): Comprehensive Bicep starter documentation
+    - Installation instructions (standard and namespaced)
+    - Task details (format, lint, build)
+    - Usage examples and configuration
+    - Testing and troubleshooting sections
+
+### Changed
+- **Main README.md**: Simplified Package Starters section for better navigation
+  - Package starters now show summaries with links to detailed package-specific READMEs
+  - Removed speculative "Coming Soon" lists to focus on current capabilities
+  - Added cross-references to package creation guides in Contributing section
+  - Added Golang Starter Package tests to Test Structure section
+- **packages/README.md**: Enhanced with comprehensive package creation resources
+  - Added links to AI-assisted and manual development paths
+  - Updated reference implementations to link directly to package READMEs
+  - Removed speculative future package lists
+- **IMPLEMENTATION.md**: Added Package Starter Development section
+  - Central reference point for all package creation documentation
+  - Quick overview with links to detailed guides
+  - Updated future enhancements to remove specific package types
+
+### Documentation
+- **DRY Principle**: Detailed content now lives in package-specific READMEs, main README provides overview
+- **Better Navigation**: Reference implementations link directly to package READMEs for easy access
+- **Focused Content**: Removed speculative future features to maintain current-state documentation
+
 ## [0.7.0] - 2026-01-07
 
 ### Changed

@@ -869,9 +869,134 @@ Tests can be run in CI pipelines with tag-based filtering:
     files: TestResults.xml
 ```
 
+## Package Starter Development
+
+Bolt includes a comprehensive framework for creating new package starters - reusable task collections for specific toolchains.
+
+### Documentation Resources
+
+**For AI-Assisted Development:**
+- **Prompt**: `.github/prompts/create-package-starter.prompt.md`
+  - Comprehensive specification for creating new package starters
+  - Includes all requirements, patterns, and validation checklist
+  - Designed for AI agents to generate complete package starters
+
+**For Developer Guidelines:**
+- **Instructions**: `.github/instructions/package-starter-development.instructions.md`
+  - Detailed development guide with patterns and examples
+  - Task structure requirements and cross-platform considerations
+  - Testing requirements (structure and integration tests)
+  - Release script conventions
+  - Common patterns and troubleshooting
+
+**For Package-Specific Details:**
+- **Package README**: `packages/README.md`
+  - Available package starters (Bicep, Golang)
+  - Installation and usage instructions
+  - Multi-namespace support
+  - Quick pattern overview with links to comprehensive docs
+
+### Package Starter Structure
+
+Each package starter includes:
+```
+packages/.build-[toolchain]/
+├── Invoke-Format.ps1           # Format task
+├── Invoke-Lint.ps1             # Validation task
+├── Invoke-Test.ps1             # Testing task (if applicable)
+├── Invoke-Build.ps1            # Build task (main pipeline)
+├── Create-Release.ps1          # Release packaging script
+├── README.md                   # Package-specific documentation
+└── tests/
+    ├── Tasks.Tests.ps1         # Task structure validation
+    ├── Integration.Tests.ps1   # End-to-end integration tests
+    └── [example-project]/      # Sample files for testing
+```
+
+### Key Requirements
+
+- **Naming**: Use `Invoke-<TaskName>.ps1` pattern
+- **Metadata**: Include comment-based metadata (`# TASK:`, `# DESCRIPTION:`, `# DEPENDS:`)
+- **Tool Checks**: Validate external tool availability before execution
+- **Error Handling**: Use explicit exit codes (0=success, 1=failure)
+- **Output Formatting**: Follow Bolt color standards (Cyan/Gray/Green/Yellow/Red)
+- **Cross-Platform**: Use PowerShell cmdlets, not Unix commands
+- **Path Construction**: Always use `Join-Path` for paths
+- **Testing**: Include both structure validation and integration tests
+- **Documentation**: Provide package-specific README with installation and usage
+
+### Creating New Package Starters
+
+1. **Use the AI prompt** for automated creation:
+   ```
+   .github/prompts/create-package-starter.prompt.md
+   ```
+
+2. **Follow the development guide** for manual creation:
+   ```
+   .github/instructions/package-starter-development.instructions.md
+   ```
+
+3. **Reference existing implementations**:
+   - `packages/.build-bicep/` - Bicep infrastructure tasks
+   - `packages/.build-golang/` - Go application tasks
+
+4. **Test comprehensively**:
+   ```powershell
+   # Run package-specific tests
+   Invoke-Pester -Tag [Toolchain]-Tasks
+   ```
+
+5. **Update main documentation**:
+   - Add entry to `packages/README.md`
+   - Update `CHANGELOG.md` under `[Unreleased]`
+
+### Multi-Namespace Support
+
+Package starters can be installed in namespace subdirectories:
+
+```powershell
+# Create namespace subdirectory
+New-Item -ItemType Directory -Path ".build/golang" -Force
+
+# Install tasks
+Copy-Item -Path "packages/.build-golang/Invoke-*.ps1" -Destination ".build/golang/" -Force
+
+# Tasks become namespace-prefixed
+# golang-format, golang-lint, golang-test, golang-build
+```
+
+Dependencies within the same namespace are resolved with priority, providing proper task isolation.
+
+### Reference Implementations
+
+**Bicep Starter Package** (`packages/.build-bicep/`):
+- Infrastructure-as-Code tasks for Azure Bicep
+- Tasks: format, lint, build
+- Includes comprehensive tests and example infrastructure
+- See: `packages/.build-bicep/README.md`
+
+**Golang Starter Package** (`packages/.build-golang/`):
+- Go application development tasks
+- Tasks: format, lint, test, build
+- Includes comprehensive tests and example Go app
+- See: `packages/.build-golang/README.md`
+
+### Contributing Package Starters
+
+We welcome new package starters! Follow the comprehensive guidelines and submit a pull request with:
+- Complete package starter implementation
+- Comprehensive tests (structure and integration)
+- Package-specific documentation
+- Entry in `packages/README.md`
+- Changelog update
+
+For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md)
+
 ## Next Steps / Enhancements
 
 Potential future improvements:
+- [ ] Add more package starters
 - [ ] Add `deploy` task for Azure deployment
 - [ ] Add `clean` task to remove compiled JSON files
 - [x] Add `test` task for infrastructure testing (✅ Completed with Pester)
