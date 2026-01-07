@@ -263,77 +263,25 @@ cd ~/projects/bolt
 
 ### Available Package Starters
 
-#### Bicep Starter Package (`packages/.build-bicep`)
+#### Bicep Starter Package
 
 Infrastructure-as-Code tasks for Azure Bicep workflows.
 
-**Included Tasks:**
-- **`format`** - Formats Bicep files using `bicep format`
-- **`lint`** - Validates Bicep syntax using `bicep lint`
-- **`build`** - Compiles Bicep files to ARM JSON templates
+**Included Tasks:** `format`, `lint`, `build`
 
-**Requirements:** Azure Bicep CLI - `winget install Microsoft.Bicep` (Windows) or https://aka.ms/bicep-install
+**Requirements:** Azure Bicep CLI ([Installation](https://aka.ms/bicep-install))
 
-**Installation:**
+See [packages/.build-bicep/README.md](packages/.build-bicep/README.md) for detailed documentation, installation instructions, and usage examples.
 
-Option 1: Use the download script (recommended for released versions)
-```powershell
-irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
-```
-
-Option 2: Manual copy from source (for development)
-```powershell
-# Copy tasks from package starter to your project
-Copy-Item -Path "packages/.build-bicep/Invoke-*.ps1" -Destination ".build/" -Force
-```
-
-**Usage:**
-```powershell
-.\bolt.ps1 format  # Format Bicep files
-.\bolt.ps1 lint    # Validate syntax
-.\bolt.ps1 build   # Full pipeline: format → lint → build
-```
-
-#### Golang Starter Package (`packages/.build-golang`)
+#### Golang Starter Package
 
 Go application development tasks for building, testing, and formatting Go code.
 
-**Included Tasks:**
-- **`format`** (alias `fmt`) - Formats Go files using `go fmt`
-- **`lint`** - Validates Go code using `go vet`
-- **`test`** - Runs Go tests using `go test`
-- **`build`** - Builds Go application (depends on format → lint → test)
+**Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
 
-**Requirements:** Go 1.21+ CLI - https://go.dev/doc/install
+**Requirements:** Go 1.21+ CLI ([Installation](https://go.dev/doc/install))
 
-**Installation:**
-
-Option 1: Use the download script (recommended for released versions)
-```powershell
-irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
-```
-
-Option 2: Manual copy from source (for development)
-```powershell
-# Copy tasks from package starter to your project
-Copy-Item -Path "packages/.build-golang/Invoke-*.ps1" -Destination ".build/" -Force
-```
-
-**Usage:**
-```powershell
-.\bolt.ps1 format  # Format Go files (or use alias: fmt)
-.\bolt.ps1 lint    # Validate Go code
-.\bolt.ps1 test    # Run tests
-.\bolt.ps1 build   # Full pipeline: format → lint → test → build
-```
-
-**Configuration:**
-Customize the Go project path via `bolt.config.json`:
-```json
-{
-  "GoPath": "cmd/myapp/"
-}
-```
+See [packages/.build-golang/README.md](packages/.build-golang/README.md) for detailed documentation, installation instructions, and usage examples.
 
 ### More Package Starters Coming Soon
 
@@ -992,7 +940,9 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
   - Validates length/line limits and malicious input handling
   - Tag: `OutputValidation`, `Security`
 
-**Bicep Module Tests** (`packages/.build-bicep/tests/` directory):
+**Package Starter Tests**:
+
+**Bicep Starter Package** (`packages/.build-bicep/tests/` directory):
 - **`packages/.build-bicep/tests/Tasks.Tests.ps1`** - Task validation
   - Validates structure and metadata of Bicep tasks
   - Tag: `Bicep-Tasks`
@@ -1001,6 +951,16 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
   - Executes actual Bicep operations against real infrastructure files
   - Requires Bicep CLI to be installed
   - Tag: `Bicep-Tasks`
+
+**Golang Starter Package** (`packages/.build-golang/tests/` directory):
+- **`packages/.build-golang/tests/Tasks.Tests.ps1`** - Task validation
+  - Validates structure and metadata of Golang tasks
+  - Tag: `Golang-Tasks`
+  
+- **`packages/.build-golang/tests/Integration.Tests.ps1`** - Integration tests
+  - Executes actual Go operations against example Go application
+  - Requires Go CLI to be installed
+  - Tag: `Golang-Tasks`
 
 ### Running Tests
 
