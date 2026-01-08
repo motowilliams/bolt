@@ -380,6 +380,164 @@ Describe 'Bolt Core Functionality' -Tag 'Core' {
         }
     }
 
+    Context 'Validation Feature' {
+        It 'Should accept ValidateTasks parameter set' {
+            $output = (& $script:BoltScriptPath -ValidateTasks *>&1) -join "`n"
+            $output | Should -Match 'Task Validation Report'
+        }
+
+        It 'Should validate tasks in default .build directory' {
+            $output = (& $script:BoltScriptPath -ValidateTasks *>&1) -join "`n"
+            $output | Should -Match 'Summary:'
+            $output | Should -Match 'task file\(s\) validated'
+        }
+
+        It 'Should validate tasks in custom TaskDirectory' {
+            $output = (& $script:BoltScriptPath -TaskDirectory "tests/fixtures" -ValidateTasks *>&1) -join "`n"
+            $output | Should -Match 'Task Validation Report'
+            $output | Should -Match 'mock-simple'
+        }
+
+        It 'Should detect missing TASK metadata' {
+            # Create a test task file without TASK metadata
+            $testTaskName = "test-validation-$(Get-Random)"
+            $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($testTaskName)
+            $testFile = Join-Path $script:BuildPath "Invoke-$taskNameCapitalized.ps1"
+            
+            try {
+                # Create task without TASK metadata
+                Set-Content -Path $testFile -Value @"
+Write-Host 'Test task'
+exit 0
+"@
+                
+                $output = (& $script:BoltScriptPath -ValidateTasks *>&1) -join "`n"
+                $output | Should -Match 'Missing TASK metadata'
+            }
+            finally {
+                if (Test-Path $testFile) {
+                    Remove-ItemWithRetry -Path $testFile
+                }
+            }
+        }
+
+        It 'Should detect missing DESCRIPTION metadata' {
+            # Create a test task file without DESCRIPTION metadata
+            $testTaskName = "test-validation-$(Get-Random)"
+            $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($testTaskName)
+            $testFile = Join-Path $script:BuildPath "Invoke-$taskNameCapitalized.ps1"
+            
+            try {
+                # Create task without DESCRIPTION metadata
+                Set-Content -Path $testFile -Value @"
+# TASK: $testTaskName
+# DEPENDS:
+Write-Host 'Test task'
+exit 0
+"@
+                
+                $output = (& $script:BoltScriptPath -ValidateTasks *>&1) -join "`n"
+                $output | Should -Match 'Missing DESCRIPTION metadata'
+            }
+            finally {
+                if (Test-Path $testFile) {
+                    Remove-ItemWithRetry -Path $testFile
+                }
+            }
+        }
+
+        It 'Should detect missing exit code' {
+            # Create a test task file without exit code
+            $testTaskName = "test-validation-$(Get-Random)"
+            $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($testTaskName)
+            $testFile = Join-Path $script:BuildPath "Invoke-$taskNameCapitalized.ps1"
+            
+            try {
+                # Create task without exit code
+                Set-Content -Path $testFile -Value @"
+# TASK: $testTaskName
+# DESCRIPTION: Test task
+# DEPENDS:
+Write-Host 'Test task'
+"@
+                
+                $output = (& $script:BoltScriptPath -ValidateTasks *>&1) -join "`n"
+                $output | Should -Match 'Missing explicit exit code'
+            }
+            finally {
+                if (Test-Path $testFile) {
+                    Remove-ItemWithRetry -Path $testFile
+                }
+            }
+        }
+
+        It 'Should show Pass status for well-formed tasks' {
+            # Use fixtures which have proper metadata
+            $output = (& $script:BoltScriptPath -TaskDirectory "tests/fixtures" -ValidateTasks *>&1) -join "`n"
+            $output | Should -Match '✓ PASS'
+        }
+
+        It 'Should show Warning status for tasks with issues' {
+            # Create a task with placeholder description
+            $testTaskName = "test-validation-$(Get-Random)"
+            $taskNameCapitalized = (Get-Culture).TextInfo.ToTitleCase($testTaskName)
+            $testFile = Join-Path $script:BuildPath "Invoke-$taskNameCapitalized.ps1"
+            
+            try {
+                Set-Content -Path $testFile -Value @"
+# TASK: $testTaskName
+# DESCRIPTION: TODO: Add description
+# DEPENDS:
+Write-Host 'Test task'
+exit 0
+"@
+                
+                $output = (& $script:BoltScriptPath -ValidateTasks *>&1) -join "`n"
+                $output | Should -Match '⚠ WARN'
+            }
+            finally {
+                if (Test-Path $testFile) {
+                    Remove-ItemWithRetry -Path $testFile
+                }
+            }
+        }
+
+        It 'Should show summary statistics' {
+            $output = (& $script:BoltScriptPath -TaskDirectory "tests/fixtures" -ValidateTasks *>&1) -join "`n"
+            $output | Should -Match '✓ Pass:'
+            $output | Should -Match '⚠ Warnings:'
+            $output | Should -Match '✗ Failures:'
+        }
+
+        It 'Should exit with 0 when no failures' {
+            & $script:BoltScriptPath -TaskDirectory "tests/fixtures" -ValidateTasks *>&1 | Out-Null
+            $LASTEXITCODE | Should -Be 0
+        }
+
+        It 'Should validate task name format' {
+            # Create a task with invalid name format
+            $testFile = Join-Path $script:BuildPath "Invoke-TestTask.ps1"
+            
+            try {
+                Set-Content -Path $testFile -Value @"
+# TASK: Test_Invalid-Name
+# DESCRIPTION: Test task
+# DEPENDS:
+Write-Host 'Test task'
+exit 0
+"@
+                
+                $output = (& $script:BoltScriptPath -ValidateTasks *>&1) -join "`n"
+                $output | Should -Match 'Invalid task name format'
+            }
+            finally {
+                if (Test-Path $testFile) {
+                    Remove-ItemWithRetry -Path $testFile
+                }
+            }
+        }
+    }
+
     Context 'Parameter Sets' {
         It 'Should use Help parameter set with no parameters' {
             $output = (& $script:BoltScriptPath *>&1) -join "`n"

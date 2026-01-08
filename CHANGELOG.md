@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-01-08
+
+### Added
+- **Task Validation Feature**: New `-ValidateTasks` parameter to validate task file metadata and structure
+  - Validates TASK metadata presence and format
+  - Checks DESCRIPTION metadata (flags placeholders like "TODO")
+  - Verifies DEPENDS metadata exists
+  - Ensures explicit exit codes (exit 0 or exit 1)
+  - Validates task name format (lowercase alphanumeric + hyphens only)
+  - Color-coded report output (✓ Pass, ⚠ Warn, ✗ Fail)
+  - Summary statistics showing pass/warning/failure counts
+  - Works with `-TaskDirectory` parameter for custom task locations
+  - Exit code reflects validation status (0 for success, 1 for failures)
+- **ValidateTasks Parameter Set**: New parameter set for task validation workflow
+- **Test-TaskMetadata Function**: Core validation logic for checking task file compliance
+- **Show-ValidationReport Function**: Formatted report display with color-coded status indicators
+- **Comprehensive Test Coverage**: 11 new tests covering validation feature functionality
+
+### Changed
+- Updated README.md with validation feature documentation and usage examples
+- Updated parameter sets documentation to include ValidateTasks parameter set
+- Enhanced help documentation with `-ValidateTasks` parameter and example
+
 ## [0.7.1] - 2026-01-08
 
 ### Added

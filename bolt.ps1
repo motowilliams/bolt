@@ -25,6 +25,10 @@ using namespace System.Management.Automation
 .PARAMETER NewTask
     Create a new task file with the specified name. Creates a stubbed file in
     the task directory with proper metadata structure.
+.PARAMETER ValidateTasks
+    Validate all task files in the task directory. Checks for required metadata
+    (TASK, DESCRIPTION, DEPENDS) and proper exit codes. Displays a detailed
+    report showing the status of each task file.
 .PARAMETER Arguments
     Additional arguments to pass to the task scripts.
 .EXAMPLE
@@ -45,6 +49,9 @@ using namespace System.Management.Automation
 .EXAMPLE
     .\bolt.ps1 -NewTask clean
     Creates a new task file named Invoke-Clean.ps1 in the task directory.
+.EXAMPLE
+    .\bolt.ps1 -ValidateTasks
+    Validates all task files and displays a detailed report of metadata compliance.
 .EXAMPLE
     .\bolt.ps1 format,lint,build -ErrorAction Continue
     Runs all tasks even if one fails (useful for seeing all errors at once).
@@ -91,6 +98,7 @@ param(
     [Parameter(ParameterSetName = 'TaskExecution')]
     [Parameter(ParameterSetName = 'ListTasks')]
     [Parameter(ParameterSetName = 'CreateTask')]
+    [Parameter(ParameterSetName = 'ValidateTasks')]
     [ValidatePattern('^[a-zA-Z0-9_\-\./\\]+$')]
     [ValidateScript({
         if ($_ -match '\.\.' -or [System.IO.Path]::IsPathRooted($_)) {
@@ -149,6 +157,10 @@ param(
         return $true
     })]
     [string]$VariableName,
+
+    # ValidateTasks parameter set
+    [Parameter(Mandatory = $true, ParameterSetName = 'ValidateTasks')]
+    [switch]$ValidateTasks,
 
     # TaskExecution parameter set - additional arguments
     [Parameter(ParameterSetName = 'TaskExecution', ValueFromRemainingArguments)]
@@ -1683,6 +1695,268 @@ function Show-TaskOutline {
     }
 }
 
+function Test-TaskMetadata {
+    <#
+    .SYNOPSIS
+        Validates task file metadata and structure
+    .DESCRIPTION
+        Checks task files for required metadata (TASK, DESCRIPTION) and proper exit codes.
+        Returns a hashtable with validation results.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$FilePath
+    )
+
+    $result = @{
+        FilePath = $FilePath
+        FileName = Split-Path -Path $FilePath -Leaf
+        TaskName = $null
+        HasTaskMetadata = $false
+        HasDescription = $false
+        DescriptionValue = $null
+        HasExitCode = $false
+        HasDependsMetadata = $false
+        DependenciesValue = $null
+        TaskNameValid = $true
+        Issues = @()
+        Status = 'Pass'
+    }
+
+    try {
+        # Read first 30 lines for metadata
+        $lines = Get-Content -Path $FilePath -First 30 -ErrorAction Stop
+        $content = $lines -join "`n"
+
+        # Read entire file to check for exit codes
+        $fullContent = Get-Content -Path $FilePath -Raw -ErrorAction Stop
+
+        # Check for TASK metadata
+        if ($content -match '(?m)^#\s*TASK:\s*(.+)$') {
+            $result.HasTaskMetadata = $true
+            $taskNames = $Matches[1].Trim()
+            $result.TaskName = $taskNames -split ',' | ForEach-Object { $_.Trim() } | Select-Object -First 1
+
+            # Validate task name format
+            $firstTaskName = $result.TaskName
+            if ($firstTaskName -cnotmatch '^[a-z0-9][a-z0-9\-]*$') {
+                $result.TaskNameValid = $false
+                $result.Issues += "Invalid task name format: '$firstTaskName' (only lowercase letters, numbers, and hyphens allowed)"
+                $result.Status = 'Fail'
+            }
+            if ($firstTaskName.Length -gt 50) {
+                $result.TaskNameValid = $false
+                $result.Issues += "Task name too long: '$firstTaskName' (max 50 characters)"
+                $result.Status = 'Fail'
+            }
+        }
+        else {
+            # Check if using filename fallback
+            $parts = (Get-Item -Path $FilePath).BaseName -split '-'
+            if ($parts.Count -gt 1) {
+                $result.TaskName = ($parts[1..($parts.Count-1)] -join '-').ToLower()
+            } else {
+                $result.TaskName = $parts[0].ToLower()
+            }
+            $result.Issues += "Missing TASK metadata (using filename fallback: '$($result.TaskName)')"
+            if ($result.Status -eq 'Pass') {
+                $result.Status = 'Warning'
+            }
+        }
+
+        # Check for DESCRIPTION metadata
+        if ($content -match '(?m)^#\s*DESCRIPTION:[ \t]*([^\r\n]*)') {
+            $result.HasDescription = $true
+            $result.DescriptionValue = $Matches[1].Trim()
+            
+            # Check if description is placeholder or empty
+            if ([string]::IsNullOrWhiteSpace($result.DescriptionValue) -or 
+                $result.DescriptionValue -match 'TODO|Add description') {
+                $result.Issues += "Description is placeholder or empty"
+                if ($result.Status -eq 'Pass') {
+                    $result.Status = 'Warning'
+                }
+            }
+        }
+        else {
+            $result.Issues += "Missing DESCRIPTION metadata"
+            if ($result.Status -eq 'Pass') {
+                $result.Status = 'Warning'
+            }
+        }
+
+        # Check for DEPENDS metadata (presence check, not required to have dependencies)
+        if ($content -match '(?m)^#\s*DEPENDS:(.*)$') {
+            $result.HasDependsMetadata = $true
+            $depString = $Matches[1].Trim()
+            if (-not [string]::IsNullOrWhiteSpace($depString)) {
+                $result.DependenciesValue = $depString
+            }
+        }
+        else {
+            $result.Issues += "Missing DEPENDS metadata"
+            if ($result.Status -eq 'Pass') {
+                $result.Status = 'Warning'
+            }
+        }
+
+        # Check for exit code
+        if ($fullContent -match '(?m)^\s*exit\s+[01]\s*$') {
+            $result.HasExitCode = $true
+        }
+        else {
+            $result.Issues += "Missing explicit exit code (exit 0 or exit 1)"
+            if ($result.Status -eq 'Pass') {
+                $result.Status = 'Warning'
+            }
+        }
+
+    }
+    catch {
+        $result.Status = 'Error'
+        $result.Issues += "Error reading file: $_"
+    }
+
+    return $result
+}
+
+function Show-ValidationReport {
+    <#
+    .SYNOPSIS
+        Displays validation results in a formatted report
+    .DESCRIPTION
+        Shows validation results for all task files in a table format with color-coding
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$AllTasks,
+        
+        [Parameter(Mandatory)]
+        [string]$TaskDirectory
+    )
+
+    Write-Host ""
+    Write-Host "Task Validation Report" -ForegroundColor Cyan
+    Write-Host ("=" * 80) -ForegroundColor Gray
+    Write-Host ""
+
+    # Get all unique task files (excluding core tasks)
+    $taskFiles = @{}
+    foreach ($taskKey in $AllTasks.Keys) {
+        $taskInfo = $AllTasks[$taskKey]
+        if (-not $taskInfo.IsCore -and $taskInfo.ScriptPath) {
+            $taskFiles[$taskInfo.ScriptPath] = $taskInfo
+        }
+    }
+
+    if ($taskFiles.Count -eq 0) {
+        Write-Host "No project tasks found in '$TaskDirectory' directory." -ForegroundColor Yellow
+        Write-Host ""
+        return
+    }
+
+    # Validate each task file
+    $validationResults = @()
+    foreach ($filePath in $taskFiles.Keys) {
+        $validationResults += Test-TaskMetadata -FilePath $filePath
+    }
+
+    # Display results in table format
+    $passCount = 0
+    $warningCount = 0
+    $failCount = 0
+
+    foreach ($result in $validationResults | Sort-Object FileName) {
+        # Status indicator with color
+        $statusDisplay = switch ($result.Status) {
+            'Pass' { 
+                $passCount++
+                "✓ PASS"
+            }
+            'Warning' { 
+                $warningCount++
+                "⚠ WARN"
+            }
+            'Fail' { 
+                $failCount++
+                "✗ FAIL"
+            }
+            'Error' { 
+                $failCount++
+                "✗ ERROR"
+            }
+        }
+
+        $statusColor = switch ($result.Status) {
+            'Pass' { 'Green' }
+            'Warning' { 'Yellow' }
+            'Fail' { 'Red' }
+            'Error' { 'Red' }
+        }
+
+        # Task info line
+        Write-Host "File: " -NoNewline -ForegroundColor Gray
+        Write-Host $result.FileName -NoNewline -ForegroundColor White
+        Write-Host " | Task: " -NoNewline -ForegroundColor Gray
+        Write-Host $result.TaskName -NoNewline -ForegroundColor White
+        Write-Host " | " -NoNewline -ForegroundColor Gray
+        Write-Host $statusDisplay -ForegroundColor $statusColor
+
+        # Metadata checks
+        Write-Host "  TASK: " -NoNewline -ForegroundColor Gray
+        Write-Host $(if ($result.HasTaskMetadata) { "✓" } else { "✗" }) -ForegroundColor $(if ($result.HasTaskMetadata) { "Green" } else { "Red" })
+        
+        Write-Host "  DESCRIPTION: " -NoNewline -ForegroundColor Gray
+        Write-Host $(if ($result.HasDescription) { "✓" } else { "✗" }) -NoNewline -ForegroundColor $(if ($result.HasDescription) { "Green" } else { "Red" })
+        if ($result.HasDescription -and $result.DescriptionValue) {
+            Write-Host " ($($result.DescriptionValue.Substring(0, [Math]::Min(50, $result.DescriptionValue.Length)))...)" -ForegroundColor DarkGray
+        } else {
+            Write-Host ""
+        }
+
+        Write-Host "  DEPENDS: " -NoNewline -ForegroundColor Gray
+        Write-Host $(if ($result.HasDependsMetadata) { "✓" } else { "✗" }) -NoNewline -ForegroundColor $(if ($result.HasDependsMetadata) { "Green" } else { "Red" })
+        if ($result.DependenciesValue) {
+            Write-Host " ($($result.DependenciesValue))" -ForegroundColor DarkGray
+        } else {
+            Write-Host ""
+        }
+
+        Write-Host "  Exit Code: " -NoNewline -ForegroundColor Gray
+        Write-Host $(if ($result.HasExitCode) { "✓" } else { "✗" }) -ForegroundColor $(if ($result.HasExitCode) { "Green" } else { "Red" })
+
+        # Show issues if any
+        if ($result.Issues.Count -gt 0) {
+            foreach ($issue in $result.Issues) {
+                Write-Host "  Issue: " -NoNewline -ForegroundColor Yellow
+                Write-Host $issue -ForegroundColor Gray
+            }
+        }
+
+        Write-Host ""
+    }
+
+    # Summary
+    Write-Host ("=" * 80) -ForegroundColor Gray
+    Write-Host "Summary: " -NoNewline -ForegroundColor Cyan
+    Write-Host "$($validationResults.Count) task file(s) validated" -ForegroundColor White
+    Write-Host "  " -NoNewline
+    Write-Host "✓ Pass: $passCount" -NoNewline -ForegroundColor Green
+    Write-Host "  " -NoNewline
+    Write-Host "⚠ Warnings: $warningCount" -NoNewline -ForegroundColor Yellow
+    Write-Host "  " -NoNewline
+    Write-Host "✗ Failures: $failCount" -ForegroundColor Red
+    Write-Host ""
+
+    # Return exit code based on failures
+    if ($failCount -gt 0) {
+        return 1
+    }
+    return 0
+}
+
 function Invoke-Task {
     <#
     .SYNOPSIS
@@ -2029,6 +2303,12 @@ if ($PSCmdlet.ParameterSetName -eq 'RemoveVariable') {
         Write-Error "Failed to remove variable: $_"
         exit 1
     }
+}
+
+# Handle ValidateTasks parameter set
+if ($PSCmdlet.ParameterSetName -eq 'ValidateTasks') {
+    $exitCode = Show-ValidationReport -AllTasks $availableTasks -TaskDirectory $TaskDirectory
+    exit $exitCode
 }
 
 # Handle ListTasks parameter set

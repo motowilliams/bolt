@@ -52,6 +52,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🎨 Colorized Output**: Consistent, readable task output
 - **🆕 Smart Task Generator**: Create new task stubs with `-NewTask` parameter (namespace-aware)
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (namespace-aware, no execution)
+- **✔️ Task Validation** (v0.8.0+): Validate task files with `-ValidateTasks` flag to check metadata compliance
 - **📦 Module Installation and Removal**: Install as PowerShell module via `New-BoltModule.ps1` for global access
 - **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
 - **⬆️ Upward Directory Search**: Module mode finds `.build/` by searching parent directories
@@ -411,6 +412,12 @@ Bolt uses PowerShell parameter sets to provide a clean, validated interface with
 7. **RemoveVariable** - For removing configuration variables:
    ```powershell
    .\bolt.ps1 -RemoveVariable -VariableName "Environment"
+   ```
+
+8. **ValidateTasks** - For validating task file metadata and structure:
+   ```powershell
+   .\bolt.ps1 -ValidateTasks                  # Validate all tasks in .build
+   .\bolt.ps1 -ValidateTasks -TaskDirectory "custom"  # Validate custom directory
    ```
 
 **For module installation and uninstallation, use the separate `New-BoltModule.ps1` script:**
@@ -813,6 +820,62 @@ The `-Outline` flag displays the task dependency tree and execution order **with
 # Preview with custom task directory
 .\bolt.ps1 -TaskDirectory "infra-tasks" deploy -Outline
 ```
+
+[toc](#-table-of-contents)
+
+## ✔️ Task Validation with `-ValidateTasks`
+
+The `-ValidateTasks` flag checks all task files for required metadata and proper structure **without executing** any tasks:
+
+```powershell
+# Validate all tasks in .build directory
+.\bolt.ps1 -ValidateTasks
+
+# Validate tasks in custom directory
+.\bolt.ps1 -ValidateTasks -TaskDirectory "custom-tasks"
+```
+
+**What It Validates:**
+- **TASK metadata** - Checks if `# TASK:` header exists and task name is valid
+- **DESCRIPTION metadata** - Checks if `# DESCRIPTION:` header exists and is not a placeholder
+- **DEPENDS metadata** - Checks if `# DEPENDS:` header exists (even if empty)
+- **Exit code** - Verifies task has explicit `exit 0` or `exit 1` statement
+- **Task name format** - Ensures task names follow lowercase alphanumeric + hyphens pattern
+
+**Example Output:**
+
+```
+Task Validation Report
+================================================================================
+
+File: Invoke-Build.ps1 | Task: build | ✓ PASS
+  TASK: ✓
+  DESCRIPTION: ✓ (Compiles Bicep files to ARM JSON templates...)
+  DEPENDS: ✓ (format, lint)
+  Exit Code: ✓
+
+File: Invoke-Format.ps1 | Task: format | ⚠ WARN
+  TASK: ✓
+  DESCRIPTION: ✓ (TODO: Add description for this task...)
+  DEPENDS: ✓
+  Exit Code: ✓
+  Issue: Description is placeholder or empty
+
+================================================================================
+Summary: 2 task file(s) validated
+  ✓ Pass: 1  ⚠ Warnings: 1  ✗ Failures: 0
+```
+
+**Status Indicators:**
+- **✓ PASS** - Task file meets all requirements
+- **⚠ WARN** - Task file has minor issues (placeholder descriptions, missing non-critical metadata)
+- **✗ FAIL** - Task file has critical issues (invalid task name format)
+
+**Use Cases:**
+- **Development** - Check task quality before committing
+- **Code Review** - Verify new tasks follow conventions
+- **CI/CD** - Add validation step to ensure task metadata compliance
+- **Onboarding** - Help new contributors understand task requirements
 
 [toc](#-table-of-contents)
 
