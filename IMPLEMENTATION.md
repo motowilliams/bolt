@@ -499,7 +499,7 @@ Execution order:
 
 ## Task Validation Feature
 
-The `-Validation` flag checks all task files for metadata compliance and proper structure without executing them.
+The `-ValidateTasks` flag checks all task files for metadata compliance and proper structure without executing them.
 
 ### What It Validates
 
@@ -526,7 +526,7 @@ The `-Validation` flag checks all task files for metadata compliance and proper 
 
 **Validating default .build directory:**
 ```powershell
-PS> .\bolt.ps1 -Validation
+PS> .\bolt.ps1 -ValidateTasks
 
 Task Validation Report
 ================================================================================
@@ -559,7 +559,7 @@ Summary: 3 task file(s) validated
 
 **Validating custom directory:**
 ```powershell
-PS> .\bolt.ps1 -TaskDirectory "infra-tasks" -Validation
+PS> .\bolt.ps1 -ValidateTasks -TaskDirectory "infra-tasks"
 
 Task Validation Report
 ================================================================================
@@ -592,30 +592,30 @@ Summary: 1 task file(s) validated
 **Development Workflow:**
 ```powershell
 # Check tasks before committing
-.\bolt.ps1 -Validation
+.\bolt.ps1 -ValidateTasks
 
 # Fix issues, then validate again
-.\bolt.ps1 -Validation
+.\bolt.ps1 -ValidateTasks
 ```
 
 **Code Review:**
 ```powershell
 # Validate new tasks in PR
-.\bolt.ps1 -TaskDirectory "feature-branch-tasks" -Validation
+.\bolt.ps1 -ValidateTasks -TaskDirectory "feature-branch-tasks"
 ```
 
 **CI/CD Pipeline:**
 ```yaml
 # GitHub Actions example
 - name: Validate Tasks
-  run: pwsh -File bolt.ps1 -Validation
+  run: pwsh -File bolt.ps1 -ValidateTasks
   shell: pwsh
 ```
 
 **Onboarding:**
 ```powershell
 # Help new contributors understand task requirements
-.\bolt.ps1 -Validation
+.\bolt.ps1 -ValidateTasks
 
 # Shows what metadata is required and why
 ```

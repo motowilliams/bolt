@@ -52,7 +52,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - **🎨 Colorized Output**: Consistent, readable task output
 - **🆕 Smart Task Generator**: Create new task stubs with `-NewTask` parameter (namespace-aware)
 - **📊 Task Outline**: Preview dependency trees with `-Outline` flag (namespace-aware, no execution)
-- **✔️ Task Validation** (v0.8.0+): Validate task files with `-Validation` flag to check metadata compliance
+- **✔️ Task Validation** (v0.8.0+): Validate task files with `-ValidateTasks` flag to check metadata compliance
 - **📦 Module Installation and Removal**: Install as PowerShell module via `New-BoltModule.ps1` for global access
 - **🐳 Docker Integration**: Containerized manifest generation with Docker wrapper scripts
 - **⬆️ Upward Directory Search**: Module mode finds `.build/` by searching parent directories
@@ -416,8 +416,8 @@ Bolt uses PowerShell parameter sets to provide a clean, validated interface with
 
 8. **ValidateTasks** - For validating task file metadata and structure:
    ```powershell
-   .\bolt.ps1 -Validation                  # Validate all tasks in .build
-   .\bolt.ps1 -Validation -TaskDirectory "custom"  # Validate custom directory
+   .\bolt.ps1 -ValidateTasks                  # Validate all tasks in .build
+   .\bolt.ps1 -ValidateTasks -TaskDirectory "custom"  # Validate custom directory
    ```
 
 **For module installation and uninstallation, use the separate `New-BoltModule.ps1` script:**
@@ -823,16 +823,16 @@ The `-Outline` flag displays the task dependency tree and execution order **with
 
 [toc](#-table-of-contents)
 
-## ✔️ Task Validation with `-Validation`
+## ✔️ Task Validation with `-ValidateTasks`
 
-The `-Validation` flag checks all task files for required metadata and proper structure **without executing** any tasks:
+The `-ValidateTasks` flag checks all task files for required metadata and proper structure **without executing** any tasks:
 
 ```powershell
 # Validate all tasks in .build directory
-.\bolt.ps1 -Validation
+.\bolt.ps1 -ValidateTasks
 
 # Validate tasks in custom directory
-.\bolt.ps1 -TaskDirectory "custom-tasks" -Validation
+.\bolt.ps1 -ValidateTasks -TaskDirectory "custom-tasks"
 ```
 
 **What It Validates:**

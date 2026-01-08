@@ -25,7 +25,7 @@ using namespace System.Management.Automation
 .PARAMETER NewTask
     Create a new task file with the specified name. Creates a stubbed file in
     the task directory with proper metadata structure.
-.PARAMETER Validation
+.PARAMETER ValidateTasks
     Validate all task files in the task directory. Checks for required metadata
     (TASK, DESCRIPTION, DEPENDS) and proper exit codes. Displays a detailed
     report showing the status of each task file.
@@ -50,7 +50,7 @@ using namespace System.Management.Automation
     .\bolt.ps1 -NewTask clean
     Creates a new task file named Invoke-Clean.ps1 in the task directory.
 .EXAMPLE
-    .\bolt.ps1 -Validation
+    .\bolt.ps1 -ValidateTasks
     Validates all task files and displays a detailed report of metadata compliance.
 .EXAMPLE
     .\bolt.ps1 format,lint,build -ErrorAction Continue
@@ -160,7 +160,7 @@ param(
 
     # ValidateTasks parameter set
     [Parameter(Mandatory = $true, ParameterSetName = 'ValidateTasks')]
-    [switch]$Validation,
+    [switch]$ValidateTasks,
 
     # TaskExecution parameter set - additional arguments
     [Parameter(ParameterSetName = 'TaskExecution', ValueFromRemainingArguments)]

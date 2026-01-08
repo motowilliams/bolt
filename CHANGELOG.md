@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8.0] - 2026-01-08
 
 ### Added
-- **Task Validation Feature**: New `-Validation` parameter to validate task file metadata and structure
+- **Task Validation Feature**: New `-ValidateTasks` parameter to validate task file metadata and structure
   - Validates TASK metadata presence and format
   - Checks DESCRIPTION metadata (flags placeholders like "TODO")
   - Verifies DEPENDS metadata exists
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated README.md with validation feature documentation and usage examples
 - Updated parameter sets documentation to include ValidateTasks parameter set
-- Enhanced help documentation with `-Validation` parameter and example
+- Enhanced help documentation with `-ValidateTasks` parameter and example
 
 ## [0.7.1] - 2026-01-08
 
