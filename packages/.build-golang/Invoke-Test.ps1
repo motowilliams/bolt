@@ -1,5 +1,6 @@
 # TASK: test
 # DESCRIPTION: Runs Go tests using go test
+# DEPENDS:
 
 Write-Host "Running Go tests..." -ForegroundColor Cyan
 
@@ -36,10 +37,10 @@ Push-Location $goPath
 try {
     Write-Host "  Running go test..." -ForegroundColor Gray
     Write-Host ""
-    
+
     # Run go test with verbose output
     go test -v ./...
-    
+
     if ($LASTEXITCODE -ne 0) {
         $testSuccess = $false
     }

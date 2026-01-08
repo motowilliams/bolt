@@ -1,5 +1,6 @@
 # TASK: format, fmt
 # DESCRIPTION: Formats Go source files using gofmt
+# DEPENDS:
 
 Write-Host "Formatting Go files..." -ForegroundColor Cyan
 
