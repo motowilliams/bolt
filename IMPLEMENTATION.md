@@ -497,6 +497,148 @@ Execution order:
 - Verify execution order before running
 - Test `-Only` flag behavior without side effects
 
+## Task Validation Feature
+
+The `-Validation` flag checks all task files for metadata compliance and proper structure without executing them.
+
+### What It Validates
+
+1. **TASK Metadata**
+   - Checks if `# TASK:` header exists
+   - Validates task name format (lowercase alphanumeric + hyphens only)
+   - Enforces 50 character limit for task names
+   - Detects filename fallback usage
+
+2. **DESCRIPTION Metadata**
+   - Checks if `# DESCRIPTION:` header exists
+   - Flags placeholder descriptions ("TODO", "Add description")
+   - Warns about empty descriptions
+
+3. **DEPENDS Metadata**
+   - Checks if `# DEPENDS:` header exists
+   - Header can be empty (no dependencies) but must be present
+
+4. **Exit Codes**
+   - Verifies task has explicit `exit 0` or `exit 1` statement
+   - Prevents implicit success/failure behavior
+
+### Example Output
+
+**Validating default .build directory:**
+```powershell
+PS> .\bolt.ps1 -Validation
+
+Task Validation Report
+================================================================================
+
+File: Invoke-Build.ps1 | Task: build | ✓ PASS
+  TASK: ✓
+  DESCRIPTION: ✓ (Compiles Bicep files to ARM JSON templates...)
+  DEPENDS: ✓ (format, lint)
+  Exit Code: ✓
+
+File: Invoke-Format.ps1 | Task: format | ⚠ WARN
+  TASK: ✓
+  DESCRIPTION: ✓ (TODO: Add description for this task...)
+  DEPENDS: ✓
+  Exit Code: ✓
+  Issue: Description is placeholder or empty
+
+File: Invoke-Lint.ps1 | Task: lint | ⚠ WARN
+  TASK: ✓
+  DESCRIPTION: ✗
+  DEPENDS: ✗
+  Exit Code: ✓
+  Issue: Missing DESCRIPTION metadata
+  Issue: Missing DEPENDS metadata
+
+================================================================================
+Summary: 3 task file(s) validated
+  ✓ Pass: 1  ⚠ Warnings: 2  ✗ Failures: 0
+```
+
+**Validating custom directory:**
+```powershell
+PS> .\bolt.ps1 -TaskDirectory "infra-tasks" -Validation
+
+Task Validation Report
+================================================================================
+
+File: Invoke-Deploy.ps1 | Task: deploy | ✗ FAIL
+  TASK: ✓
+  DESCRIPTION: ✓ (Deploys infrastructure to Azure...)
+  DEPENDS: ✓ (build)
+  Exit Code: ✗
+  Issue: Missing explicit exit code (exit 0 or exit 1)
+
+================================================================================
+Summary: 1 task file(s) validated
+  ✓ Pass: 0  ⚠ Warnings: 0  ✗ Failures: 1
+```
+
+### Status Indicators
+
+- **✓ PASS**: Task file meets all requirements
+- **⚠ WARN**: Task file has minor issues (placeholder descriptions, missing non-critical metadata)
+- **✗ FAIL**: Task file has critical issues (invalid task name format, etc.)
+
+### Exit Codes
+
+- **0**: All validations passed (or warnings only)
+- **1**: One or more task files have failures
+
+### Use Cases
+
+**Development Workflow:**
+```powershell
+# Check tasks before committing
+.\bolt.ps1 -Validation
+
+# Fix issues, then validate again
+.\bolt.ps1 -Validation
+```
+
+**Code Review:**
+```powershell
+# Validate new tasks in PR
+.\bolt.ps1 -TaskDirectory "feature-branch-tasks" -Validation
+```
+
+**CI/CD Pipeline:**
+```yaml
+# GitHub Actions example
+- name: Validate Tasks
+  run: pwsh -File bolt.ps1 -Validation
+  shell: pwsh
+```
+
+**Onboarding:**
+```powershell
+# Help new contributors understand task requirements
+.\bolt.ps1 -Validation
+
+# Shows what metadata is required and why
+```
+
+### Implementation Details
+
+- **Test-TaskMetadata Function**: Core validation logic
+  - Reads first 30 lines for metadata parsing
+  - Scans entire file for exit code validation
+  - Returns hashtable with validation results
+  - Tracks issues and status (Pass/Warning/Fail)
+
+- **Show-ValidationReport Function**: Formatted output
+  - Color-coded status indicators
+  - File-by-file detailed validation
+  - Summary statistics
+  - Returns exit code based on failure count
+
+- **ValidateTasks Parameter Set**: Clean interface
+  - Works with `-TaskDirectory` parameter
+  - Discovers all tasks in specified directory
+  - Excludes core tasks (only validates project tasks)
+
 ## Namespace-Aware Dependency Resolution
 
 **Version 0.7.0+** introduces namespace-aware dependency resolution for better task isolation in multi-package projects.
