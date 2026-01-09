@@ -61,12 +61,7 @@ Describe 'Task Validation' -Tag 'Golang-Tasks' {
             $content = Get-Content $script:LintTaskPath -Raw
             $content | Should -Match '# TASK: lint'
             $content | Should -Match '# DESCRIPTION:'
-        }
-
-        It 'Should not declare dependencies in metadata' {
-            $content = Get-Content $script:LintTaskPath -Raw
-            # Lint task doesn't declare dependencies - format is run by user
-            $content | Should -Not -Match '# DEPENDS:'
+            $content | Should -Match '# DEPENDS:'
         }
     }
 
@@ -83,12 +78,7 @@ Describe 'Task Validation' -Tag 'Golang-Tasks' {
             $content = Get-Content $script:TestTaskPath -Raw
             $content | Should -Match '# TASK: test'
             $content | Should -Match '# DESCRIPTION:'
-        }
-
-        It 'Should not declare dependencies in metadata' {
-            $content = Get-Content $script:TestTaskPath -Raw
-            # Test task doesn't declare dependencies
-            $content | Should -Not -Match '# DEPENDS:'
+            $content | Should -Match '# DEPENDS:'
         }
     }
 
