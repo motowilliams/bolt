@@ -1,5 +1,6 @@
 # TASK: lint
 # DESCRIPTION: Validates Go code using go vet
+# DEPENDS:
 
 Write-Host "Linting Go files..." -ForegroundColor Cyan
 
@@ -35,11 +36,11 @@ $lintSuccess = $true
 Push-Location $goPath
 try {
     Write-Host "  Running go vet..." -ForegroundColor Gray
-    
+
     # Run go vet and capture output
     $output = go vet ./... 2>&1
     $exitCode = $LASTEXITCODE
-    
+
     if ($exitCode -ne 0) {
         $lintSuccess = $false
         Write-Host ""
