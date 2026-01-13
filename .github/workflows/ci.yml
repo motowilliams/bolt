@@ -133,6 +133,12 @@ jobs:
         run: |
           Write-Host "Generating test report..." -ForegroundColor Cyan
           $config = New-PesterConfiguration
+          $config.Run.Path = @(
+            'tests'
+            'packages/.build-bicep/tests'
+            'packages/.build-golang/tests'
+            'packages/.build-terraform/tests'
+          )
           $config.Run.Exit = $false
           $config.TestResult.Enabled = $true
           $config.TestResult.OutputFormat = 'NUnitXml'
