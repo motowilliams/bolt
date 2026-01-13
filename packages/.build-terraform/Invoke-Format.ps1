@@ -65,7 +65,7 @@ foreach ($dir in $directories) {
     }
     else {
         # Use local terraform CLI
-        terraform fmt -recursive $dir | Out-Null
+        & terraform fmt -recursive $dir | Out-Null
     }
     
     if ($LASTEXITCODE -eq 0) {

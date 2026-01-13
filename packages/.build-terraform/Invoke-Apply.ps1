@@ -93,7 +93,7 @@ foreach ($dir in $directories) {
         else {
             # Use local terraform CLI
             Write-Host "    Initializing..." -ForegroundColor Gray
-            terraform init -backend=false 2>&1 | Out-Null
+            & terraform init -backend=false 2>&1 | Out-Null
             
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "    ✗ Initialization failed" -ForegroundColor Red
@@ -104,11 +104,11 @@ foreach ($dir in $directories) {
             # Apply (with or without plan file)
             if ($hasPlanFile) {
                 Write-Host "    Applying from plan file..." -ForegroundColor Gray
-                $output = terraform apply -auto-approve $planFile -no-color 2>&1
+                $output = & terraform apply -auto-approve "terraform.tfplan" -no-color 2>&1
             }
             else {
                 Write-Host "    Generating and applying plan..." -ForegroundColor Gray
-                $output = terraform apply -auto-approve -no-color 2>&1
+                $output = & terraform apply -auto-approve -no-color 2>&1
             }
         }
         

@@ -77,7 +77,7 @@ foreach ($dir in $directories) {
         else {
             # Use local terraform CLI
             Write-Host "    Initializing..." -ForegroundColor Gray
-            terraform init -backend=false 2>&1 | Out-Null
+            & terraform init -backend=false 2>&1 | Out-Null
             
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "    ✗ Initialization failed" -ForegroundColor Red
@@ -86,7 +86,7 @@ foreach ($dir in $directories) {
             }
             
             # Run validate
-            $output = terraform validate -no-color 2>&1
+            $output = & terraform validate -no-color 2>&1
         }
         
         if ($LASTEXITCODE -eq 0) {
