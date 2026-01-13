@@ -408,6 +408,46 @@ The project is a **working example** that includes:
 
 **Ready to use**: The system is functional and can be adapted for any PowerShell-based build workflow. Package starters provide pre-built task collections for specific toolchains.
 
+### Non-Goals (Permanent Design Decisions)
+
+**CRITICAL**: Bolt intentionally does NOT implement these features. Do not suggest, implement, or plan for these capabilities:
+
+#### ❌ Build System Caching
+
+**Status**: Will NEVER implement
+
+**Description**: Automatic file change detection to skip tasks if input files haven't changed.
+
+**Rationale**:
+- Caching requires accurate dependency tracking (extremely complex for arbitrary tasks)
+- Incorrect cache invalidation causes stale builds (broken builds worse than slow builds)
+- Each toolchain has unique caching needs better handled in task scripts
+- `-Only` flag already provides explicit fast iteration control
+
+**If user requests this**: Explain alternatives (task-level caching, `-Only` flag, tool-specific caching).
+
+#### ❌ Task Parallelism
+
+**Status**: Will NEVER implement
+
+**Description**: Running multiple tasks simultaneously in parallel threads/processes.
+
+**Rationale**:
+- **Race conditions**: Common pattern where tasks modify shared files (format and lint touching same files)
+- **Non-deterministic failures**: Debug complexity with interleaved output
+- **Loss of predictability**: Sequential execution is simple and debuggable
+- Tasks can implement internal parallelism if needed (`ForEach-Object -Parallel`)
+
+**Dangerous pattern**:
+```powershell
+# If parallel: format and lint both modify main.bicep simultaneously
+.\bolt.ps1 format lint  # Safe (sequential)
+```
+
+**Design philosophy**: Correctness and debuggability over execution speed.
+
+**If user requests this**: Explain race condition risks, suggest task-level parallelism for file processing.
+
 ### Parameter Sets
 
 Bolt uses PowerShell parameter sets for clean, validated interfaces:

@@ -33,6 +33,7 @@ A self-contained, cross-platform PowerShell build system with extensible task or
 - [📦 Releases](#-releases)
 - [🔒 Security](#-security)
 - [🤔 Logic Flows](#-logic-flows)
+- [🚫 Non-Goals](#-non-goals)
 
 ## 💡 Why "Bolt"?
 
@@ -2167,6 +2168,45 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "✓ Build succeeded" -ForegroundColor Green
 exit 0
 ```
+
+---
+
+## 🚫 Non-Goals
+
+Bolt intentionally **does not** implement the following features to maintain simplicity and avoid dangerous patterns:
+
+### ❌ Build System Caching
+
+**Not Implemented**: Automatic file change detection to skip tasks if files haven't changed.
+
+**Rationale**: 
+- Caching adds complexity to track file dependencies correctly
+- Incorrect cache invalidation leads to stale builds (worse than slow builds)
+- Task scripts can implement their own caching strategies if needed
+- Developers control when tasks run with explicit `-Only` flag for fast iteration
+
+**Alternative**: Use `-Only` flag to skip dependencies when iterating: `.\bolt.ps1 build -Only`
+
+### ❌ Task Parallelism
+
+**Not Implemented**: Running multiple tasks simultaneously in parallel.
+
+**Rationale**:
+- Common pattern of multiple tasks modifying shared files creates race conditions
+- Parallel execution makes debugging difficult (interleaved output, non-deterministic failures)
+- Task dependencies already provide execution order control
+- Simple sequential execution is predictable and debuggable
+
+**Dangerous Pattern Example**:
+```powershell
+# Both tasks might modify the same files simultaneously
+.\bolt.ps1 format lint  # Sequential (safe)
+# If parallel: format and lint could race on same files (unsafe)
+```
+
+**Design Decision**: Sequential task execution eliminates race conditions and maintains predictable behavior. Developers who need parallelism can implement it within individual task scripts using PowerShell's `-Parallel` flag in `ForEach-Object` or background jobs.
+
+[toc](#-table-of-contents)
 
 ---
 
