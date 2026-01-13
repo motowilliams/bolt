@@ -100,6 +100,66 @@ The Golang starter package includes comprehensive tests:
 
 Run tests with: `Invoke-Pester -Tag Golang-Tasks`
 
+### `.build-terraform` - Terraform Starter Package
+
+Infrastructure-as-Code tasks for Terraform workflows with Docker fallback support.
+
+**Included Tasks:**
+- **`format`** - Formats Terraform files using `terraform fmt` (alias: `fmt`)
+- **`validate`** - Validates Terraform configuration syntax
+- **`plan`** - Generates Terraform execution plan
+- **`apply`** - Applies Terraform changes (alias: `deploy`)
+
+**Requirements:**
+- Terraform 1.0+ CLI: https://developer.hashicorp.com/terraform/downloads
+  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
+- Tasks automatically use Docker if Terraform CLI is not installed
+
+**Installation:**
+
+**Option 1: Download from GitHub Releases (recommended)**
+```powershell
+# Interactive script to download and install starter packages
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
+```
+
+**Option 2: Manual copy from source (for development)**
+```powershell
+# From your project root
+Copy-Item -Path "packages/.build-terraform/Invoke-*.ps1" -Destination ".build/" -Force
+```
+
+**Usage:**
+```powershell
+# Format all Terraform files
+.\bolt.ps1 format
+
+# Validate Terraform configuration
+.\bolt.ps1 validate
+
+# Generate execution plan
+.\bolt.ps1 plan
+
+# Full apply pipeline (format → validate → plan → apply)
+.\bolt.ps1 apply
+```
+
+**Docker Fallback:**
+If Terraform CLI is not installed, tasks automatically use Docker:
+```powershell
+# No local Terraform? No problem!
+.\bolt.ps1 format    # Uses Docker: hashicorp/terraform:latest
+.\bolt.ps1 validate  # Automatically falls back to Docker
+```
+
+**Testing:**
+The Terraform starter package includes comprehensive tests:
+- `packages/.build-terraform/tests/Tasks.Tests.ps1` - Task structure validation
+- `packages/.build-terraform/tests/Integration.Tests.ps1` - End-to-end integration tests
+- `packages/.build-terraform/tests/tf/` - Example Terraform configuration
+
+Run tests with: `Invoke-Pester -Tag Terraform-Tasks`
+
 ## Using Multiple Package Starters (Multi-Namespace)
 
 **New in Bolt v0.6.0**: You can install multiple package starters simultaneously by organizing them as namespace subdirectories under `.build/`.
