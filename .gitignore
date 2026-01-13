@@ -18,6 +18,45 @@ packages/.build-bicep/tests/iac/*.json
 !packages/.build-bicep/tests/iac/bicepconfig.json
 
 # =============================================================================
+# Terraform Infrastructure Files
+# =============================================================================
+# Terraform state files (contain sensitive data)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform plan files
+*.tfplan
+*.tfplan.*
+
+# Terraform directory
+.terraform/
+.terraform.lock.hcl
+
+# Terraform variable files (may contain sensitive data)
+*.tfvars
+*.auto.tfvars
+
+# Preserve example variable files
+!*.tfvars.example
+!example.tfvars
+
+# Terraform generated files
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform CLI configuration files
+.terraformrc
+terraform.rc
+
+# Output files created by example Terraform configs
+packages/.build-terraform/tests/tf/output.txt
+
+# =============================================================================
 # Test Results and Coverage
 # =============================================================================
 # Pester test output files

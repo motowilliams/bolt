@@ -108,6 +108,42 @@ jobs:
             bicep --version
           }
 
+      - name: Install Terraform CLI (Ubuntu)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          # NOTE: Terraform CLI installation is for testing the Terraform starter package
+          # The core Bolt orchestrator has no dependency on Terraform
+          # Check if Terraform is already installed
+          if command -v terraform &> /dev/null; then
+            echo "✓ Terraform CLI already installed"
+            terraform version
+          else
+            echo "Installing Terraform CLI..."
+            wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+            echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+            sudo apt update && sudo apt install -y terraform
+            echo "✓ Terraform CLI installed"
+            terraform version
+          fi
+
+      - name: Install Terraform CLI (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # NOTE: Terraform CLI installation is for testing the Terraform starter package
+          # The core Bolt orchestrator has no dependency on Terraform
+          # Check if Terraform is already installed
+          if (Get-Command terraform -ErrorAction SilentlyContinue) {
+            Write-Host "✓ Terraform CLI already installed" -ForegroundColor Green
+            terraform version
+          } else {
+            Write-Host "Installing Terraform via Chocolatey..." -ForegroundColor Cyan
+            choco install terraform -y
+            Write-Host "✓ Terraform CLI installed" -ForegroundColor Green
+            terraform version
+          }
+
       - name: Run Core Tests (Fast)
         shell: pwsh
         run: |
@@ -133,6 +169,12 @@ jobs:
         run: |
           Write-Host "Generating test report..." -ForegroundColor Cyan
           $config = New-PesterConfiguration
+          $config.Run.Path = @(
+            'tests'
+            'packages/.build-bicep/tests'
+            'packages/.build-golang/tests'
+            'packages/.build-terraform/tests'
+          )
           $config.Run.Exit = $false
           $config.TestResult.Enabled = $true
           $config.TestResult.OutputFormat = 'NUnitXml'

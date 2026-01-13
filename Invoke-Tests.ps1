@@ -12,6 +12,7 @@
     - tests/ - Core Bolt orchestration tests
     - packages/.build-bicep/tests/ - Bicep starter package tests
     - packages/.build-golang/tests/ - Golang starter package tests
+    - packages/.build-terraform/tests/ - Terraform starter package tests
     
     This allows developers to run all tests with a single command while
     maintaining test decoupling for future starter package separation.
@@ -22,6 +23,7 @@
     - Security: Security validation tests (includes all security-related tests)
     - Bicep-Tasks: Bicep starter package tests (requires Bicep CLI)
     - Golang-Tasks: Golang starter package tests (requires Go CLI)
+    - Terraform-Tasks: Terraform starter package tests (requires Terraform CLI or Docker)
     - SecurityLogging: Security event logging tests
     - SecurityTxt: RFC 9116 compliance tests
     - OutputValidation: Output sanitization tests
@@ -56,6 +58,10 @@
     Runs only Golang starter package tests (requires Go CLI).
 
 .EXAMPLE
+    .\Invoke-Tests.ps1 -Tag Terraform-Tasks
+    Runs only Terraform starter package tests (requires Terraform CLI or Docker).
+
+.EXAMPLE
     .\Invoke-Tests.ps1 -PassThru
     Runs all tests and returns the result object.
 
@@ -67,11 +73,11 @@
 [CmdletBinding()]
 param(
     [Parameter()]
-    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
+    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$Tag,
 
     [Parameter()]
-    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
+    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$ExcludeTag,
 
     [Parameter()]
@@ -87,9 +93,10 @@ $config = New-PesterConfiguration
 
 # Set test discovery paths
 $config.Run.Path = @(
-    'tests'                         # Core Bolt tests
-    'packages/.build-bicep/tests'   # Bicep starter package tests
-    'packages/.build-golang/tests'  # Golang starter package tests
+    'tests'                            # Core Bolt tests
+    'packages/.build-bicep/tests'      # Bicep starter package tests
+    'packages/.build-golang/tests'     # Golang starter package tests
+    'packages/.build-terraform/tests'  # Terraform starter package tests
 )
 
 # Apply tag filters if specified
@@ -114,6 +121,7 @@ Write-Host "Discovering tests in:" -ForegroundColor Cyan
 Write-Host "  - tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-bicep/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-golang/tests/" -ForegroundColor Gray
+Write-Host "  - packages/.build-terraform/tests/" -ForegroundColor Gray
 Write-Host ""
 
 $result = Invoke-Pester -Configuration $config

@@ -693,13 +693,14 @@ Add your new tag to `Invoke-Tests.ps1`:
 
 ```powershell
 # Update ValidateSet in both -Tag and -ExcludeTag parameters
-[ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', '<Toolchain>-Tasks', ...)]
+[ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', '<Toolchain>-Tasks', ...)]
 
 # Add to test discovery paths
 $config.Run.Path = @(
     'tests'
     'packages/.build-bicep/tests'
     'packages/.build-golang/tests'
+    'packages/.build-terraform/tests'
     'packages/.build-<toolchain>/tests'  # Add your package
 )
 
@@ -776,8 +777,9 @@ Study these existing packages as templates:
 
 - **Bicep Starter** (`packages/.build-bicep/`) - Infrastructure-as-Code toolchain
 - **Golang Starter** (`packages/.build-golang/`) - Application development with testing
+- **Terraform Starter** (`packages/.build-terraform/`) - Infrastructure-as-Code with Docker fallback
 
-Both follow the same conventions and provide excellent examples of:
+All three follow the same conventions and provide excellent examples of:
 - Task structure and metadata
 - External tool validation
 - Configuration handling
