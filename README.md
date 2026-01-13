@@ -285,6 +285,16 @@ Go application development tasks for building, testing, and formatting Go code.
 
 See [packages/.build-golang/README.md](packages/.build-golang/README.md) for detailed documentation, installation instructions, and usage examples.
 
+#### Terraform Starter Package
+
+Infrastructure-as-Code tasks for Terraform workflows with automatic Docker fallback.
+
+**Included Tasks:** `format` (alias `fmt`), `validate`, `plan`, `apply` (alias `deploy`)
+
+**Requirements:** Terraform CLI ([Installation](https://developer.hashicorp.com/terraform/downloads)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+
+See [packages/.build-terraform/README.md](packages/.build-terraform/README.md) for detailed documentation, installation instructions, and usage examples.
+
 See [`packages/README.md`](packages/README.md) for details on available package starters.
 
 **Want to create your own package starter?** See the comprehensive guides:

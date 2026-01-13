@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-01-13
+
+### Added
+- **Terraform Starter Package**: Infrastructure-as-Code tasks for Terraform workflows
+  - **`format` task** (alias: `fmt`) - Formats `.tf` files using `terraform fmt -recursive`
+  - **`validate` task** - Validates Terraform configuration after `terraform init -backend=false`
+  - **`plan` task** - Generates execution plan, saves to `terraform.tfplan`
+  - **`apply` task** (alias: `deploy`) - Applies changes with 5-second safety delay
+  - Dependencies: `apply` → `plan` → `validate` → `format`
+  - **Docker Fallback Support**: Automatically uses `hashicorp/terraform:latest` Docker image when Terraform CLI not installed
+  - Cross-platform compatibility (Windows, Linux, macOS)
+  - Comprehensive test suite (21 task validation + 4 integration tests)
+  - Example Terraform configuration for testing
+  - Complete documentation in `packages/.build-terraform/README.md`
+  - CI integration with Terraform CLI installation on both Ubuntu and Windows runners
+
+### Changed
+- **CI Workflow**: Added Terraform CLI installation steps for both Ubuntu and Windows
+  - Ubuntu: Uses HashiCorp's official apt repository
+  - Windows: Uses Chocolatey package manager
+  - Ensures consistent cross-platform testing with native Terraform CLI
+- **Test Discovery**: Added `packages/.build-terraform/tests` to test discovery paths in CI workflow
+- **Invoke-Tests.ps1**: Added `Terraform-Tasks` tag to ValidateSet for test filtering
+
+### Fixed
+- **PowerShell Command Execution**: Fixed terraform command invocation to use call operator (`&`) and quoted parameters
+  - Changed from `terraform plan -out=$planFile` to `& terraform plan "-out=terraform.tfplan"`
+  - Prevents PowerShell variable expansion issues on Windows
+  - Ensures consistent behavior across all platforms
+
+### Technical Notes
+- **Docker Limitation on Windows**: The `hashicorp/terraform:latest` Docker image only provides Linux containers
+  - Windows CI runners don't support Linux containers
+  - Solution: Install Terraform CLI natively on both platforms for consistent testing
+  - Docker fallback still available for local development on platforms that support Linux containers
+
 ## [0.8.1] - 2026-01-12
 
 ### Changed
@@ -662,7 +698,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - EditorConfig for consistent code formatting
 
-[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/motowilliams/bolt/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/motowilliams/bolt/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/motowilliams/bolt/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/motowilliams/bolt/compare/v0.7.0...v0.7.1
