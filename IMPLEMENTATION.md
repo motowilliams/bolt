@@ -1182,5 +1182,54 @@ steps:
 
 ---
 
+## 🚫 Non-Goals
+
+Bolt intentionally **does not** implement the following features. These decisions are permanent and documented for both human developers and AI agents working on this codebase.
+
+### ❌ Build System Caching
+
+**Status**: Will not implement
+
+**Description**: Automatic file change detection to skip tasks if input files haven't changed.
+
+**Rationale**: 
+- Caching requires tracking file dependencies across tasks, adding significant complexity
+- Incorrect cache invalidation causes stale builds (broken builds are worse than slow builds)
+- Each project has unique caching needs that are better handled in task scripts
+- Developers already have explicit control via `-Only` flag for fast iteration
+
+**Alternative Approaches**:
+- Task scripts can implement custom caching logic if needed for their specific toolchain
+- Use `-Only` flag to skip dependency execution: `.\bolt.ps1 build -Only`
+- Tools like Bicep CLI have their own built-in caching mechanisms
+
+### ❌ Task Parallelism
+
+**Status**: Will not implement
+
+**Description**: Running multiple tasks simultaneously in parallel threads or processes.
+
+**Rationale**:
+- **Race Condition Risk**: Common pattern where multiple tasks modify shared files (e.g., format and lint both touching source files)
+- **Debugging Complexity**: Interleaved output and non-deterministic failures make troubleshooting difficult
+- **Unpredictable Behavior**: Task execution order becomes non-deterministic
+- **Sequential is Clear**: Current sequential execution is simple, predictable, and debuggable
+
+**Dangerous Pattern**:
+```powershell
+# If these ran in parallel, both would touch the same files:
+.\bolt.ps1 format lint  # Safe (sequential)
+# Parallel would cause: format modifies file.bicep while lint reads it
+```
+
+**Alternative Approaches**:
+- Task scripts can use PowerShell's built-in parallelism (`ForEach-Object -Parallel`, background jobs) for file-level operations
+- Tasks are already optimized to process multiple files efficiently
+- CI/CD systems can run multiple Bolt invocations in parallel if needed
+
+**Design Philosophy**: Bolt prioritizes correctness and debuggability over execution speed. Sequential task execution eliminates entire classes of race condition bugs.
+
+---
+
 **Lightning fast builds with Bolt!** ⚡
 
