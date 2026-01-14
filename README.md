@@ -2216,6 +2216,38 @@ Bolt intentionally **does not** implement the following features to maintain sim
 
 **Design Decision**: Sequential task execution eliminates race conditions and maintains predictable behavior. Developers who need parallelism can implement it within individual task scripts using PowerShell's `-Parallel` flag in `ForEach-Object` or background jobs.
 
+### ❌ Task Argument Passing via Bolt CLI
+
+**Not Implemented**: Passing named arguments to task scripts through the bolt command (e.g., `.\bolt.ps1 deploy -Environment prod`).
+
+**Rationale**:
+- When bolt runs multiple tasks (`format lint deploy`), it's unclear which task gets which arguments
+- Task arguments would conflict with bolt's own parameters (`-Task`, `-Only`, `-Outline`)
+- Task scripts can use `param()` blocks, but parameters only work when calling directly (bypassing dependency resolution): `.\Invoke-Deploy.ps1 -Environment prod`
+
+**What to Use Instead**:
+
+1. **`bolt.config.json` (Recommended)** - Type-safe configuration:
+   ```json
+   {
+     "Azure": {
+       "Environment": "prod",
+       "Region": "eastus"
+     }
+   }
+   ```
+   Tasks automatically receive `$BoltConfig` variable.
+
+2. **Environment Variables** - For dynamic values:
+   ```powershell
+   $env:DEPLOY_ENV = "prod"
+   .\bolt.ps1 deploy
+   ```
+
+3. **Configuration Files** - Load JSON/YAML/XML in your task scripts as needed.
+
+**Design Decision**: Configuration should be declarative (config files) not imperative (command-line arguments). Type safety and validation through `bolt.config.json` provide more value than CLI convenience.
+
 [toc](#-table-of-contents)
 
 ---

@@ -448,6 +448,58 @@ The project is a **working example** that includes:
 
 **If user requests this**: Explain race condition risks, suggest task-level parallelism for file processing.
 
+#### ❌ Task Argument Passing via Bolt CLI
+
+**Status**: Will NEVER implement
+
+**Description**: Passing named arguments to task scripts through bolt.ps1 command line (e.g., `.\bolt.ps1 deploy -Environment prod`).
+
+**Rationale**:
+- **Parameter ambiguity**: When bolt orchestrates multiple tasks (e.g., `format lint deploy`), there's no way to determine which task receives which arguments
+- **Parameter collision**: Task arguments would conflict with bolt's own parameters (`-Task`, `-Only`, `-Outline`, `-TaskDirectory`)
+- **Complexity**: Would require complex parsing to distinguish bolt parameters from task parameters
+- **Direct invocation works**: Tasks can still accept parameters when called directly: `.\Invoke-Deploy.ps1 -Environment prod` (but this bypasses dependency resolution)
+
+**Dangerous Pattern**:
+```powershell
+# If bolt supported task arguments, this would be ambiguous:
+.\bolt.ps1 format lint deploy -Environment prod -Region eastus
+# Which task gets -Environment? Which gets -Region? Both? All three?
+
+# Direct script call works but skips dependencies:
+.\Invoke-Deploy.ps1 -Environment prod  # ✓ Works, but no format/lint executed
+```
+
+**Alternative Approaches** (in preference order):
+1. **Use `bolt.config.json` with `$BoltConfig`** (PREFERRED) - Type-safe, validated, auto-injected into all tasks:
+   ```json
+   // bolt.config.json
+   {
+     "Azure": {
+       "Environment": "prod",
+       "Region": "eastus",
+       "SubscriptionId": "abc-123"
+     }
+   }
+   ```
+   ```powershell
+   # In task script: $BoltConfig.Azure.Environment
+   .\bolt.ps1 deploy  # Config auto-injected
+   ```
+
+2. **Use environment variables** - For dynamic/runtime values:
+   ```powershell
+   $env:DEPLOY_ENV = "prod"
+   $env:DEPLOY_REGION = "eastus"
+   .\bolt.ps1 deploy  # Read $env:DEPLOY_ENV in task script
+   ```
+
+3. **Load configuration files** - For complex scenarios, load JSON/YAML/XML within task scripts
+
+**Design philosophy**: Configuration should be declarative (config files) not imperative (command-line arguments). Type safety and validation are more important than command-line convenience.
+
+**If user requests this**: Explain parameter ambiguity problem with multi-task examples, direct them to `bolt.config.json` (preferred) or environment variables. Mention that direct script invocation (`.\Invoke-Task.ps1 -Args`) still works but bypasses dependency resolution.
+
 ### Parameter Sets
 
 Bolt uses PowerShell parameter sets for clean, validated interfaces:
