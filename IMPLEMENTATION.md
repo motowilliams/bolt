@@ -774,7 +774,7 @@ Summary: 1 task file(s) validated
 
 ### Task Parameter Passing Limitations
 
-**Named parameter passing from bolt CLI is NOT supported** - see [Non-Goals: Task Argument Passing](#-task-argument-passing-via-bolt-cli) for rationale (parameter ambiguity, collision risks).
+**Named parameter passing from bolt CLI is NOT supported** - see [Non-Goals: Task Argument Passing](#task-argument-passing-via-bolt-cli) for rationale (parameter ambiguity, collision risks).
 
 **Potential future alternatives** under consideration - see [Possible Future Features: Named Parameter Passing](#named-parameter-passing-for-tasks) for hashtable-based approaches.
 
@@ -1485,7 +1485,7 @@ $env:DEPLOY_ENV = "prod"; $env:DEPLOY_REGION = "eastus"
 
 3. **External Configuration Files** - Load JSON/YAML/XML within task scripts as needed
 
-**Design Philosophy**: Configuration should be declarative (config files) not imperative (CLI arguments). Type safety and validation through `bolt.config.json` are more valuable than command-line convenience. See [Possible Future Features](#possible-future-features) for potential hashtable-based approaches under consideration.
+**Design Philosophy**: Configuration should be declarative (config files) not imperative (CLI arguments). Type safety and validation through `bolt.config.json` are more valuable than command-line convenience. See [Possible Future Features](#-possible-future-features) for potential hashtable-based approaches under consideration.
 
 ---
 
