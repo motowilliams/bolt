@@ -420,15 +420,27 @@ function Invoke-UninstallBoltModule {
     if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
         # Windows: Check Documents\PowerShell\Modules
         $userModulePath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell" "Modules" $moduleName
-        if (Test-Path $userModulePath) {
-            $installLocations += $userModulePath
+        try {
+            if (Test-Path $userModulePath -ErrorAction Stop) {
+                $installLocations += $userModulePath
+            }
+        }
+        catch {
+            # Ignore permission errors when checking for module existence
+            Write-Verbose "Unable to check path $userModulePath : $($_.Exception.Message)"
         }
     }
     else {
         # Linux/macOS: Check .local/share/powershell/Modules
         $userModulePath = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "powershell" "Modules" $moduleName
-        if (Test-Path $userModulePath) {
-            $installLocations += $userModulePath
+        try {
+            if (Test-Path $userModulePath -ErrorAction Stop) {
+                $installLocations += $userModulePath
+            }
+        }
+        catch {
+            # Ignore permission errors when checking for module existence
+            Write-Verbose "Unable to check path $userModulePath : $($_.Exception.Message)"
         }
     }
 
@@ -436,8 +448,14 @@ function Invoke-UninstallBoltModule {
     $modulePaths = $env:PSModulePath -split [System.IO.Path]::PathSeparator
     foreach ($modulePath in $modulePaths) {
         $boltModulePath = Join-Path $modulePath $moduleName
-        if ((Test-Path $boltModulePath) -and $boltModulePath -notin $installLocations) {
-            $installLocations += $boltModulePath
+        try {
+            if ((Test-Path $boltModulePath -ErrorAction Stop) -and $boltModulePath -notin $installLocations) {
+                $installLocations += $boltModulePath
+            }
+        }
+        catch {
+            # Ignore permission errors when checking for module existence
+            Write-Verbose "Unable to check path $boltModulePath : $($_.Exception.Message)"
         }
     }
 

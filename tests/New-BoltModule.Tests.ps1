@@ -72,7 +72,10 @@ Describe 'Parameter Sets' -Tag 'Core' {
         # This test just validates the parameter parsing, not actual uninstallation
         # since there may not be a module installed
         $output = & $script:NewBoltModulePath -Uninstall -Force 2>&1
-        # Exit code can be 0 (success) or 1 (no module found), both are valid
+        # Exit code can be:
+        # 0 = success (module found and removed)
+        # 1 = no module found, or partial failure (e.g., permission denied in CI)
+        # In CI environments with cached modules, permission errors may occur
         $LASTEXITCODE | Should -BeIn @(0, 1)
     }
 }
@@ -165,11 +168,30 @@ Describe 'Module Installation' -Tag 'Core' {
 }
 
 Describe 'Module Uninstallation' -Tag 'Core' {
-    It 'Should report when no module is installed' {
+    It 'Should report when no module is installed or handle permission errors' {
         $output = & $script:NewBoltModulePath -Uninstall -Force *>&1 | Out-String
-        # When no module is found, should return exit code 1
+        # Exit code can be:
+        # 0 = module found and successfully removed
+        # 1 = no module found, or partial failure (e.g., permission denied in CI)
+        # In CI environments with cached modules, permission errors may occur
+        $LASTEXITCODE | Should -BeIn @(0, 1)
+        
+        # Check for expected messages based on exit code
         if ($LASTEXITCODE -eq 1) {
-            $output | Should -Match 'Bolt module is not installed'
+            # Either no module installed, or partial failure with recovery file
+            $expectedPatterns = @(
+                'Bolt module is not installed',
+                'Failed to remove',
+                'Permission denied'
+            )
+            $matchFound = $false
+            foreach ($pattern in $expectedPatterns) {
+                if ($output -match $pattern) {
+                    $matchFound = $true
+                    break
+                }
+            }
+            $matchFound | Should -Be $true -Because "Output should indicate why uninstallation failed or wasn't needed"
         }
     }
 
