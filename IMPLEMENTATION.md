@@ -246,12 +246,12 @@ All Terraform tasks automatically detect and use Docker when Terraform CLI is no
 
 #### **Test Suite**
 Comprehensive Pester test suite for Terraform starter package:
-- **Task Validation Tests** (`packages/.build-terraform/tests/Tasks.Tests.ps1`) - 21 tests
+- **Task Validation Tests** (`packages/.build-terraform/tests/Tasks.Tests.ps1`)
   - Task file structure and syntax
   - Metadata validation (TASK, DESCRIPTION, DEPENDS)
   - Dependency declarations
   - Tool availability checks
-- **Integration Tests** (`packages/.build-terraform/tests/Integration.Tests.ps1`) - 4 tests
+- **Integration Tests** (`packages/.build-terraform/tests/Integration.Tests.ps1`)
   - Format task execution
   - Validate task execution
   - Plan task execution
@@ -780,7 +780,7 @@ Summary: 1 task file(s) validated
 
 ### How It Works
 
-When a namespaced task declares dependencies, Bolt now resolves them with **namespace priority**:
+When a task under a namespace declares dependencies, Bolt now resolves them with **namespace priority**:
 
 1. **First**: Look for `{namespace}-{dependency}` in the same namespace
 2. **Fallback**: Use root-level `{dependency}` if not found
@@ -885,8 +885,8 @@ function Resolve-Dependency($dep, $namespace, $allTasks) {
 ```
 
 **Applied in:**
-- `Invoke-Task` - Task execution (commit 513da5f)
-- `Show-TaskOutline` - `-Outline` mode (commit eed7e55)
+- `Invoke-Task` - Task execution (commit id)
+- `Show-TaskOutline` - `-Outline` mode (commit id)
 
 ## Task Dependency Chain
 
@@ -1008,24 +1008,24 @@ The project includes a comprehensive Pester test suite organized into three file
 
 ### Test Structure
 
-**Core Orchestration** (`tests/bolt.Tests.ps1` - 28 tests):
+**Core Orchestration** (`tests/bolt.Tests.ps1`):
 - Tests Bolt's task discovery, execution, and dependency resolution
 - Uses mock tasks from `tests/fixtures/` to avoid external dependencies
 - Validates script syntax, parameter handling, error handling
 - Tests filename fallback for tasks without metadata (handles Invoke-Verb-Noun.ps1 patterns)
 - Ensures documentation consistency
 
-**Security Validation** (`tests/security/Security.Tests.ps1` - 29 tests):
+**Security Validation** (`tests/security/Security.Tests.ps1`):
 - Validates P0 security fixes for path traversal and command injection
 - Tests input sanitization and validation
 - Ensures secure error handling
 
-**Bicep Starter Package Tests** (`packages/.build-bicep/tests/Tasks.Tests.ps1` - 12 tests):
+**Bicep Starter Package Tests** (`packages/.build-bicep/tests/Tasks.Tests.ps1`):
 - Validates structure and metadata of Bicep starter package tasks
 - Checks task existence, syntax, and proper metadata headers
 - Verifies dependency declarations
 
-**Bicep Starter Package Integration** (`packages/.build-bicep/tests/Integration.Tests.ps1` - 4 tests):
+**Bicep Starter Package Integration** (`packages/.build-bicep/tests/Integration.Tests.ps1`):
 - End-to-end tests executing actual Bicep operations
 - Requires Bicep CLI to be installed
 - Tests format, lint, build, and full pipeline
@@ -1069,23 +1069,25 @@ Invoke-Pester -Path tests/bolt.Tests.ps1
 Invoke-Pester -Path packages/.build-bicep/tests/
 
 # Run tests by tag
-Invoke-Pester -Tag Core           # Only core orchestration tests (28 tests, ~1s)
-Invoke-Pester -Tag Security       # Only security validation tests (29 tests, ~1s)
-Invoke-Pester -Tag Bicep-Tasks    # Only Bicep task tests (16 tests, ~22s)
+Invoke-Pester -Tag Core           # Only core orchestration tests (fast, ~1s)
+Invoke-Pester -Tag Security       # Only security validation tests (fast, ~1s)
+Invoke-Pester -Tag Bicep-Tasks    # Only Bicep task tests (slower, requires Bicep CLI)
+Invoke-Pester -Tag Golang-Tasks   # Only Golang task tests (slower, requires Go)
+Invoke-Pester -Tag Terraform-Tasks # Only Terraform task tests (slower, requires Terraform/Docker)
 ```
 
 ### Test Tags
 
 The test suite uses Pester tags for flexible test execution:
 
-**`Core` Tag** (28 tests, ~1 second)
+**`Core` Tag** (fast, ~1 second)
 - Tests bolt.ps1 orchestration functionality
 - Includes `bolt.Tests.ps1` and `Documentation Consistency` tests
 - Fast execution with no external dependencies
 - Uses mock fixtures from `tests/fixtures/`
 - Ideal for quick validation during development
 
-**`Security` Tag** (29 tests, ~1 second)
+**`Security` Tag** (fast, ~1 second)
 - Tests security validation and P0 fixes
 - Includes path traversal and command injection prevention
 - Fast execution with no external dependencies
@@ -1407,7 +1409,7 @@ Bolt intentionally **does not** implement the following features. These decision
 - **Race Condition Risk**: Common pattern where multiple tasks modify shared files (e.g., format and lint both touching source files)
 - **Debugging Complexity**: Interleaved output and non-deterministic failures make troubleshooting difficult
 - **Unpredictable Behavior**: Task execution order becomes non-deterministic
-- **Sequential is Clear**: Current sequential execution is simple, predictable, and debuggable
+- **Sequential is Clear**: Current sequential execution is simple, predictable, and easier to debug
 
 **Dangerous Pattern**:
 ```powershell

@@ -435,7 +435,7 @@ The project is a **working example** that includes:
 **Rationale**:
 - **Race conditions**: Common pattern where tasks modify shared files (format and lint touching same files)
 - **Non-deterministic failures**: Debug complexity with interleaved output
-- **Loss of predictability**: Sequential execution is simple and debuggable
+- **Loss of predictability**: Sequential execution is simple and easier to debug
 - Tasks can implement internal parallelism if needed (`ForEach-Object -Parallel`)
 
 **Dangerous pattern**:
@@ -722,7 +722,7 @@ Copy-Item $source $dest -Force -Recurse
 - `Select-String` - Use `-Path`, `-Pattern`, `-CaseSensitive`
 - `Select-Object` - Use `-Property`, `-First`, `-Last`, `-Skip`, `-Unique`
 - `Measure-Object` - Use `-Property`, `-Sum`, `-Average`, `-Maximum`, `-Minimum`
-- `Invoke-Expression` - **NEVER USE** - Security risk, use scriptblocks or `&` operator instead
+- `Invoke-Expression` - **NEVER USE** - Security risk, use script blocks or `&` operator instead
 - `Invoke-Command` - Use `-ScriptBlock`, `-ComputerName`, `-ArgumentList`
 
 **Real Examples from Bolt**:

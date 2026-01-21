@@ -203,9 +203,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Only lowercase letters, numbers, and hyphens allowed
   - Invalid directories skipped with warning message
 - **Test Suite Expansion**: Added comprehensive namespace testing
-  - New test file `tests/Namespaces.Tests.ps1` with 13 tests
+  - New test file `tests/Namespaces.Tests.ps1`
   - Covers discovery, prefixing, validation, and backward compatibility
-  - Total test count increased from 92 to 105 tests
 
 ### Technical Notes
 - **Namespace Directory Structure Change**: 
@@ -280,11 +279,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Invoke-Tests.ps1**: Wrapper script for comprehensive test execution with recursive discovery
-  - Automatically discovers tests in both `tests/` (310 tests) and `packages/` (16 tests) directories
+  - Automatically discovers tests in both `tests/` and `packages/` directories
   - Supports tag filtering (`-Tag Core`, `-Tag Bicep-Tasks`, `-Tag Security`)
   - Includes `-Output` parameter for verbosity control (None, Normal, Detailed, Diagnostic)
   - Includes `-PassThru` parameter to return result object for automation
-  - Total of 326 tests discovered across project
 
 ### Changed
 - **Testing Documentation**: Updated README.md and CONTRIBUTING.md to document new test workflow
@@ -673,9 +671,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Example Bicep starter package tasks: `format`, `lint`, `build`
 - Example Azure infrastructure (App Service + SQL Database)
 - Comprehensive test suite with Pester
-  - Core orchestration tests (28 tests, fast)
-  - Security validation tests (205 tests)
-  - Bicep starter package tests (16 tests)
+  - Core orchestration tests (fast, no external dependencies)
+  - Security validation tests
+  - Bicep starter package tests (requires Bicep CLI)
   - Test tags: `Core`, `Security`, `Bicep-Tasks`
 - VS Code integration:
   - Pre-configured tasks (build, format, lint, test)

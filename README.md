@@ -1630,8 +1630,8 @@ Bolt includes a GitHub Actions workflow that runs on Ubuntu and Windows:
   - Push builds run on all branches (including topic branches)
   - Duplicate builds prevented when PR is open (only PR build runs)
 - **Platforms**: Ubuntu (Linux) and Windows
-- **Pipeline**: Core tests → Starter package tests → Full build (format → lint → build)
-- **Dependencies**: Automatically installs PowerShell 7.0+ and tools required by starter packages (e.g., Bicep CLI for testing Bicep starter)
+- **Pipeline**: Core tests → Starter package tests (Bicep, Golang, Terraform) → Full build (format → lint → build)
+- **Dependencies**: Automatically installs PowerShell 7.0+ and tools required by starter packages (Bicep CLI, Go, Terraform)
 - **Test Reports**: NUnit XML artifacts uploaded for each platform
 - **Status**: [![CI](https://github.com/motowilliams/bolt/actions/workflows/ci.yml/badge.svg)](https://github.com/motowilliams/bolt/actions/workflows/ci.yml)
 
@@ -1647,7 +1647,9 @@ Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
 
 # Run tests (same as CI)
 Invoke-Pester -Tag Core    # Fast tests (~1s)
-Invoke-Pester -Tag Bicep-Tasks   # Bicep starter package tests (~22s)
+Invoke-Pester -Tag Bicep-Tasks   # Bicep starter package tests
+Invoke-Pester -Tag Golang-Tasks  # Golang starter package tests
+Invoke-Pester -Tag Terraform-Tasks # Terraform starter package tests
 Invoke-Pester             # All tests
 
 # Run build pipeline (same as CI)
@@ -2205,7 +2207,7 @@ Bolt intentionally **does not** implement the following features to maintain sim
 - Common pattern of multiple tasks modifying shared files creates race conditions
 - Parallel execution makes debugging difficult (interleaved output, non-deterministic failures)
 - Task dependencies already provide execution order control
-- Simple sequential execution is predictable and debuggable
+- Simple sequential execution is predictable and easier to debug
 
 **Dangerous Pattern Example**:
 ```powershell
