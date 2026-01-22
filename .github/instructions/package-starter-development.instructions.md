@@ -605,6 +605,58 @@ if ($errors) {
 }
 ```
 
+## Updating Test Discovery Wrappers
+
+**CRITICAL**: When creating a new package starter, you must update the test wrapper scripts to include your new tests.
+
+### Update Invoke-Tests.ps1
+
+The `Invoke-Tests.ps1` script at the repository root is the primary test runner. It must be updated to:
+
+1. **Add the test path** to the discovery paths array:
+   ```powershell
+   $config.Run.Path = @(
+       'tests'                            # Core Bolt tests
+       'packages/.build-bicep/tests'      # Bicep starter package tests
+       'packages/.build-golang/tests'     # Golang starter package tests
+       'packages/.build-terraform/tests'  # Terraform starter package tests
+       'packages/.build-[toolchain]/tests' # YOUR NEW PACKAGE
+   )
+   ```
+
+2. **Add the tag** to both `ValidateSet` attributes:
+   ```powershell
+   [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', '[Toolchain]-Tasks', ...)]
+   ```
+
+3. **Update the parameter documentation** in `.PARAMETER Tag` section:
+   ```powershell
+   - [Toolchain]-Tasks: [Toolchain] starter package tests (requires [Tool] CLI or Docker)
+   ```
+
+4. **Add an example** in the `.EXAMPLE` section:
+   ```powershell
+   .EXAMPLE
+       .\Invoke-Tests.ps1 -Tag [Toolchain]-Tasks
+       Runs only [Toolchain] starter package tests (requires [Tool] CLI or Docker).
+   ```
+
+5. **Update the discovery output** in the `Write-Host` section:
+   ```powershell
+   Write-Host "  - packages/.build-[toolchain]/tests/" -ForegroundColor Gray
+   ```
+
+6. **Update the description** in `.DESCRIPTION` section to list your package.
+
+**Example commit message**: `Update Invoke-Tests.ps1 to include [Toolchain]-Tasks tag and test path`
+
+### Why This Matters
+
+- **Test Discovery**: Without updating `Invoke-Tests.ps1`, your tests won't be discovered by the main test runner
+- **CI Integration**: The CI pipeline uses `Invoke-Tests.ps1` to run all tests
+- **Developer Experience**: Developers expect `.\Invoke-Tests.ps1` to run all tests, including new packages
+- **Tag Filtering**: Without the tag in `ValidateSet`, developers can't filter to just your package's tests
+
 ## Checklist for New Package Starters
 
 Before submitting a pull request:
@@ -619,6 +671,7 @@ Before submitting a pull request:
 - [ ] Path construction uses `Join-Path`
 - [ ] Tests include both structure and integration tests
 - [ ] Test tags use `[Toolchain]-Tasks` pattern
+- [ ] **`Invoke-Tests.ps1` updated with new tag and test path**
 - [ ] Release script creates valid archives
 - [ ] Package-specific README.md is complete
 - [ ] Main packages/README.md updated with new entry

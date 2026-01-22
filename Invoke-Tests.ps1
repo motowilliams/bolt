@@ -13,6 +13,7 @@
     - packages/.build-bicep/tests/ - Bicep starter package tests
     - packages/.build-golang/tests/ - Golang starter package tests
     - packages/.build-terraform/tests/ - Terraform starter package tests
+    - packages/.build-dotnet/tests/ - .NET starter package tests
     
     This allows developers to run all tests with a single command while
     maintaining test decoupling for future starter package separation.
@@ -24,6 +25,7 @@
     - Bicep-Tasks: Bicep starter package tests (requires Bicep CLI)
     - Golang-Tasks: Golang starter package tests (requires Go CLI)
     - Terraform-Tasks: Terraform starter package tests (requires Terraform CLI or Docker)
+    - DotNet-Tasks: .NET starter package tests (requires .NET SDK or Docker)
     - SecurityLogging: Security event logging tests
     - SecurityTxt: RFC 9116 compliance tests
     - OutputValidation: Output sanitization tests
@@ -62,6 +64,10 @@
     Runs only Terraform starter package tests (requires Terraform CLI or Docker).
 
 .EXAMPLE
+    .\Invoke-Tests.ps1 -Tag DotNet-Tasks
+    Runs only .NET starter package tests (requires .NET SDK or Docker).
+
+.EXAMPLE
     .\Invoke-Tests.ps1 -PassThru
     Runs all tests and returns the result object.
 
@@ -73,11 +79,11 @@
 [CmdletBinding()]
 param(
     [Parameter()]
-    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
+    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'DotNet-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$Tag,
 
     [Parameter()]
-    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
+    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'DotNet-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$ExcludeTag,
 
     [Parameter()]
@@ -97,6 +103,7 @@ $config.Run.Path = @(
     'packages/.build-bicep/tests'      # Bicep starter package tests
     'packages/.build-golang/tests'     # Golang starter package tests
     'packages/.build-terraform/tests'  # Terraform starter package tests
+    'packages/.build-dotnet/tests'     # .NET starter package tests
 )
 
 # Apply tag filters if specified
@@ -122,6 +129,7 @@ Write-Host "  - tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-bicep/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-golang/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-terraform/tests/" -ForegroundColor Gray
+Write-Host "  - packages/.build-dotnet/tests/" -ForegroundColor Gray
 Write-Host ""
 
 $result = Invoke-Pester -Configuration $config
