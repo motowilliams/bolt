@@ -1,3 +1,5 @@
+using Xunit;
+
 namespace HelloWorld.Tests;
 
 public class CalculatorTests

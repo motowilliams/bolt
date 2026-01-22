@@ -30,37 +30,44 @@ Describe ".NET Package Starter - Task Validation" -Tag "DotNet-Tasks" {
 
     Context "Task Metadata" {
         It "format task should have TASK metadata" {
-            $content = Get-Content -Path "$packagePath/Invoke-Format.ps1" -First 30 -Raw
+            $lines = Get-Content -Path "$packagePath/Invoke-Format.ps1" -First 30
+            $content = $lines -join "`n"
             $content | Should -Match "# TASK:"
         }
 
         It "format task should have DESCRIPTION metadata" {
-            $content = Get-Content -Path "$packagePath/Invoke-Format.ps1" -First 30 -Raw
+            $lines = Get-Content -Path "$packagePath/Invoke-Format.ps1" -First 30
+            $content = $lines -join "`n"
             $content | Should -Match "# DESCRIPTION:"
         }
 
         It "restore task should have TASK metadata" {
-            $content = Get-Content -Path "$packagePath/Invoke-Restore.ps1" -First 30 -Raw
+            $lines = Get-Content -Path "$packagePath/Invoke-Restore.ps1" -First 30
+            $content = $lines -join "`n"
             $content | Should -Match "# TASK:"
         }
 
         It "test task should have TASK metadata" {
-            $content = Get-Content -Path "$packagePath/Invoke-Test.ps1" -First 30 -Raw
+            $lines = Get-Content -Path "$packagePath/Invoke-Test.ps1" -First 30
+            $content = $lines -join "`n"
             $content | Should -Match "# TASK:"
         }
 
         It "build task should have TASK metadata" {
-            $content = Get-Content -Path "$packagePath/Invoke-Build.ps1" -First 30 -Raw
+            $lines = Get-Content -Path "$packagePath/Invoke-Build.ps1" -First 30
+            $content = $lines -join "`n"
             $content | Should -Match "# TASK:"
         }
 
         It "build task should declare dependencies" {
-            $content = Get-Content -Path "$packagePath/Invoke-Build.ps1" -First 30 -Raw
+            $lines = Get-Content -Path "$packagePath/Invoke-Build.ps1" -First 30
+            $content = $lines -join "`n"
             $content | Should -Match "# DEPENDS:"
         }
 
         It "build task should depend on format, restore, and test" {
-            $content = Get-Content -Path "$packagePath/Invoke-Build.ps1" -First 30 -Raw
+            $lines = Get-Content -Path "$packagePath/Invoke-Build.ps1" -First 30
+            $content = $lines -join "`n"
             $content | Should -Match "# DEPENDS:\s+format,\s+restore,\s+test"
         }
     }
@@ -134,7 +141,7 @@ Describe ".NET Package Starter - Task Validation" -Tag "DotNet-Tasks" {
         }
 
         It "example test project should exist" {
-            $testProject = Join-Path $PSScriptRoot "app" "HelloWorld.Tests" "HelloWorld.Tests.csproj"
+            $testProject = Join-Path $PSScriptRoot "HelloWorld.Tests" "HelloWorld.Tests.csproj"
             Test-Path $testProject | Should -Be $true
         }
 
@@ -144,7 +151,7 @@ Describe ".NET Package Starter - Task Validation" -Tag "DotNet-Tasks" {
         }
 
         It "example test file should exist" {
-            $testFile = Join-Path $PSScriptRoot "app" "HelloWorld.Tests" "CalculatorTests.cs"
+            $testFile = Join-Path $PSScriptRoot "HelloWorld.Tests" "CalculatorTests.cs"
             Test-Path $testFile | Should -Be $true
         }
     }

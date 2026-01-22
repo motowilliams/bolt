@@ -32,7 +32,7 @@ public class Program
     public static void Main(string[] args)
     {
         var calculator = new Calculator();
-        
+
         Console.WriteLine("Hello, World from .NET!");
         Console.WriteLine($"2 + 3 = {calculator.Add(2, 3)}");
         Console.WriteLine($"10 - 4 = {calculator.Subtract(10, 4)}");

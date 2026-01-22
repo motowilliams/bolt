@@ -31,7 +31,7 @@ if ($BoltConfig.DotNetPath) {
 }
 else {
     # Fallback to default location for backward compatibility
-    $dotnetPath = Join-Path $PSScriptRoot "tests" "app"
+    $dotnetPath = Join-Path $PSScriptRoot "tests"
 }
 
 $projectFiles = Get-ChildItem -Path $dotnetPath -Filter "*.csproj" -Recurse -File -Force -ErrorAction SilentlyContinue
