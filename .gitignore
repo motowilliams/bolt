@@ -57,6 +57,31 @@ terraform.rc
 packages/.build-terraform/tests/tf/output.txt
 
 # =============================================================================
+# .NET Build Artifacts
+# =============================================================================
+# .NET build outputs
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.cache
+
+# .NET NuGet packages
+packages/
+*.nupkg
+*.snupkg
+
+# .NET publish output
+publish/
+
+# .NET user-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# =============================================================================
 # Test Results and Coverage
 # =============================================================================
 # Pester test output files
