@@ -14,6 +14,10 @@
 go.mod text eol=lf
 go.sum text eol=lf
 
+# C# files
+*.cs text eol=lf
+*.csproj text eol=lf
+
 # JSON files
 *.json text eol=lf
 
