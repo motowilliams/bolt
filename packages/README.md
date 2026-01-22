@@ -100,6 +100,66 @@ The Golang starter package includes comprehensive tests:
 
 Run tests with: `Invoke-Pester -Tag Golang-Tasks`
 
+### `.build-dotnet` - .NET (C#) Starter Package
+
+.NET/C# application development tasks for building, testing, formatting, and restoring packages with Docker fallback support.
+
+**Included Tasks:**
+- **`format`** - Formats C# files using `dotnet format` (alias: `fmt`)
+- **`restore`** - Restores NuGet packages using `dotnet restore`
+- **`test`** - Runs .NET tests using `dotnet test`
+- **`build`** - Builds .NET projects (depends on format, restore, test)
+
+**Requirements:**
+- .NET SDK 6.0+ (8.0+ recommended): https://dotnet.microsoft.com/download
+  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
+- Tasks automatically use Docker if .NET SDK is not installed
+
+**Installation:**
+
+**Option 1: Download from GitHub Releases (recommended)**
+```powershell
+# Interactive script to download and install starter packages
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
+```
+
+**Option 2: Manual copy from source (for development)**
+```powershell
+# From your project root
+Copy-Item -Path "packages/.build-dotnet/Invoke-*.ps1" -Destination ".build/" -Force
+```
+
+**Usage:**
+```powershell
+# Format all C# files
+.\bolt.ps1 format
+
+# Restore NuGet packages
+.\bolt.ps1 restore
+
+# Run tests
+.\bolt.ps1 test
+
+# Full build pipeline (format → restore → test → build)
+.\bolt.ps1 build
+```
+
+**Docker Fallback:**
+If .NET SDK is not installed, tasks automatically use Docker:
+```powershell
+# No local .NET SDK? No problem!
+.\bolt.ps1 format    # Uses Docker: mcr.microsoft.com/dotnet/sdk:8.0
+.\bolt.ps1 build     # Automatically falls back to Docker
+```
+
+**Testing:**
+The .NET starter package includes comprehensive tests:
+- `packages/.build-dotnet/tests/Tasks.Tests.ps1` - Task structure validation
+- `packages/.build-dotnet/tests/Integration.Tests.ps1` - End-to-end integration tests
+- `packages/.build-dotnet/tests/app/` - Example .NET application with xUnit tests
+
+Run tests with: `Invoke-Pester -Tag DotNet-Tasks`
+
 ### `.build-terraform` - Terraform Starter Package
 
 Infrastructure-as-Code tasks for Terraform workflows with Docker fallback support.
