@@ -60,12 +60,12 @@ foreach ($project in $projectFiles) {
             $absolutePath = [System.IO.Path]::GetFullPath($projectDir)
             
             # Run dotnet format in Docker container
-            $output = & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:8.0 dotnet format --verify-no-changes 2>&1
+            $output = & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:10.0 dotnet format --verify-no-changes 2>&1
             
             # If verify-no-changes returns non-zero, format is needed
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "    Formatting needed, applying changes..." -ForegroundColor Gray
-                $output = & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:8.0 dotnet format 2>&1
+                $output = & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:10.0 dotnet format 2>&1
                 
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "    ✓ Project formatted successfully" -ForegroundColor Green

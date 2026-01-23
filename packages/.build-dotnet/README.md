@@ -12,14 +12,14 @@
 ## Requirements
 
 **Option 1: Local .NET SDK** (Recommended)
-- .NET SDK 6.0+ (8.0+ recommended): https://dotnet.microsoft.com/download
-  - **Windows**: `winget install Microsoft.DotNet.SDK.8`
+- .NET SDK 6.0+ (10.0+ recommended): https://dotnet.microsoft.com/download
+  - **Windows**: `winget install Microsoft.DotNet.SDK.10`
   - **macOS**: `brew install dotnet-sdk`
   - **Linux**: See https://dotnet.microsoft.com/download/linux
 
 **Option 2: Docker Fallback**
 - Docker Engine: https://docs.docker.com/get-docker/
-- If .NET SDK is not found, tasks automatically use `mcr.microsoft.com/dotnet/sdk:8.0` Docker image
+- If .NET SDK is not found, tasks automatically use `mcr.microsoft.com/dotnet/sdk:10.0` Docker image
 - Requires Docker volume mount support for working directory
 
 **Additional Requirements:**
@@ -102,9 +102,9 @@ If .NET SDK is not installed locally, tasks automatically detect and use Docker:
 
 ```powershell
 # No local .NET SDK? No problem!
-# Tasks will automatically use: docker run mcr.microsoft.com/dotnet/sdk:8.0
+# Tasks will automatically use: docker run mcr.microsoft.com/dotnet/sdk:10.0
 
-.\bolt.ps1 format    # Uses Docker if dotnet command not found
+.\bolt.ps1 format    # Uses Docker: mcr.microsoft.com/dotnet/sdk:10.0
 .\bolt.ps1 build     # Uses Docker if dotnet command not found
 ```
 

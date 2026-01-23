@@ -60,7 +60,7 @@ foreach ($project in $projectFiles) {
             $absolutePath = [System.IO.Path]::GetFullPath($projectDir)
             
             # Run dotnet restore in Docker container
-            $output = & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:8.0 dotnet restore 2>&1
+            $output = & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:10.0 dotnet restore 2>&1
         }
         else {
             # Use local dotnet CLI

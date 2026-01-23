@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`test` task** - Runs .NET tests using `dotnet test` with xUnit
   - **`build` task** - Builds .NET projects (depends on format, restore, test)
   - Dependencies: `build` → `format`, `restore`, `test`
-  - **Docker Fallback Support**: Automatically uses `mcr.microsoft.com/dotnet/sdk:8.0` Docker image when .NET SDK not installed
+  - **Docker Fallback Support**: Automatically uses `mcr.microsoft.com/dotnet/sdk:10.0` Docker image when .NET SDK not installed
   - Cross-platform compatibility (Windows, Linux, macOS)
   - Comprehensive test suite (25 task validation + 9 integration tests)
   - Example C# application with Calculator class and xUnit tests

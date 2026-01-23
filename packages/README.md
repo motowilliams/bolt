@@ -148,7 +148,7 @@ Copy-Item -Path "packages/.build-dotnet/Invoke-*.ps1" -Destination ".build/" -Fo
 If .NET SDK is not installed, tasks automatically use Docker:
 ```powershell
 # No local .NET SDK? No problem!
-.\bolt.ps1 format    # Uses Docker: mcr.microsoft.com/dotnet/sdk:8.0
+.\bolt.ps1 format    # Uses Docker: mcr.microsoft.com/dotnet/sdk:10.0
 .\bolt.ps1 build     # Automatically falls back to Docker
 ```
 

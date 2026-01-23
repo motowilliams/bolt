@@ -70,7 +70,7 @@ foreach ($project in $testProjects) {
             
             # Run dotnet test in Docker container
             Write-Host ""
-            & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:8.0 dotnet test --nologo --verbosity normal
+            & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:10.0 dotnet test --nologo --verbosity normal
             Write-Host ""
         }
         else {
