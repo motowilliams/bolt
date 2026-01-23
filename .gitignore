@@ -5,9 +5,10 @@
 # See: https://git-scm.com/docs/gitignore
 
 # =============================================================================
-# Bicep Infrastructure Files
+# Bicep Starter Package (.build-bicep)
 # =============================================================================
-# Ignore compiled ARM JSON templates (generated from .bicep files)
+# Compiled ARM JSON templates generated from .bicep files
+# Bicep starter package: https://github.com/motowilliams/bolt/tree/main/packages/.build-bicep
 tests/iac/*.json
 packages/.build-bicep/tests/iac/*.json
 
@@ -18,32 +19,35 @@ packages/.build-bicep/tests/iac/*.json
 !packages/.build-bicep/tests/iac/bicepconfig.json
 
 # =============================================================================
-# Terraform Infrastructure Files
+# Terraform Starter Package (.build-terraform)
 # =============================================================================
+# Based on: https://github.com/github/gitignore/blob/main/Terraform.gitignore
+# Terraform starter package: https://github.com/motowilliams/bolt/tree/main/packages/.build-terraform
+
+# Local .terraform directories
+.terraform/
+
 # Terraform state files (contain sensitive data)
 *.tfstate
 *.tfstate.*
-*.tfstate.backup
 
 # Terraform plan files
 *.tfplan
 *.tfplan.*
 
-# Terraform directory
-.terraform/
-.terraform.lock.hcl
-
 # Terraform variable files (may contain sensitive data)
 *.tfvars
-*.auto.tfvars
+*.tfvars.json
 
 # Preserve example variable files
 !*.tfvars.example
 !example.tfvars
 
-# Terraform generated files
+# Crash log files
 crash.log
 crash.*.log
+
+# Override files (usually used to override resources locally)
 override.tf
 override.tf.json
 *_override.tf
@@ -53,33 +57,74 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+# Transient lock info files
+.terraform.tfstate.lock.info
+
 # Output files created by example Terraform configs
 packages/.build-terraform/tests/tf/output.txt
 
 # =============================================================================
-# .NET Build Artifacts
+# .NET/C# Starter Package (.build-dotnet)
 # =============================================================================
-# .NET build outputs
-bin/
-obj/
+# Based on: https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
+# .NET starter package: https://github.com/motowilliams/bolt/tree/main/packages/.build-dotnet
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+
+# .NET Core
 *.dll
 *.exe
 *.pdb
 *.cache
 
-# .NET NuGet packages
-packages/
+# NuGet packages
 *.nupkg
 *.snupkg
 
-# .NET publish output
-publish/
+# Publish output
+[Pp]ublish/
 
-# .NET user-specific files
+# User-specific files
+*.rsuser
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+
+# Visual Studio cache/options
+.vs/
+
+# =============================================================================
+# Go/Golang Starter Package (.build-golang)
+# =============================================================================
+# Based on: https://github.com/github/gitignore/blob/main/Go.gitignore
+# Golang starter package: https://github.com/motowilliams/bolt/tree/main/packages/.build-golang
+
+# Binaries for programs and plugins
+# Note: *.exe and *.dll also covered by .NET section above
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Code coverage profiles and test artifacts
+# Note: coverage.* and *.out also used by test coverage section below
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Go workspace file
+go.work
+go.work.sum
 
 # =============================================================================
 # Test Results and Coverage
@@ -88,7 +133,9 @@ publish/
 TestResults.xml
 coverage.xml
 testResults.xml
-*.trx                               # Visual Studio test results
+
+# Visual Studio and .NET test results (also see .NET starter package section)
+*.trx
 
 # Test artifacts and temporary directories
 .build-test/                        # Temporary build directories
