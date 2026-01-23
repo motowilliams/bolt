@@ -1528,27 +1528,64 @@ This project follows [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1.1
 
 ### Release Process
 
-When creating a new release:
+**CRITICAL**: When the user asks to "prepare release X.Y.Z" or "update changelog for X.Y.Z", you must ACTUALLY UPDATE the CHANGELOG.md file with the version number and date, not just stage the content.
 
-1. **Move `[Unreleased]` content** to a new version section:
-   ```markdown
-   ## [1.1.0] - 2025-10-30
-   
-   ### Added
-   - Content from Unreleased section
-   ```
+When creating a new release, perform these concrete steps:
 
-2. **Use Semantic Versioning**:
+1. **Determine the release date**:
+   - Use the current date in ISO format: `YYYY-MM-DD`
+   - Example: `2026-01-23`
+
+2. **Update CHANGELOG.md to move `[Unreleased]` content**:
+   - Change `## [Unreleased]` header to `## [X.Y.Z] - YYYY-MM-DD`
+   - Add a NEW empty `## [Unreleased]` section at the top (after the file header)
+   - Example transformation:
+     ```markdown
+     ## [Unreleased]
+     
+     ### Added
+     - New feature
+     ```
+     Becomes:
+     ```markdown
+     ## [Unreleased]
+     
+     ## [X.Y.Z] - YYYY-MM-DD
+     
+     ### Added
+     - New feature
+     ```
+
+3. **Use Semantic Versioning** to determine the version number:
    - **Major (X.0.0)**: Breaking changes to core functionality or task metadata format
-   - **Minor (1.X.0)**: New features, new parameters, backward-compatible enhancements
-   - **Patch (1.0.X)**: Bug fixes, documentation updates, minor improvements
+   - **Minor (X.Y.0)**: New features, new parameters, backward-compatible enhancements
+   - **Patch (X.Y.Z)**: Bug fixes, documentation updates, minor improvements
 
-3. **Add version comparison links** at bottom:
-   ```markdown
-   [Unreleased]: https://github.com/motowilliams/bolt/compare/v1.1.0...HEAD
-   [1.1.0]: https://github.com/motowilliams/bolt/compare/v1.0.0...v1.1.0
-   [1.0.0]: https://github.com/motowilliams/bolt/releases/tag/v1.0.0
-   ```
+4. **Update version comparison links** at the bottom of CHANGELOG.md:
+   - Update the `[Unreleased]` link to compare from the new version
+   - Add a new comparison link for the new version
+   - Example:
+     ```markdown
+     [Unreleased]: https://github.com/motowilliams/bolt/compare/v1.1.0...HEAD
+     [1.1.0]: https://github.com/motowilliams/bolt/compare/v1.0.0...v1.1.0
+     [1.0.0]: https://github.com/motowilliams/bolt/releases/tag/v1.0.0
+     ```
+
+5. **Verify the changes**:
+   - Check that the version header includes the date: `## [X.Y.Z] - YYYY-MM-DD`
+   - Check that a new empty `[Unreleased]` section exists at the top
+   - Check that version comparison links are updated correctly
+
+**Example Complete Workflow**:
+
+If the user says "prepare 0.10.0 release":
+1. Get current date: `2026-01-23`
+2. Edit CHANGELOG.md to change `## [Unreleased]` to `## [0.10.0] - 2026-01-23`
+3. Add new empty `## [Unreleased]` section above the new version
+4. Update links:
+   - Change: `[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.9.0...HEAD`
+   - To: `[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.10.0...HEAD`
+   - Add: `[0.10.0]: https://github.com/motowilliams/bolt/compare/v0.9.0...v0.10.0`
 
 4. **Create empty `[Unreleased]` section** for next changes
 
