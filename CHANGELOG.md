@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **.NET (C#) Starter Package**: .NET/C# application development tasks with Docker fallback support
+  - **`format` task** (alias: `fmt`) - Formats C# files using `dotnet format`
+  - **`restore` task** - Restores NuGet packages using `dotnet restore`
+  - **`test` task** - Runs .NET tests using `dotnet test` with xUnit
+  - **`build` task** - Builds .NET projects (depends on format, restore, test)
+  - Dependencies: `build` → `format`, `restore`, `test`
+  - **Docker Fallback Support**: Automatically uses `mcr.microsoft.com/dotnet/sdk:10.0` Docker image when .NET SDK not installed
+  - Cross-platform compatibility (Windows, Linux, macOS)
+  - Comprehensive test suite (25 task validation + 9 integration tests)
+  - Example C# application with Calculator class and xUnit tests
+  - Complete documentation in `packages/.build-dotnet/README.md`
+
+### Changed
+- **`.gitattributes`**: Added `*.cs` and `*.csproj` files with `eol=lf` to ensure consistent line endings across platforms
+  - Prevents `dotnet format` from modifying files after checkout on Windows
+- **`.gitignore`**: Added .NET build artifacts (bin/, obj/, *.dll, *.exe, *.pdb, *.cache, packages/, publish/)
+- **`Invoke-Tests.ps1`**: Added `DotNet-Tasks` tag to ValidateSet for test filtering
+  - Added `packages/.build-dotnet/tests/` to test discovery paths
+  - Added documentation and examples for DotNet-Tasks tag
+- **Package Starter Development Instructions**: Enhanced `.github/instructions/package-starter-development.instructions.md`
+  - Added "Updating Test Discovery Wrappers" section with detailed requirements
+  - Added "Version Bumping and Release Preparation" section
+  - Updated checklist to require `Invoke-Tests.ps1` and `CHANGELOG.md` updates
+
 ## [0.9.0] - 2026-01-13
 
 ### Added
