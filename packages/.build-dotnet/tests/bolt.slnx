@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/app/">
+    <Project Path="app\HelloWorld.csproj" Type="C#" />
+  </Folder>
+  <Project Path="HelloWorld.Tests\HelloWorld.Tests.csproj" Type="C#" />
+  <Properties>
+    <SolutionGuid>{B54BC6CD-18A1-412E-9026-DCBE77C8EE74}</SolutionGuid>
+  </Properties>
+</Solution>
