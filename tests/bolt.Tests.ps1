@@ -180,8 +180,8 @@ Describe 'Bolt Core Functionality' -Tag 'Core' {
                 $file2 = Join-Path $tempDir "Invoke-Test-Output.ps1"
                 Set-Content -Path $file2 -Value "Write-Host 'Test'; exit 0"
 
-                # Test case 3: No hyphens (TestOnly.ps1 -> testonly)
-                $file3 = Join-Path $tempDir "TestOnly.ps1"
+                # Test case 3: No hyphens after Invoke- (Invoke-TestOnly.ps1 -> testonly)
+                $file3 = Join-Path $tempDir "Invoke-TestOnly.ps1"
                 Set-Content -Path $file3 -Value "Write-Host 'Test'; exit 0"
 
                 # Use relative path from project root

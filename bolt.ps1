@@ -216,7 +216,7 @@ $taskCompleter = {
         # Scan default .build directory for root-level tasks
         $buildPath = Join-Path -Path $scriptDir -ChildPath '.build'
         if (Test-Path -Path $buildPath) {
-            $buildFiles = Get-ChildItem -Path $buildPath -Filter "*.ps1" -File -Force
+            $buildFiles = Get-ChildItem -Path $buildPath -Filter "Invoke-*.ps1" -File -Force
             foreach ($file in $buildFiles) {
                 # Extract task name from file
                 $lines = Get-Content -Path $file.FullName -First 20 -ErrorAction SilentlyContinue
@@ -246,7 +246,7 @@ $taskCompleter = {
                 $namespace = $dir.Name
                 # Validate namespace format
                 if ($namespace -cmatch '^[a-z0-9][a-z0-9\-]*$') {
-                    $buildFiles = Get-ChildItem -Path $dir.FullName -Filter "*.ps1" -File -Force -ErrorAction SilentlyContinue
+                    $buildFiles = Get-ChildItem -Path $dir.FullName -Filter "Invoke-*.ps1" -File -Force -ErrorAction SilentlyContinue
                     foreach ($file in $buildFiles) {
                         # Extract task name from file
                         $lines = Get-Content -Path $file.FullName -First 20 -ErrorAction SilentlyContinue
@@ -277,7 +277,7 @@ $taskCompleter = {
         # Custom directory specified - scan only that directory
         $buildPath = Join-Path -Path $scriptDir -ChildPath $taskDir
         if (Test-Path -Path $buildPath) {
-            $buildFiles = Get-ChildItem -Path $buildPath -Filter "*.ps1" -File -Force
+            $buildFiles = Get-ChildItem -Path $buildPath -Filter "Invoke-*.ps1" -File -Force
             foreach ($file in $buildFiles) {
                 # Extract task name from file
                 $lines = Get-Content -Path $file.FullName -First 20 -ErrorAction SilentlyContinue
@@ -1377,8 +1377,8 @@ function Get-ProjectTasks {
         return $metadata
     }
 
-    # Load tasks from directory (exclude test files)
-    $buildFiles = Get-ChildItem -Path $BuildPath -Filter "*.ps1" -File -Force | Where-Object { $_.Name -notmatch '\.Tests\.ps1$' }
+    # Load tasks from directory (only process Invoke-*.ps1 files)
+    $buildFiles = Get-ChildItem -Path $BuildPath -Filter "Invoke-*.ps1" -File -Force
     foreach ($file in $buildFiles) {
         $metadata = Get-TaskMetadata -FilePath $file.FullName -TaskNamespace $Namespace
         foreach ($name in $metadata.Names) {
