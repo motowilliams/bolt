@@ -71,8 +71,32 @@ if ($releasesWithStarters.Count -eq 0) {
 
 Write-Host "Found $($releasesWithStarters.Count) release(s) with starter packages" -ForegroundColor Green
 
-# Sort releases by name ascending (oldest first, newest last)
-$sortedReleases = $releasesWithStarters | Sort-Object -Property name
+# Sort releases by semantic version ascending (oldest first, newest last)
+# Parse version numbers for proper semver comparison
+$sortedReleases = $releasesWithStarters | Sort-Object -Property {
+    # Extract version string (remove 'v' prefix if present)
+    $versionString = $_.name -replace '^v', ''
+
+    # Parse major.minor.patch and prerelease components
+    if ($versionString -match '^(\d+)\.(\d+)\.(\d+)(-(.+))?$') {
+        $major = [int]$matches[1]
+        $minor = [int]$matches[2]
+        $patch = [int]$matches[3]
+        $prerelease = $matches[5]
+
+        # Create sortable value: major * 1000000 + minor * 1000 + patch
+        # Prereleases sort before releases (subtract 0.5 if prerelease)
+        $sortValue = ($major * 1000000) + ($minor * 1000) + $patch
+        if ($prerelease) {
+            $sortValue -= 0.5
+        }
+
+        return $sortValue
+    }
+
+    # Fallback to alphabetical if version parsing fails
+    return $_.name
+}
 
 # Display interactive menu
 Write-Host "`nAvailable Releases with Starter Packages:" -ForegroundColor Cyan

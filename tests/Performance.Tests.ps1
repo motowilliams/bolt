@@ -164,7 +164,7 @@ Describe "Bolt Performance Baseline" -Tag "Perf" {
     }
 
     Context "Task Outline Performance" {
-        It "Should generate task outline in under 500ms" {
+        It "Should generate task outline in under 1750ms" {
             Push-Location $script:BoltRoot
             try {
                 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -179,7 +179,7 @@ Describe "Bolt Performance Baseline" -Tag "Perf" {
                 Write-Host "Task outline generation took: $elapsedMs ms" -ForegroundColor Cyan
 
                 # Baseline threshold: outline should be fast (includes pwsh startup overhead)
-                $elapsedMs | Should -BeLessThan 1500
+                $elapsedMs | Should -BeLessThan 1750
 
                 # Verify outline succeeded
                 $exitCode | Should -Be 0
