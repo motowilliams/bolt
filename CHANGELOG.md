@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Task Discovery**: Updated task file discovery to only process files matching `Invoke-*.ps1` pattern
-  - Filters out helper scripts and utilities (e.g., `Create-Release.ps1`, `Get-PesterTests.ps1`)
+  - Filters out helper scripts and utilities (e.g., `Create-Release.ps1`, `Download-Starter.ps1`, `Get-PesterTests.ps1`)
   - Removes warnings for non-task scripts in `.build` directories
   - Applied to main task discovery in `Get-ProjectTasks` function
   - Applied to tab completion for default `.build` directory, namespaced subdirectories, and custom task directories
