@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Complete documentation in `packages/.build-typescript/README.md`
 
 ### Changed
+- **`.gitattributes`**: Added TypeScript/JavaScript file patterns with `eol=lf` for consistent line endings
+  - Added `*.ts`, `*.tsx`, `*.js`, `*.jsx` with `text eol=lf`
+  - Prevents Prettier from causing git changes during test runs
+  - Follows same pattern as C# files to ensure cross-platform consistency
 - **`.gitignore`**: Added TypeScript/Node.js starter package section
   - Added `node_modules/` for Node.js dependencies
   - Added npm/yarn/pnpm lock files (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`)
