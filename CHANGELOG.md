@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Applied to tab completion for default `.build` directory, namespaced subdirectories, and custom task directories
   - Allows users to keep utility scripts alongside task files without triggering discovery
   - Establishes clear convention: only `Invoke-*.ps1` files are processed as tasks
+- **Download-Starter.ps1**: Improved release sorting with semantic version comparison
+  - Changed from alphabetical sorting to proper semantic versioning (e.g., v0.9.0 → v0.10.0 instead of v0.10.0 → v0.9.0)
+  - Correctly handles major, minor, and patch version components
+  - Pre-release versions (e.g., v1.0.0-beta) sort before release versions
+  - Ensures latest releases appear at the end of the selection menu
 
 ### Fixed
 - **Test Suite**: Updated test expectations to match new `Invoke-*.ps1` filtering behavior
