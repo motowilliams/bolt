@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-01-27
+
+### Added
+- **TypeScript Starter Package**: TypeScript/JavaScript application development tasks with Docker fallback support
+  - **`format` task** (alias: `fmt`) - Formats TypeScript files using Prettier
+  - **`lint` task** - Validates TypeScript code using ESLint
+  - **`test` task** - Runs tests using Jest test runner
+  - **`build` task** - Compiles TypeScript to JavaScript (depends on format, lint, test)
+  - Dependencies: `build` → `format`, `lint`, `test`
+  - **Docker Fallback Support**: Automatically uses `node:22-alpine` Docker image when Node.js/npm not installed
+  - Cross-platform compatibility (Windows, Linux, macOS)
+  - Comprehensive test suite (16 task validation + 4 integration tests)
+  - Example TypeScript application with Greeter class and Jest tests
+  - Complete documentation in `packages/.build-typescript/README.md`
+
+### Changed
+- **`.gitattributes`**: Added TypeScript/JavaScript file patterns with `eol=lf` for consistent line endings
+  - Added `*.ts`, `*.tsx`, `*.js`, `*.jsx` with `text eol=lf`
+  - Prevents Prettier from causing git changes during test runs
+  - Follows same pattern as C# files to ensure cross-platform consistency
+- **`.gitignore`**: Added TypeScript/Node.js starter package section
+  - Added `node_modules/` for Node.js dependencies
+  - Added npm/yarn/pnpm lock files (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`)
+  - Added Jest test coverage directory (`coverage/`)
+  - Added TypeScript build cache (`*.tsbuildinfo`)
+  - Added npm and ESLint cache directories (`.npm`, `.eslintcache`)
+  - Follows same pattern as other package starters with section header and comments
+- **`Invoke-Tests.ps1`**: Added `TypeScript-Tasks` tag to ValidateSet for test filtering
+  - Added `packages/.build-typescript/tests/` to test discovery paths
+  - Added documentation and examples for TypeScript-Tasks tag
 ## [0.10.2] - 2026-01-27
 
 ### Changed

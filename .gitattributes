@@ -18,6 +18,12 @@ go.sum text eol=lf
 *.cs text eol=lf
 *.csproj text eol=lf
 
+# TypeScript/JavaScript files
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+
 # JSON files
 *.json text eol=lf
 

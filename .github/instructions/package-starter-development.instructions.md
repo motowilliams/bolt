@@ -727,6 +727,8 @@ Before submitting a pull request:
 - [ ] Test tags use `[Toolchain]-Tasks` pattern
 - [ ] **`Invoke-Tests.ps1` updated with new tag and test path**
 - [ ] **`CHANGELOG.md` updated under `[Unreleased]` section**
+- [ ] **Main `README.md` updated with new package starter section**
+- [ ] **Main `.gitignore` updated with toolchain-specific patterns (if needed)**
 - [ ] Release script creates valid archives
 - [ ] Package-specific README.md is complete
 - [ ] Main packages/README.md updated with new entry

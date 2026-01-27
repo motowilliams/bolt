@@ -164,9 +164,28 @@ See main [packages/README.md](../README.md) for installation options.
 
 After creating the package starter:
 
-1. Add entry to `packages/README.md` under "Available Package Starters"
-2. Update `.github/copilot-instructions.md` if toolchain-specific patterns are needed
-3. Update `CHANGELOG.md` under `[Unreleased]` section
+1. **Add entry to main `README.md`** under "Available Package Starters" section (around line 266):
+   ```markdown
+   #### [Toolchain] Starter Package
+
+   [Brief description of what the package provides]
+
+   **Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
+
+   **Requirements:** [Tool] [version]+ ([Installation](installation-url)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+
+   See [packages/.build-[toolchain]/README.md](packages/.build-[toolchain]/README.md) for detailed documentation, installation instructions, and usage examples.
+   ```
+
+2. **Add entry to `packages/README.md`** under "Available Package Starters"
+
+3. **Update `Invoke-Tests.ps1`** to add the new tag to ValidateSet and test discovery paths
+
+4. **Update `.gitignore`** if the toolchain generates build artifacts (follow pattern of other package starters with section header and comments)
+
+5. **Update `CHANGELOG.md`** under `[Unreleased]` section
+
+6. **Update `.github/copilot-instructions.md`** if toolchain-specific patterns are needed
 
 ## Cross-Platform Requirements
 
@@ -204,6 +223,11 @@ Before submitting:
 - [ ] Dependencies are properly declared
 - [ ] Error handling uses explicit exit codes
 - [ ] No Unix commands used
+- [ ] Main `README.md` updated with package starter section
+- [ ] Main `packages/README.md` updated with package entry
+- [ ] `Invoke-Tests.ps1` updated with new tag
+- [ ] `.gitignore` updated if toolchain generates artifacts
+- [ ] `CHANGELOG.md` updated
 
 ## Additional Notes
 

@@ -160,6 +160,66 @@ The .NET starter package includes comprehensive tests:
 
 Run tests with: `Invoke-Pester -Tag DotNet-Tasks`
 
+### `.build-typescript` - TypeScript Starter Package
+
+TypeScript/JavaScript application development tasks for building, testing, linting, and formatting with Docker fallback support.
+
+**Included Tasks:**
+- **`format`** - Formats TypeScript files using Prettier (alias: `fmt`)
+- **`lint`** - Validates TypeScript code using ESLint
+- **`test`** - Runs tests using Jest test runner
+- **`build`** - Compiles TypeScript to JavaScript (depends on format, lint, test)
+
+**Requirements:**
+- Node.js 18+ with npm: https://nodejs.org/
+  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
+- Tasks automatically use Docker if Node.js/npm is not installed
+
+**Installation:**
+
+**Option 1: Download from GitHub Releases (recommended)**
+```powershell
+# Interactive script to download and install starter packages
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
+```
+
+**Option 2: Manual copy from source (for development)**
+```powershell
+# From your project root
+Copy-Item -Path "packages/.build-typescript/Invoke-*.ps1" -Destination ".build/" -Force
+```
+
+**Usage:**
+```powershell
+# Format all TypeScript files
+.\bolt.ps1 format
+
+# Lint TypeScript code
+.\bolt.ps1 lint
+
+# Run tests
+.\bolt.ps1 test
+
+# Full build pipeline (format → lint → test → build)
+.\bolt.ps1 build
+```
+
+**Docker Fallback:**
+If Node.js/npm is not installed, tasks automatically use Docker:
+```powershell
+# No local Node.js? No problem!
+.\bolt.ps1 format    # Uses Docker: node:22-alpine
+.\bolt.ps1 build     # Automatically falls back to Docker
+```
+
+**Testing:**
+The TypeScript starter package includes comprehensive tests:
+- `packages/.build-typescript/tests/Tasks.Tests.ps1` - Task structure validation
+- `packages/.build-typescript/tests/Integration.Tests.ps1` - End-to-end integration tests
+- `packages/.build-typescript/tests/app/` - Example TypeScript application with Jest tests
+
+Run tests with: `Invoke-Pester -Tag TypeScript-Tasks`
+
 ### `.build-terraform` - Terraform Starter Package
 
 Infrastructure-as-Code tasks for Terraform workflows with Docker fallback support.
