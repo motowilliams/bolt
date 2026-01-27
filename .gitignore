@@ -127,6 +127,35 @@ go.work
 go.work.sum
 
 # =============================================================================
+# TypeScript/Node.js Starter Package (.build-typescript)
+# =============================================================================
+# Based on: https://github.com/github/gitignore/blob/main/Node.gitignore
+# TypeScript starter package: https://github.com/motowilliams/bolt/tree/main/packages/.build-typescript
+
+# Node.js dependencies
+node_modules/
+
+# TypeScript compiled output
+# Note: dist/ also covered by Build and Distribution section below
+
+# npm/yarn/pnpm lock files (generated during package installation)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Jest test coverage
+coverage/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# =============================================================================
 # Test Results and Coverage
 # =============================================================================
 # Pester test output files

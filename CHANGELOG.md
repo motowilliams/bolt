@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Complete documentation in `packages/.build-typescript/README.md`
 
 ### Changed
+- **`.gitignore`**: Added TypeScript/Node.js starter package section
+  - Added `node_modules/` for Node.js dependencies
+  - Added npm/yarn/pnpm lock files (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`)
+  - Added Jest test coverage directory (`coverage/`)
+  - Added TypeScript build cache (`*.tsbuildinfo`)
+  - Added npm and ESLint cache directories (`.npm`, `.eslintcache`)
+  - Follows same pattern as other package starters with section header and comments
 - **`Invoke-Tests.ps1`**: Added `TypeScript-Tasks` tag to ValidateSet for test filtering
   - Added `packages/.build-typescript/tests/` to test discovery paths
   - Added documentation and examples for TypeScript-Tasks tag
