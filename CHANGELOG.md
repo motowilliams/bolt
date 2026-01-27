@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-01-27
+
+### Changed
+- **Task Discovery**: Updated task file discovery to only process files matching `Invoke-*.ps1` pattern
+  - Filters out helper scripts and utilities (e.g., `Create-Release.ps1`, `Get-PesterTests.ps1`)
+  - Removes warnings for non-task scripts in `.build` directories
+  - Applied to main task discovery in `Get-ProjectTasks` function
+  - Applied to tab completion for default `.build` directory, namespaced subdirectories, and custom task directories
+  - Allows users to keep utility scripts alongside task files without triggering discovery
+  - Establishes clear convention: only `Invoke-*.ps1` files are processed as tasks
+
+### Fixed
+- **Test Suite**: Updated test expectations to match new `Invoke-*.ps1` filtering behavior
+  - Changed test case from `TestOnly.ps1` to `Invoke-TestOnly.ps1` to align with filtering pattern
+
 ## [0.10.1] - 2026-01-26
 
 ### Added
@@ -731,7 +746,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - EditorConfig for consistent code formatting
 
-[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.10.2...HEAD
+[0.10.2]: https://github.com/motowilliams/bolt/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/motowilliams/bolt/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/motowilliams/bolt/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/motowilliams/bolt/compare/v0.8.1...v0.9.0
