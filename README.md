@@ -295,6 +295,26 @@ Infrastructure-as-Code tasks for Terraform workflows with automatic Docker fallb
 
 See [packages/.build-terraform/README.md](packages/.build-terraform/README.md) for detailed documentation, installation instructions, and usage examples.
 
+#### .NET (C#) Starter Package
+
+.NET/C# application development tasks with automatic Docker fallback.
+
+**Included Tasks:** `format` (alias `fmt`), `restore`, `test`, `build`
+
+**Requirements:** .NET SDK 6.0+ ([Installation](https://dotnet.microsoft.com/download)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+
+See [packages/.build-dotnet/README.md](packages/.build-dotnet/README.md) for detailed documentation, installation instructions, and usage examples.
+
+#### TypeScript Starter Package
+
+TypeScript/JavaScript application development tasks with automatic Docker fallback.
+
+**Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
+
+**Requirements:** Node.js 18+ with npm ([Installation](https://nodejs.org/)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+
+See [packages/.build-typescript/README.md](packages/.build-typescript/README.md) for detailed documentation, installation instructions, and usage examples.
+
 See [`packages/README.md`](packages/README.md) for details on available package starters.
 
 **Want to create your own package starter?** See the comprehensive guides:
