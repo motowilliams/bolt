@@ -220,6 +220,66 @@ The TypeScript starter package includes comprehensive tests:
 
 Run tests with: `Invoke-Pester -Tag TypeScript-Tasks`
 
+### `.build-python` - Python Starter Package
+
+Python application development tasks for formatting, linting, testing, and building with Docker fallback support.
+
+**Included Tasks:**
+- **`format`** - Formats Python files using `black` (alias: `fmt`)
+- **`lint`** - Validates Python code using `ruff`
+- **`test`** - Runs tests using `pytest`
+- **`build`** - Installs dependencies and validates package structure (depends on format, lint, test)
+
+**Requirements:**
+- Python 3.8+ (3.12 recommended): https://www.python.org/downloads/
+  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
+- Tasks automatically use Docker if Python is not installed
+
+**Installation:**
+
+**Option 1: Download from GitHub Releases (recommended)**
+```powershell
+# Interactive script to download and install starter packages
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
+```
+
+**Option 2: Manual copy from source (for development)**
+```powershell
+# From your project root
+Copy-Item -Path "packages/.build-python/Invoke-*.ps1" -Destination ".build/" -Force
+```
+
+**Usage:**
+```powershell
+# Format all Python files
+.\bolt.ps1 format
+
+# Lint Python code
+.\bolt.ps1 lint
+
+# Run tests
+.\bolt.ps1 test
+
+# Full build pipeline (format → lint → test → build)
+.\bolt.ps1 build
+```
+
+**Docker Fallback:**
+If Python is not installed, tasks automatically use Docker:
+```powershell
+# No local Python? No problem!
+.\bolt.ps1 format    # Uses Docker: python:3.12-slim
+.\bolt.ps1 build     # Automatically falls back to Docker
+```
+
+**Testing:**
+The Python starter package includes comprehensive tests:
+- `packages/.build-python/tests/Tasks.Tests.ps1` - Task structure validation
+- `packages/.build-python/tests/Integration.Tests.ps1` - End-to-end integration tests
+- `packages/.build-python/tests/app/` - Example Python application with pytest tests
+
+Run tests with: `Invoke-Pester -Tag Python-Tasks`
+
 ### `.build-terraform` - Terraform Starter Package
 
 Infrastructure-as-Code tasks for Terraform workflows with Docker fallback support.
