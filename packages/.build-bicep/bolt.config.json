@@ -1,0 +1,4 @@
+{
+  "$schema": "../../bolt.config.schema.json",
+  "BicepPath": "tests/iac"
+}

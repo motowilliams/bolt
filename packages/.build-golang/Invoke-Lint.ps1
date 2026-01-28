@@ -25,14 +25,14 @@ else {
 }
 
 # ===== Find Go Project Path =====
-# Find all .go files (using config or fallback to default path)
+# Find all .go files (using configured path)
 if ($BoltConfig.GoPath) {
     # Use configured path (relative to project root)
     $goPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.GoPath
 }
 else {
-    # Fallback to default location for backward compatibility
-    $goPath = Join-Path $PSScriptRoot "tests" "app"
+    Write-Error "GoPath not configured in bolt.config.json. Please add 'GoPath' property pointing to your Go source files."
+    exit 1
 }
 
 # Check if path exists

@@ -24,7 +24,7 @@ else {
 }
 
 # ===== Find Bicep Files =====
-# Find all .bicep files (using config or fallback to default path)
+# Find all .bicep files (using configured path)
 if ($BoltConfig.BicepPath) {
     # Use configured path (relative to project root)
     $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.BicepPath
@@ -34,8 +34,8 @@ elseif ($BoltConfig.IacPath) {
     $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
 }
 else {
-    # Fallback to default location for backward compatibility
-    $iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+    Write-Error "BicepPath not configured in bolt.config.json. Please add 'BicepPath' property pointing to your Bicep source files."
+    exit 1
 }
 $bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File -Force -ErrorAction SilentlyContinue
 

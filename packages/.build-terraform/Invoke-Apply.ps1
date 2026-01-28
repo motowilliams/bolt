@@ -42,7 +42,7 @@ else {
 }
 
 # ===== Find Terraform Root Modules =====
-# Find directories containing .tf files (using config or fallback to default path)
+# Find directories containing .tf files (using configured path)
 if ($BoltConfig.TerraformPath) {
     # Use configured path (relative to project root)
     $tfPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.TerraformPath
@@ -52,8 +52,8 @@ elseif ($BoltConfig.IacPath) {
     $tfPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
 }
 else {
-    # Fallback to default location for backward compatibility
-    $tfPath = Join-Path $PSScriptRoot "tests" "tf"
+    Write-Error "TerraformPath not configured in bolt.config.json. Please add 'TerraformPath' property pointing to your Terraform source files."
+    exit 1
 }
 
 $tfFiles = Get-ChildItem -Path $tfPath -Filter "*.tf" -Recurse -File -Force -ErrorAction SilentlyContinue

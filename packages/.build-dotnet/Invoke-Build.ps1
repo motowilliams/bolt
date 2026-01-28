@@ -37,14 +37,14 @@ else {
 }
 
 # ===== Find .NET Projects =====
-# Find directories containing .csproj files (using config or fallback to default path)
+# Find directories containing .csproj files (using configured path)
 if ($BoltConfig.DotNetPath) {
     # Use configured path (relative to project root)
     $dotnetPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.DotNetPath
 }
 else {
-    # Fallback to default location for backward compatibility
-    $dotnetPath = Join-Path $PSScriptRoot "tests"
+    Write-Error "DotNetPath not configured in bolt.config.json. Please add 'DotNetPath' property pointing to your .NET source files."
+    exit 1
 }
 
 $projectFiles = Get-ChildItem -Path $dotnetPath -Filter "*.csproj" -Recurse -File -Force -ErrorAction SilentlyContinue
