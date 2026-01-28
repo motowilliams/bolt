@@ -23,37 +23,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`BicepPath`** - Relative path to Bicep source files
   - **`TerraformPath`** - Relative path to Terraform source files
   - **`TypeScriptPath`** - Relative path to TypeScript source files
-  - **`IacPath`** - Maintained for backward compatibility (maps to BicepPath/TerraformPath)
   - **`GoPath`** - Already supported, now documented alongside other paths
   - **`DotNetPath`** - Already supported, now documented alongside other paths
   - All paths are relative to project root
   - Configuration schema updated in `bolt.config.schema.json`
   - Example configuration updated in `bolt.config.example.json`
 
+- **Package Starter Configuration Files**: Each package starter now includes `bolt.config.json`
+  - Bicep: `BicepPath = "packages/.build-bicep/tests/iac"`
+  - Terraform: `TerraformPath = "packages/.build-terraform/tests/tf"`
+  - Golang: `GoPath = "packages/.build-golang/tests/app"`
+  - .NET: `DotNetPath = "packages/.build-dotnet/tests"`
+  - TypeScript: `TypeScriptPath = "packages/.build-typescript/tests/app"`
+  - Provides working examples for users to copy and customize
+
 ### Changed
-- **Bicep Starter Package**: Enhanced with configurable tool paths
+- **Bicep Starter Package**: Enhanced with configurable tool paths and explicit configuration
   - All tasks (format, lint, build) now support `BicepToolPath` configuration
-  - Backward compatibility maintained with `IacPath` (maps to `BicepPath` if not specified)
+  - **BREAKING**: Removed `IacPath` backward compatibility - use `BicepPath` instead
+  - **BREAKING**: Removed default fallback paths - explicit configuration required in `bolt.config.json`
   - Improved error messages suggest both installation and configuration options
+  - Updated README.md with ToolPath configuration examples
 
-- **Terraform Starter Package**: Enhanced with configurable tool paths
+- **Terraform Starter Package**: Enhanced with configurable tool paths and explicit configuration
   - All tasks (format, validate, plan, apply) now support `TerraformToolPath` configuration
-  - `TerraformPath` configuration added for source files (with `IacPath` fallback)
-  - Backward compatibility maintained with `IacPath` (maps to `TerraformPath` if not specified)
+  - `TerraformPath` configuration added for source files
+  - **BREAKING**: Removed default fallback paths - explicit configuration required in `bolt.config.json`
   - Docker fallback still supported when tool not configured
+  - Updated README.md with ToolPath configuration examples
 
-- **Golang Starter Package**: Enhanced with configurable tool paths
+- **Golang Starter Package**: Enhanced with configurable tool paths and explicit configuration
   - All tasks (format, lint, test, build) now support `GoToolPath` configuration
+  - **BREAKING**: Removed default fallback paths - explicit configuration required in `bolt.config.json`
   - Improved error messages suggest both installation and configuration options
+  - Updated README.md with ToolPath configuration examples
 
-- **.NET Starter Package**: Enhanced with configurable tool paths
+- **.NET Starter Package**: Enhanced with configurable tool paths and explicit configuration
   - All tasks (format, restore, test, build) now support `DotNetToolPath` configuration
+  - **BREAKING**: Removed default fallback paths - explicit configuration required in `bolt.config.json`
   - Docker fallback still supported when tool not configured
+  - Updated README.md with ToolPath configuration examples
 
-- **TypeScript Starter Package**: Enhanced with configurable tool paths
+- **TypeScript Starter Package**: Enhanced with configurable tool paths and explicit configuration
   - All tasks (format, lint, test, build) now support `NodeToolPath` configuration
   - npm path automatically derived from Node.js path when custom path specified
+  - **BREAKING**: Removed default fallback paths - explicit configuration required in `bolt.config.json`
   - Docker fallback still supported when tool not configured
+  - Updated README.md with ToolPath configuration examples
+
+- **Integration Tests**: Updated to use bolt.ps1 orchestrator for consistency
+  - Terraform, .NET, and TypeScript integration tests now use `Invoke-Bolt` helper function
+  - Changed from direct script invocation to orchestrated execution
+  - Ensures `$BoltConfig` is always available when tasks run
+  - Matches existing Golang and Bicep test patterns
+  - All 448 tests passing
+
+- **Release Scripts**: Synchronized release builder scripts across all package starters
+  - Consistent version validation and packaging
+  - All packages use same release workflow pattern
+
+### Removed
+- **IacPath backward compatibility**: Removed from Bicep package starter
+  - Use `BicepPath` configuration instead
+  - Tests updated to use `BicepPath`
+  - Terraform still supports `IacPath` fallback to `TerraformPath`
+
+- **Default fallback paths**: Removed from all task scripts
+  - Tasks no longer fall back to `$PSScriptRoot`-relative paths
+  - Explicit configuration in `bolt.config.json` now required
+  - Clear error messages guide users to add configuration
+  - Prevents silent misconfiguration issues
+
+- **Compiled artifacts from git**: Removed `packages/.build-bicep/tests/iac/main.json`
+  - File is generated during Bicep build tests
+  - Now properly ignored by `.gitignore` rule
+  - No longer pollutes git status after test runs
+
+### Fixed
+- **`.gitignore` rule effectiveness**: Removed tracked artifact to allow gitignore rule to work
+  - `packages/.build-bicep/tests/iac/main.json` was previously tracked
+  - Once tracked, `.gitignore` rules don't apply
+  - File removed from tracking, now properly ignored when regenerated
 
 ## [0.11.0] - 2026-01-27
 

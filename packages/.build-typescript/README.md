@@ -143,6 +143,49 @@ Compiles TypeScript files to JavaScript using the TypeScript compiler.
 - Reports number of generated files
 - Exit code 0 on success, 1 on failure
 
+## Configuration
+
+### Custom TypeScript Project Directory
+
+Configure the path to your TypeScript files using `bolt.config.json`:
+
+```json
+{
+  "TypeScriptPath": "src/"
+}
+```
+
+Or for a monorepo structure:
+
+```json
+{
+  "TypeScriptPath": "packages/app/"
+}
+```
+
+Tasks now require explicit configuration - no default fallback paths.
+
+### Custom Tool Path
+
+If Node.js is installed in a non-standard location, configure the executable path:
+
+```json
+{
+  "NodeToolPath": "/usr/local/bin/node",
+  "TypeScriptPath": "src/"
+}
+```
+
+**Windows example:**
+```json
+{
+  "NodeToolPath": "C:\\Program Files\\nodejs\\node.exe",
+  "TypeScriptPath": "src/"
+}
+```
+
+If `NodeToolPath` is not configured, Bolt searches for `node` in your system PATH or falls back to Docker. npm path is automatically derived from the Node.js path.
+
 ## Example Project Structure
 
 ```
