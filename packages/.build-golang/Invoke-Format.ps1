@@ -4,13 +4,27 @@
 
 Write-Host "Formatting Go files..." -ForegroundColor Cyan
 
-# Check if go CLI is available
-$goCmd = Get-Command go -ErrorAction SilentlyContinue
-if (-not $goCmd) {
-    Write-Error "Go CLI not found. Please install: https://go.dev/doc/install"
-    exit 1
+# ===== Go Command Detection =====
+# Check for configured tool path first
+if ($BoltConfig.GoToolPath) {
+    $goToolPath = $BoltConfig.GoToolPath
+    if (-not (Test-Path -Path $goToolPath -PathType Leaf)) {
+        Write-Error "Go CLI not found at configured path: $goToolPath. Please check GoToolPath in bolt.config.json or install Go: https://go.dev/doc/install"
+        exit 1
+    }
+    $goCmd = $goToolPath
+}
+else {
+    # Fall back to PATH search
+    $goCmdObj = Get-Command go -ErrorAction SilentlyContinue
+    if (-not $goCmdObj) {
+        Write-Error "Go CLI not found. Please install: https://go.dev/doc/install or configure GoToolPath in bolt.config.json"
+        exit 1
+    }
+    $goCmd = "go"
 }
 
+# ===== Find Go Files =====
 # Find all .go files (using config or fallback to default path)
 if ($BoltConfig.GoPath) {
     # Use configured path (relative to project root)
@@ -40,7 +54,7 @@ foreach ($file in $goFiles) {
     Write-Host "  Formatting: $relativePath" -ForegroundColor Gray
 
     # gofmt -w writes the result to the file
-    go fmt $file.FullName | Out-Null
+    & $goCmd fmt $file.FullName | Out-Null
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  ✓ $relativePath formatted" -ForegroundColor Green
