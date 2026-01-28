@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **ToolPath Configuration**: Configurable tool executable paths for all package starters
+  - **`BicepToolPath`** - Custom path to Bicep CLI executable
+  - **`TerraformToolPath`** - Custom path to Terraform CLI executable
+  - **`GoToolPath`** - Custom path to Go CLI executable
+  - **`DotNetToolPath`** - Custom path to .NET SDK executable
+  - **`NodeToolPath`** - Custom path to Node.js executable (for TypeScript tasks)
+  - Each ToolPath allows specifying absolute path to CLI tool (e.g., `/usr/local/bin/bicep`, `C:\tools\terraform.exe`)
+  - Falls back to PATH search if not configured
+  - Clear error messages when tool not found at configured path
+  - All package starters updated with ToolPath support
+
+- **Source Path Configuration**: Enhanced path configuration for all package starters
+  - **`BicepPath`** - Relative path to Bicep source files
+  - **`TerraformPath`** - Relative path to Terraform source files
+  - **`TypeScriptPath`** - Relative path to TypeScript source files
+  - **`IacPath`** - Maintained for backward compatibility (maps to BicepPath/TerraformPath)
+  - **`GoPath`** - Already supported, now documented alongside other paths
+  - **`DotNetPath`** - Already supported, now documented alongside other paths
+  - All paths are relative to project root
+  - Configuration schema updated in `bolt.config.schema.json`
+  - Example configuration updated in `bolt.config.example.json`
+
+### Changed
+- **Bicep Starter Package**: Enhanced with configurable tool paths
+  - All tasks (format, lint, build) now support `BicepToolPath` configuration
+  - Backward compatibility maintained with `IacPath` (maps to `BicepPath` if not specified)
+  - Improved error messages suggest both installation and configuration options
+
+- **Terraform Starter Package**: Enhanced with configurable tool paths
+  - All tasks (format, validate, plan, apply) now support `TerraformToolPath` configuration
+  - `TerraformPath` configuration added for source files (with `IacPath` fallback)
+  - Backward compatibility maintained with `IacPath` (maps to `TerraformPath` if not specified)
+  - Docker fallback still supported when tool not configured
+
+- **Golang Starter Package**: Enhanced with configurable tool paths
+  - All tasks (format, lint, test, build) now support `GoToolPath` configuration
+  - Improved error messages suggest both installation and configuration options
+
+- **.NET Starter Package**: Enhanced with configurable tool paths
+  - All tasks (format, restore, test, build) now support `DotNetToolPath` configuration
+  - Docker fallback still supported when tool not configured
+
+- **TypeScript Starter Package**: Enhanced with configurable tool paths
+  - All tasks (format, lint, test, build) now support `NodeToolPath` configuration
+  - npm path automatically derived from Node.js path when custom path specified
+  - Docker fallback still supported when tool not configured
+
 ## [0.11.0] - 2026-01-27
 
 ### Added
