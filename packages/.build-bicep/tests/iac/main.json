@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.36.1.42791",
-      "templateHash": "11378610236848470532"
+      "version": "0.39.26.7824",
+      "templateHash": "9118099018039130625"
     }
   },
   "parameters": {
@@ -73,7 +73,7 @@
   "resources": [
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "appServicePlanDeployment",
       "properties": {
         "expressionEvaluationOptions": {
@@ -97,8 +97,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.1.42791",
-              "templateHash": "14551600214325282081"
+              "version": "0.39.26.7824",
+              "templateHash": "10951783209926958360"
             }
           },
           "parameters": {
@@ -151,7 +151,7 @@
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "webAppDeployment",
       "properties": {
         "expressionEvaluationOptions": {
@@ -166,10 +166,10 @@
             "value": "[parameters('location')]"
           },
           "appServicePlanId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'appServicePlanDeployment'), '2022-09-01').outputs.id.value]"
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'appServicePlanDeployment'), '2025-04-01').outputs.id.value]"
           },
           "sqlConnectionString": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'sqlServerDeployment'), '2022-09-01').outputs.connectionString.value]"
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'sqlServerDeployment'), '2025-04-01').outputs.connectionString.value]"
           }
         },
         "template": {
@@ -178,8 +178,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.1.42791",
-              "templateHash": "8937031612021120741"
+              "version": "0.39.26.7824",
+              "templateHash": "15647684614729547723"
             }
           },
           "parameters": {
@@ -262,7 +262,7 @@
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "sqlServerDeployment",
       "properties": {
         "expressionEvaluationOptions": {
@@ -292,8 +292,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.1.42791",
-              "templateHash": "12843646476624123121"
+              "version": "0.39.26.7824",
+              "templateHash": "6608555441914476814"
             }
           },
           "parameters": {
@@ -416,11 +416,11 @@
   "outputs": {
     "webAppUrl": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'webAppDeployment'), '2022-09-01').outputs.defaultHostName.value]"
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'webAppDeployment'), '2025-04-01').outputs.defaultHostName.value]"
     },
     "sqlServerFqdn": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'sqlServerDeployment'), '2022-09-01').outputs.serverFqdn.value]"
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'sqlServerDeployment'), '2025-04-01').outputs.serverFqdn.value]"
     }
   }
 }

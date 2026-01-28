@@ -38,13 +38,13 @@ else {
 
 # ===== Find .NET Test Projects =====
 # Find directories containing .csproj files (using configured path)
-if ($BoltConfig.DotNetPath) {
+if ($BoltConfig -and $BoltConfig.DotNetPath) {
     # Use configured path (relative to project root)
     $dotnetPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.DotNetPath
 }
 else {
-    Write-Error "DotNetPath not configured in bolt.config.json. Please add 'DotNetPath' property pointing to your .NET source files."
-    exit 1
+    # Fallback to default location (for direct script execution)
+    $dotnetPath = Join-Path $PSScriptRoot "tests"
 }
 
 # Look for test projects (typically named *.Tests.csproj or in Tests directory)

@@ -49,13 +49,13 @@ else {
 
 # ===== Find TypeScript Projects =====
 # Find directories containing package.json files (using configured path)
-if ($BoltConfig.TypeScriptPath) {
+if ($BoltConfig -and $BoltConfig.TypeScriptPath) {
     # Use configured path (relative to project root)
     $tsPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.TypeScriptPath
 }
 else {
-    Write-Error "TypeScriptPath not configured in bolt.config.json. Please add 'TypeScriptPath' property pointing to your TypeScript source files."
-    exit 1
+    # Fallback to default location (for direct script execution)
+    $tsPath = Join-Path $PSScriptRoot "tests" "app"
 }
 
 # Check if path exists

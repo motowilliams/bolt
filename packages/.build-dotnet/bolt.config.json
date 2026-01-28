@@ -1,4 +1,4 @@
 {
   "$schema": "../../bolt.config.schema.json",
-  "DotNetPath": "tests"
+  "DotNetPath": "packages/.build-dotnet/tests"
 }

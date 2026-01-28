@@ -1,4 +1,4 @@
 {
   "$schema": "../../bolt.config.schema.json",
-  "TypeScriptPath": "tests/app"
+  "TypeScriptPath": "packages/.build-typescript/tests/app"
 }
