@@ -315,6 +315,16 @@ TypeScript/JavaScript application development tasks with automatic Docker fallba
 
 See [packages/.build-typescript/README.md](packages/.build-typescript/README.md) for detailed documentation, installation instructions, and usage examples.
 
+#### Python Starter Package
+
+Python application development tasks for formatting, linting, testing, and building with Docker fallback support.
+
+**Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
+
+**Requirements:** Python 3.8+ ([Installation](https://www.python.org/downloads/)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+
+See [packages/.build-python/README.md](packages/.build-python/README.md) for detailed documentation, installation instructions, and usage examples.
+
 See [`packages/README.md`](packages/README.md) for details on available package starters.
 
 **Want to create your own package starter?** See the comprehensive guides:

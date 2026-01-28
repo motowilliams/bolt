@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Python Starter Package**: Python application development tasks with Docker fallback support
+  - **`format` task** (alias: `fmt`) - Formats Python files using `black` (industry standard formatter)
+  - **`lint` task** - Validates Python code using `ruff` (fast, modern linter)
+  - **`test` task** - Runs tests using `pytest` (popular testing framework)
+  - **`build` task** - Installs dependencies and validates package structure
+  - Dependencies: build → format, lint, test
+  - Docker Fallback Support: Automatically uses `python:3.12-slim` when Python CLI not installed
+  - Cross-platform compatibility (Windows, Linux, macOS)
+  - Comprehensive test suite (13 task validation + integration tests)
+  - Example Python calculator module with pytest tests
+  - Complete documentation in `packages/.build-python/README.md`
+  - Configuration via `PythonPath` and `PythonToolPath` in `bolt.config.json`
+  - Supports Python 3.8+ (3.12 recommended)
+
 ## [0.12.0] - 2026-01-28
 
 ### Added
