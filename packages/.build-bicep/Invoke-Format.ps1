@@ -29,10 +29,6 @@ if ($BoltConfig.BicepPath) {
     # Use configured path (relative to project root)
     $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.BicepPath
 }
-elseif ($BoltConfig.IacPath) {
-    # Backward compatibility - use IacPath if BicepPath not specified
-    $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
-}
 else {
     Write-Error "BicepPath not configured in bolt.config.json. Please add 'BicepPath' property pointing to your Bicep source files."
     exit 1

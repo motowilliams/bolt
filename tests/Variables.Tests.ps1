@@ -94,21 +94,21 @@ Describe "Variable System - Integration with Bicep Tasks" -Tag "Bicep-Tasks" {
         $formatTask = Join-Path $script:BoltRoot "packages" ".build-bicep" "Invoke-Format.ps1"
         $content = Get-Content $formatTask -Raw
 
-        $content | Should -Match '\$BoltConfig\.IacPath'
+        $content | Should -Match '\$BoltConfig\.BicepPath'
     }
 
     It "Lint task uses BoltConfig for path resolution" {
         $lintTask = Join-Path $script:BoltRoot "packages" ".build-bicep" "Invoke-Lint.ps1"
         $content = Get-Content $lintTask -Raw
 
-        $content | Should -Match '\$BoltConfig\.IacPath'
+        $content | Should -Match '\$BoltConfig\.BicepPath'
     }
 
     It "Build task uses BoltConfig for path resolution" {
         $buildTask = Join-Path $script:BoltRoot "packages" ".build-bicep" "Invoke-Build.ps1"
         $content = Get-Content $buildTask -Raw
 
-        $content | Should -Match '\$BoltConfig\.IacPath'
+        $content | Should -Match '\$BoltConfig\.BicepPath'
     }
 }
 
