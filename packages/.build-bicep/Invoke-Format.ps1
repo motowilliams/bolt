@@ -3,16 +3,34 @@
 
 Write-Host "Formatting Bicep files..." -ForegroundColor Cyan
 
-# Check if bicep CLI is available
-$bicepCmd = Get-Command bicep -ErrorAction SilentlyContinue
-if (-not $bicepCmd) {
-    Write-Error "Bicep CLI not found. Please install: https://aka.ms/bicep-install"
-    exit 1
+# ===== Bicep Command Detection =====
+# Check for configured tool path first
+if ($BoltConfig.BicepToolPath) {
+    $bicepToolPath = $BoltConfig.BicepToolPath
+    if (-not (Test-Path -Path $bicepToolPath -PathType Leaf)) {
+        Write-Error "Bicep CLI not found at configured path: $bicepToolPath. Please check BicepToolPath in bolt.config.json or install Bicep: https://aka.ms/bicep-install"
+        exit 1
+    }
+    $bicepCmd = $bicepToolPath
+}
+else {
+    # Fall back to PATH search
+    $bicepCmdObj = Get-Command bicep -ErrorAction SilentlyContinue
+    if (-not $bicepCmdObj) {
+        Write-Error "Bicep CLI not found. Please install: https://aka.ms/bicep-install or configure BicepToolPath in bolt.config.json"
+        exit 1
+    }
+    $bicepCmd = "bicep"
 }
 
+# ===== Find Bicep Files =====
 # Find all .bicep files (using config or fallback to default path)
-if ($BoltConfig.IacPath) {
+if ($BoltConfig.BicepPath) {
     # Use configured path (relative to project root)
+    $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.BicepPath
+}
+elseif ($BoltConfig.IacPath) {
+    # Backward compatibility - use IacPath if BicepPath not specified
     $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
 }
 else {
@@ -38,7 +56,7 @@ foreach ($file in $bicepFiles) {
     # Format the file in place
     Write-Host "  Formatting: $relativePath" -ForegroundColor Gray
 
-    bicep format $file.FullName --outfile $file.FullName
+    & $bicepCmd format $file.FullName --outfile $file.FullName
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  ✓ $relativePath formatted" -ForegroundColor Green
