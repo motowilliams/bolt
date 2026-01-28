@@ -77,6 +77,41 @@ Runs format → lint → build:
 .\bolt.ps1 build -Outline
 ```
 
+## Configuration
+
+### Custom Bicep Directory
+
+Configure the path to your Bicep files using `bolt.config.json`:
+
+```json
+{
+  "BicepPath": "infrastructure/bicep"
+}
+```
+
+Tasks now require explicit configuration - no default fallback paths.
+
+### Custom Tool Path
+
+If Bicep CLI is installed in a non-standard location, configure the executable path:
+
+```json
+{
+  "BicepToolPath": "/usr/local/bin/bicep",
+  "BicepPath": "infrastructure/bicep"
+}
+```
+
+**Windows example:**
+```json
+{
+  "BicepToolPath": "C:\\tools\\bicep\\bicep.exe",
+  "BicepPath": "infrastructure/bicep"
+}
+```
+
+If `BicepToolPath` is not configured, Bolt searches for `bicep` in your system PATH.
+
 ## Task Details
 
 ### Format Task

@@ -1,0 +1,4 @@
+{
+  "$schema": "../../bolt.config.schema.json",
+  "TerraformPath": "packages/.build-terraform/tests/tf"
+}

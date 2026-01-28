@@ -5,33 +5,46 @@
 Write-Host "Building .NET projects..." -ForegroundColor Cyan
 
 # ===== .NET Command Detection =====
-# Check for local dotnet installation first
-$dotnetCmd = Get-Command dotnet -ErrorAction SilentlyContinue
-
-# If dotnet not found, check for Docker
-if (-not $dotnetCmd) {
-    $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-    if (-not $dockerCmd) {
-        Write-Error ".NET SDK not found and Docker is not available. Please install .NET SDK: https://dotnet.microsoft.com/download or Docker: https://docs.docker.com/get-docker/"
+# Check for configured tool path first
+if ($BoltConfig.DotNetToolPath) {
+    $dotnetToolPath = $BoltConfig.DotNetToolPath
+    if (-not (Test-Path -Path $dotnetToolPath -PathType Leaf)) {
+        Write-Error ".NET SDK not found at configured path: $dotnetToolPath. Please check DotNetToolPath in bolt.config.json or install .NET SDK: https://dotnet.microsoft.com/download"
         exit 1
     }
-    
-    Write-Host "  Using Docker container for .NET SDK (local CLI not found)" -ForegroundColor Gray
-    $useDocker = $true
+    $dotnetCmd = $dotnetToolPath
+    $useDocker = $false
 }
 else {
-    $useDocker = $false
+    # Fall back to PATH search
+    $dotnetCmdObj = Get-Command dotnet -ErrorAction SilentlyContinue
+    
+    # If dotnet not found, check for Docker
+    if (-not $dotnetCmdObj) {
+        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+        if (-not $dockerCmd) {
+            Write-Error ".NET SDK not found and Docker is not available. Please install .NET SDK: https://dotnet.microsoft.com/download, Docker: https://docs.docker.com/get-docker/, or configure DotNetToolPath in bolt.config.json"
+            exit 1
+        }
+        
+        Write-Host "  Using Docker container for .NET SDK (local CLI not found)" -ForegroundColor Gray
+        $useDocker = $true
+    }
+    else {
+        $dotnetCmd = "dotnet"
+        $useDocker = $false
+    }
 }
 
 # ===== Find .NET Projects =====
-# Find directories containing .csproj files (using config or fallback to default path)
-if ($BoltConfig.DotNetPath) {
+# Find directories containing .csproj files (using configured path)
+if ($BoltConfig -and $BoltConfig.DotNetPath) {
     # Use configured path (relative to project root)
     $dotnetPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.DotNetPath
 }
 else {
-    # Fallback to default location for backward compatibility
-    $dotnetPath = Join-Path $PSScriptRoot "tests"
+    Write-Error "DotNetPath not configured in bolt.config.json. Please add 'DotNetPath' property pointing to your .NET source files."
+    exit 1
 }
 
 $projectFiles = Get-ChildItem -Path $dotnetPath -Filter "*.csproj" -Recurse -File -Force -ErrorAction SilentlyContinue
@@ -63,8 +76,8 @@ foreach ($project in $projectFiles) {
             $output = & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:10.0 dotnet build --nologo --verbosity quiet 2>&1
         }
         else {
-            # Use local dotnet CLI
-            $output = & dotnet build --nologo --verbosity quiet 2>&1
+            # Use local dotnet CLI (configured path or PATH search)
+            $output = & $dotnetCmd build --nologo --verbosity quiet 2>&1
         }
         
         if ($LASTEXITCODE -eq 0) {

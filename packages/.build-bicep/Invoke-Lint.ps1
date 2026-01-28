@@ -3,21 +3,35 @@
 
 Write-Host "Linting Bicep files..." -ForegroundColor Cyan
 
-# Check if bicep CLI is available
-$bicepCmd = Get-Command bicep -ErrorAction SilentlyContinue
-if (-not $bicepCmd) {
-    Write-Error "Bicep CLI not found. Please install: https://aka.ms/bicep-install"
-    exit 1
-}
-
-# Find all .bicep files (using config or fallback to default path)
-if ($BoltConfig.IacPath) {
-    # Use configured path (relative to project root)
-    $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+# ===== Bicep Command Detection =====
+# Check for configured tool path first
+if ($BoltConfig.BicepToolPath) {
+    $bicepToolPath = $BoltConfig.BicepToolPath
+    if (-not (Test-Path -Path $bicepToolPath -PathType Leaf)) {
+        Write-Error "Bicep CLI not found at configured path: $bicepToolPath. Please check BicepToolPath in bolt.config.json or install Bicep: https://aka.ms/bicep-install"
+        exit 1
+    }
+    $bicepCmd = $bicepToolPath
 }
 else {
-    # Fallback to default location for backward compatibility
-    $iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+    # Fall back to PATH search
+    $bicepCmdObj = Get-Command bicep -ErrorAction SilentlyContinue
+    if (-not $bicepCmdObj) {
+        Write-Error "Bicep CLI not found. Please install: https://aka.ms/bicep-install or configure BicepToolPath in bolt.config.json"
+        exit 1
+    }
+    $bicepCmd = "bicep"
+}
+
+# ===== Find Bicep Files =====
+# Find all .bicep files (using configured path)
+if ($BoltConfig.BicepPath) {
+    # Use configured path (relative to project root)
+    $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.BicepPath
+}
+else {
+    Write-Error "BicepPath not configured in bolt.config.json. Please add 'BicepPath' property pointing to your Bicep source files."
+    exit 1
 }
 $bicepFiles = Get-ChildItem -Path $iacPath -Filter "*.bicep" -Recurse -File -Force -ErrorAction SilentlyContinue
 
@@ -38,7 +52,7 @@ foreach ($file in $bicepFiles) {
     Write-Host "  Linting: $relativePath" -ForegroundColor Gray
 
     # Run bicep lint to check for issues (capture both stdout and stderr)
-    $output = & bicep lint $file.FullName 2>&1
+    $output = & $bicepCmd lint $file.FullName 2>&1
 
     # bicep lint outputs diagnostics in format: "path(line,col) : Level rule-name: message"
     # Example: "main.bicep(4,7) : Warning no-unused-params: Parameter "foo" is declared but never used."

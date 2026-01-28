@@ -10,33 +10,50 @@ Write-Host ""
 Write-Host "Applying Terraform changes..." -ForegroundColor Cyan
 
 # ===== Terraform Command Detection =====
-# Check for local terraform installation first
-$terraformCmd = Get-Command terraform -ErrorAction SilentlyContinue
-
-# If terraform not found, check for Docker
-if (-not $terraformCmd) {
-    $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-    if (-not $dockerCmd) {
-        Write-Error "Terraform CLI not found and Docker is not available. Please install Terraform: https://developer.hashicorp.com/terraform/downloads or Docker: https://docs.docker.com/get-docker/"
+# Check for configured tool path first
+if ($BoltConfig.TerraformToolPath) {
+    $terraformToolPath = $BoltConfig.TerraformToolPath
+    if (-not (Test-Path -Path $terraformToolPath -PathType Leaf)) {
+        Write-Error "Terraform CLI not found at configured path: $terraformToolPath. Please check TerraformToolPath in bolt.config.json or install Terraform: https://developer.hashicorp.com/terraform/downloads"
         exit 1
     }
-    
-    Write-Host "  Using Docker container for Terraform (local CLI not found)" -ForegroundColor Gray
-    $useDocker = $true
+    $terraformCmd = $terraformToolPath
+    $useDocker = $false
 }
 else {
-    $useDocker = $false
+    # Fall back to PATH search
+    $terraformCmdObj = Get-Command terraform -ErrorAction SilentlyContinue
+    
+    # If terraform not found, check for Docker
+    if (-not $terraformCmdObj) {
+        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+        if (-not $dockerCmd) {
+            Write-Error "Terraform CLI not found and Docker is not available. Please install Terraform: https://developer.hashicorp.com/terraform/downloads, Docker: https://docs.docker.com/get-docker/, or configure TerraformToolPath in bolt.config.json"
+            exit 1
+        }
+        
+        Write-Host "  Using Docker container for Terraform (local CLI not found)" -ForegroundColor Gray
+        $useDocker = $true
+    }
+    else {
+        $terraformCmd = "terraform"
+        $useDocker = $false
+    }
 }
 
 # ===== Find Terraform Root Modules =====
-# Find directories containing .tf files (using config or fallback to default path)
-if ($BoltConfig.IacPath) {
+# Find directories containing .tf files (using configured path)
+if ($BoltConfig -and $BoltConfig.TerraformPath) {
     # Use configured path (relative to project root)
+    $tfPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.TerraformPath
+}
+elseif ($BoltConfig -and $BoltConfig.IacPath) {
+    # Backward compatibility - use IacPath if TerraformPath not specified
     $tfPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
 }
 else {
-    # Fallback to default location for backward compatibility
-    $tfPath = Join-Path $PSScriptRoot "tests" "tf"
+    Write-Error "TerraformPath not configured in bolt.config.json. Please add 'TerraformPath' property pointing to your Terraform source files."
+    exit 1
 }
 
 $tfFiles = Get-ChildItem -Path $tfPath -Filter "*.tf" -Recurse -File -Force -ErrorAction SilentlyContinue
@@ -91,9 +108,9 @@ foreach ($dir in $directories) {
             }
         }
         else {
-            # Use local terraform CLI
+            # Use local terraform CLI (configured path or PATH search)
             Write-Host "    Initializing..." -ForegroundColor Gray
-            & terraform init -backend=false 2>&1 | Out-Null
+            & $terraformCmd init -backend=false 2>&1 | Out-Null
             
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "    ✗ Initialization failed" -ForegroundColor Red
@@ -104,11 +121,11 @@ foreach ($dir in $directories) {
             # Apply (with or without plan file)
             if ($hasPlanFile) {
                 Write-Host "    Applying from plan file..." -ForegroundColor Gray
-                $output = & terraform apply -auto-approve "terraform.tfplan" -no-color 2>&1
+                $output = & $terraformCmd apply -auto-approve "terraform.tfplan" -no-color 2>&1
             }
             else {
                 Write-Host "    Generating and applying plan..." -ForegroundColor Gray
-                $output = & terraform apply -auto-approve -no-color 2>&1
+                $output = & $terraformCmd apply -auto-approve -no-color 2>&1
             }
         }
         

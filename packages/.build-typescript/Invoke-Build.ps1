@@ -6,34 +6,56 @@
 
 Write-Host "Building TypeScript project..." -ForegroundColor Cyan
 
-# ===== Tool Command Detection =====
-# Check for local npm installation first
-$npmCmd = Get-Command npm -ErrorAction SilentlyContinue
-
-# If npm not found, check for Docker
-if (-not $npmCmd) {
-    $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-    if (-not $dockerCmd) {
-        Write-Error "Node.js/npm not found and Docker is not available. Please install Node.js: https://nodejs.org/ or Docker: https://docs.docker.com/get-docker/"
+# ===== Node.js Command Detection =====
+# Check for configured tool path first
+if ($BoltConfig.NodeToolPath) {
+    $nodeToolPath = $BoltConfig.NodeToolPath
+    if (-not (Test-Path -Path $nodeToolPath -PathType Leaf)) {
+        Write-Error "Node.js not found at configured path: $nodeToolPath. Please check NodeToolPath in bolt.config.json or install Node.js: https://nodejs.org/"
         exit 1
     }
-    
-    Write-Host "  Using Docker container for Node.js (local CLI not found)" -ForegroundColor Gray
-    $useDocker = $true
+    # When using custom node path, derive npm path
+    $nodeDir = Split-Path -Path $nodeToolPath -Parent
+    $npmCmd = Join-Path $nodeDir "npm"
+    if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
+        $npmCmd += ".cmd"
+    }
+    if (-not (Test-Path -Path $npmCmd -PathType Leaf)) {
+        Write-Error "npm not found at expected path: $npmCmd. Please ensure npm is installed alongside Node.js"
+        exit 1
+    }
+    $useDocker = $false
 }
 else {
-    $useDocker = $false
+    # Fall back to PATH search
+    $npmCmdObj = Get-Command npm -ErrorAction SilentlyContinue
+    
+    # If npm not found, check for Docker
+    if (-not $npmCmdObj) {
+        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+        if (-not $dockerCmd) {
+            Write-Error "Node.js/npm not found and Docker is not available. Please install Node.js: https://nodejs.org/, Docker: https://docs.docker.com/get-docker/, or configure NodeToolPath in bolt.config.json"
+            exit 1
+        }
+        
+        Write-Host "  Using Docker container for Node.js (local CLI not found)" -ForegroundColor Gray
+        $useDocker = $true
+    }
+    else {
+        $npmCmd = "npm"
+        $useDocker = $false
+    }
 }
 
 # ===== Find TypeScript Projects =====
-# Find directories containing package.json files (using config or fallback to default path)
-if ($BoltConfig.TypeScriptPath) {
+# Find directories containing package.json files (using configured path)
+if ($BoltConfig -and $BoltConfig.TypeScriptPath) {
     # Use configured path (relative to project root)
     $tsPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.TypeScriptPath
 }
 else {
-    # Fallback to default location for backward compatibility
-    $tsPath = Join-Path $PSScriptRoot "tests" "app"
+    Write-Error "TypeScriptPath not configured in bolt.config.json. Please add 'TypeScriptPath' property pointing to your TypeScript source files."
+    exit 1
 }
 
 # Check if path exists
@@ -100,9 +122,9 @@ try {
         }
     }
     else {
-        # Use local npm CLI
+        # Use local npm CLI (configured path or PATH search)
         Write-Host "  Installing dependencies..." -ForegroundColor Gray
-        $output = & npm install 2>&1
+        $output = & $npmCmd install 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             Write-Host "    ✗ Failed to install dependencies" -ForegroundColor Red
@@ -116,7 +138,7 @@ try {
             
             # Run build via npm script
             Write-Host "  Compiling TypeScript..." -ForegroundColor Gray
-            $output = & npm run build 2>&1
+            $output = & $npmCmd run build 2>&1
             
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "    ✓ Build completed successfully" -ForegroundColor Green

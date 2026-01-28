@@ -16,14 +16,12 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$Version,
-    
+
     [Parameter(Mandatory = $false)]
     [string]$OutputDirectory = "release"
 )
 
 $ErrorActionPreference = 'Stop'
-
-Write-Host "Creating Bicep starter package archive..." -ForegroundColor Cyan
 
 # Get the package directory (where this script is located)
 $packageDir = $PSScriptRoot
@@ -37,6 +35,8 @@ if ($packageName -notmatch '^\.build-') {
 
 # Extract starter name (e.g., ".build-bicep" -> "bicep")
 $starterName = $packageName -replace '^\.build-', ''
+
+Write-Host "Creating $starterName starter package archive..." -ForegroundColor Cyan
 
 # Create output directory if it doesn't exist
 if (-not (Test-Path -Path $OutputDirectory)) {
@@ -86,8 +86,23 @@ if (Test-Path -Path $zipPath) {
 Write-Host "  Creating archive: $zipName" -ForegroundColor Gray
 Compress-Archive -Path "$stagingDir/*" -DestinationPath $zipPath -Force
 
-# Clean up staging directory
-Remove-Item -Path $stagingDir -Recurse -Force
+# Clean up staging directory (with retry for Windows file locks)
+$retryCount = 0
+$maxRetries = 3
+while ($retryCount -lt $maxRetries) {
+    try {
+        Remove-Item -Path $stagingDir -Recurse -Force -ErrorAction Stop
+        break
+    }
+    catch {
+        $retryCount++
+        if ($retryCount -ge $maxRetries) {
+            Write-Warning "Could not remove staging directory after $maxRetries attempts. Continuing anyway..."
+            break
+        }
+        Start-Sleep -Milliseconds 500
+    }
+}
 
 # Verify archive was created
 if (-not (Test-Path -Path $zipPath)) {
@@ -108,5 +123,5 @@ Write-Host "✓ Generated checksum file: $(Split-Path -Path $checksumFile -Leaf)
 Write-Host "  SHA256: $($hash.Hash)" -ForegroundColor Gray
 
 Write-Host ""
-Write-Host "✓ Bicep starter package release completed successfully" -ForegroundColor Green
+Write-Host "✓ $starterName starter package release completed successfully" -ForegroundColor Green
 exit 0

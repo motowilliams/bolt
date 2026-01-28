@@ -6,8 +6,58 @@
   "properties": {
     "IacPath": {
       "type": "string",
-      "description": "Relative path to infrastructure-as-code files (e.g., Bicep, Terraform)",
+      "description": "Relative path to infrastructure-as-code files (backward compatibility - maps to BicepPath/TerraformPath)",
       "examples": ["infrastructure", "iac", "bicep"]
+    },
+    "BicepPath": {
+      "type": "string",
+      "description": "Relative path to Bicep source files",
+      "examples": ["infrastructure", "iac", "bicep"]
+    },
+    "TerraformPath": {
+      "type": "string",
+      "description": "Relative path to Terraform source files",
+      "examples": ["infrastructure", "terraform", "tf"]
+    },
+    "GoPath": {
+      "type": "string",
+      "description": "Relative path to Go source files",
+      "examples": ["app", "src", "cmd"]
+    },
+    "DotNetPath": {
+      "type": "string",
+      "description": "Relative path to .NET source files",
+      "examples": ["src", "app", "projects"]
+    },
+    "TypeScriptPath": {
+      "type": "string",
+      "description": "Relative path to TypeScript source files",
+      "examples": ["src", "app", "packages"]
+    },
+    "BicepToolPath": {
+      "type": "string",
+      "description": "Absolute path to Bicep CLI executable (optional - defaults to PATH search)",
+      "examples": ["/usr/local/bin/bicep", "C:\\tools\\bicep\\bicep.exe"]
+    },
+    "TerraformToolPath": {
+      "type": "string",
+      "description": "Absolute path to Terraform CLI executable (optional - defaults to PATH search)",
+      "examples": ["/usr/local/bin/terraform", "C:\\tools\\terraform\\terraform.exe"]
+    },
+    "GoToolPath": {
+      "type": "string",
+      "description": "Absolute path to Go CLI executable (optional - defaults to PATH search)",
+      "examples": ["/usr/local/go/bin/go", "C:\\Go\\bin\\go.exe"]
+    },
+    "DotNetToolPath": {
+      "type": "string",
+      "description": "Absolute path to .NET CLI executable (optional - defaults to PATH search)",
+      "examples": ["/usr/local/bin/dotnet", "C:\\Program Files\\dotnet\\dotnet.exe"]
+    },
+    "NodeToolPath": {
+      "type": "string",
+      "description": "Absolute path to Node.js executable for TypeScript tasks (optional - defaults to PATH search)",
+      "examples": ["/usr/local/bin/node", "C:\\Program Files\\nodejs\\node.exe"]
     },
     "Environment": {
       "type": "string",

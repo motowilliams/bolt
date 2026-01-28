@@ -171,11 +171,32 @@ Configure the path to your Terraform files using `bolt.config.json`:
 
 ```json
 {
-  "IacPath": "infrastructure/terraform"
+  "TerraformPath": "infrastructure/terraform"
 }
 ```
 
-Default path (if not configured): `tests/tf/` relative to package location.
+Tasks now require explicit configuration - no default fallback paths.
+
+### Custom Tool Path
+
+If Terraform CLI is installed in a non-standard location, configure the executable path:
+
+```json
+{
+  "TerraformToolPath": "/usr/local/bin/terraform",
+  "TerraformPath": "infrastructure/terraform"
+}
+```
+
+**Windows example:**
+```json
+{
+  "TerraformToolPath": "C:\\tools\\terraform\\terraform.exe",
+  "TerraformPath": "infrastructure/terraform"
+}
+```
+
+If `TerraformToolPath` is not configured, Bolt searches for `terraform` in your system PATH or falls back to Docker.
 
 ## Example Project Structure
 

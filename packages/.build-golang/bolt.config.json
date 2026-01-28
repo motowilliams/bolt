@@ -1,0 +1,4 @@
+{
+  "$schema": "../../bolt.config.schema.json",
+  "GoPath": "packages/.build-golang/tests/app"
+}

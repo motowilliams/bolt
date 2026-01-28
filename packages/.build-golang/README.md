@@ -44,7 +44,9 @@ With namespaced installation, tasks are prefixed: `golang-format`, `golang-lint`
 
 ## Configuration
 
-By default, tasks look for Go code in `tests/app/` directory. To use a custom path, create a `bolt.config.json` in your project root:
+### Custom Go Project Directory
+
+Configure the path to your Go files using `bolt.config.json`:
 
 ```json
 {
@@ -59,6 +61,29 @@ Or for a different project structure:
   "GoPath": "cmd/myapp/"
 }
 ```
+
+Tasks now require explicit configuration - no default fallback paths.
+
+### Custom Tool Path
+
+If Go CLI is installed in a non-standard location, configure the executable path:
+
+```json
+{
+  "GoToolPath": "/usr/local/go/bin/go",
+  "GoPath": "src/"
+}
+```
+
+**Windows example:**
+```json
+{
+  "GoToolPath": "C:\\Go\\bin\\go.exe",
+  "GoPath": "cmd/myapp/"
+}
+```
+
+If `GoToolPath` is not configured, Bolt searches for `go` in your system PATH.
 
 ## Usage
 

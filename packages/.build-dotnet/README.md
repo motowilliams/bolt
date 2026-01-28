@@ -182,7 +182,28 @@ Or for multiple projects:
 }
 ```
 
-Default path (if not configured): `tests/app/` relative to package location.
+Tasks now require explicit configuration - no default fallback paths.
+
+### Custom Tool Path
+
+If .NET SDK is installed in a non-standard location, configure the executable path:
+
+```json
+{
+  "DotNetToolPath": "/usr/local/bin/dotnet",
+  "DotNetPath": "src/"
+}
+```
+
+**Windows example:**
+```json
+{
+  "DotNetToolPath": "C:\\Program Files\\dotnet\\dotnet.exe",
+  "DotNetPath": "src/"
+}
+```
+
+If `DotNetToolPath` is not configured, Bolt searches for `dotnet` in your system PATH or falls back to Docker.
 
 ## Example Project Structure
 

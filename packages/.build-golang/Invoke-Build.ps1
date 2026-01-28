@@ -4,21 +4,35 @@
 
 Write-Host "Building Go application..." -ForegroundColor Cyan
 
-# Check if go CLI is available
-$goCmd = Get-Command go -ErrorAction SilentlyContinue
-if (-not $goCmd) {
-    Write-Error "Go CLI not found. Please install: https://go.dev/doc/install"
-    exit 1
+# ===== Go Command Detection =====
+# Check for configured tool path first
+if ($BoltConfig.GoToolPath) {
+    $goToolPath = $BoltConfig.GoToolPath
+    if (-not (Test-Path -Path $goToolPath -PathType Leaf)) {
+        Write-Error "Go CLI not found at configured path: $goToolPath. Please check GoToolPath in bolt.config.json or install Go: https://go.dev/doc/install"
+        exit 1
+    }
+    $goCmd = $goToolPath
+}
+else {
+    # Fall back to PATH search
+    $goCmdObj = Get-Command go -ErrorAction SilentlyContinue
+    if (-not $goCmdObj) {
+        Write-Error "Go CLI not found. Please install: https://go.dev/doc/install or configure GoToolPath in bolt.config.json"
+        exit 1
+    }
+    $goCmd = "go"
 }
 
-# Find Go module path (using config or fallback to default path)
+# ===== Find Go Module Path =====
+# Find Go module path (using configured path)
 if ($BoltConfig.GoPath) {
     # Use configured path (relative to project root)
     $goPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.GoPath
 }
 else {
-    # Fallback to default location for backward compatibility
-    $goPath = Join-Path $PSScriptRoot "tests" "app"
+    Write-Error "GoPath not configured in bolt.config.json. Please add 'GoPath' property pointing to your Go source files."
+    exit 1
 }
 
 # Check if path exists
@@ -63,7 +77,7 @@ try {
     Write-Host "  Building binary: $outputPath" -ForegroundColor Gray
     
     # Build the application
-    go build -o $outputPath ./...
+    & $goCmd build -o $outputPath ./...
     
     if ($LASTEXITCODE -ne 0) {
         $buildSuccess = $false

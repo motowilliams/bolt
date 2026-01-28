@@ -4,16 +4,37 @@
 
 Write-Host "Building Bicep templates..." -ForegroundColor Cyan
 
-# Find all main*.bicep files (e.g., main.bicep, main.dev.bicep)
-# Modules are not compiled directly - they're referenced by main files
-# Using config or fallback to default path
-if ($BoltConfig.IacPath) {
-    # Use configured path (relative to project root)
-    $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.IacPath
+# ===== Bicep Command Detection =====
+# Check for configured tool path first
+if ($BoltConfig.BicepToolPath) {
+    $bicepToolPath = $BoltConfig.BicepToolPath
+    if (-not (Test-Path -Path $bicepToolPath -PathType Leaf)) {
+        Write-Error "Bicep CLI not found at configured path: $bicepToolPath. Please check BicepToolPath in bolt.config.json or install Bicep: https://aka.ms/bicep-install"
+        exit 1
+    }
+    $bicepCmd = $bicepToolPath
 }
 else {
-    # Fallback to default location for backward compatibility
-    $iacPath = Join-Path $PSScriptRoot ".." "tests" "iac"
+    # Fall back to PATH search
+    $bicepCmdObj = Get-Command bicep -ErrorAction SilentlyContinue
+    if (-not $bicepCmdObj) {
+        Write-Error "Bicep CLI not found. Please install: https://aka.ms/bicep-install or configure BicepToolPath in bolt.config.json"
+        exit 1
+    }
+    $bicepCmd = "bicep"
+}
+
+# ===== Find Bicep Files =====
+# Find all main*.bicep files (e.g., main.bicep, main.dev.bicep)
+# Modules are not compiled directly - they're referenced by main files
+# Using configured path
+if ($BoltConfig.BicepPath) {
+    # Use configured path (relative to project root)
+    $iacPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.BicepPath
+}
+else {
+    Write-Error "BicepPath not configured in bolt.config.json. Please add 'BicepPath' property pointing to your Bicep source files."
+    exit 1
 }
 $bicepFiles = Get-ChildItem -Path $iacPath -Filter "main*.bicep" -File -Force -ErrorAction SilentlyContinue
 
@@ -22,20 +43,13 @@ if ($bicepFiles.Count -eq 0) {
     exit 0
 }
 
-# Check if bicep CLI is available
-$bicepCmd = Get-Command bicep -ErrorAction SilentlyContinue
-if (-not $bicepCmd) {
-    Write-Error "Bicep CLI not found. Please install: https://aka.ms/bicep-install"
-    exit 1
-}
-
 $buildSuccess = $true
 
 foreach ($file in $bicepFiles) {
     $outputFile = $file.FullName -replace '\.bicep$', '.json'
     Write-Host "  Compiling: $($file.Name) -> $([System.IO.Path]::GetFileName($outputFile))" -ForegroundColor Gray
 
-    bicep build $file.FullName --outfile $outputFile
+    & $bicepCmd build $file.FullName --outfile $outputFile
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to build $($file.Name)"
