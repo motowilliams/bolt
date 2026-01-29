@@ -275,6 +275,16 @@ Infrastructure-as-Code tasks for Azure Bicep workflows.
 
 See [packages/.build-bicep/README.md](packages/.build-bicep/README.md) for detailed documentation, installation instructions, and usage examples.
 
+#### .NET (C#) Starter Package
+
+.NET/C# application development tasks with automatic Docker fallback.
+
+**Included Tasks:** `format` (alias `fmt`), `restore`, `test`, `build`
+
+**Requirements:** .NET SDK 6.0+ ([Installation](https://dotnet.microsoft.com/download)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+
+See [packages/.build-dotnet/README.md](packages/.build-dotnet/README.md) for detailed documentation, installation instructions, and usage examples.
+
 #### Golang Starter Package
 
 Go application development tasks for building, testing, and formatting Go code.
@@ -285,6 +295,16 @@ Go application development tasks for building, testing, and formatting Go code.
 
 See [packages/.build-golang/README.md](packages/.build-golang/README.md) for detailed documentation, installation instructions, and usage examples.
 
+#### Python Starter Package
+
+Python application development tasks for formatting, linting, testing, and building with Docker fallback support.
+
+**Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
+
+**Requirements:** Python 3.8+ ([Installation](https://www.python.org/downloads/)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+
+See [packages/.build-python/README.md](packages/.build-python/README.md) for detailed documentation, installation instructions, and usage examples.
+
 #### Terraform Starter Package
 
 Infrastructure-as-Code tasks for Terraform workflows with automatic Docker fallback.
@@ -294,16 +314,6 @@ Infrastructure-as-Code tasks for Terraform workflows with automatic Docker fallb
 **Requirements:** Terraform CLI ([Installation](https://developer.hashicorp.com/terraform/downloads)) or Docker ([Installation](https://docs.docker.com/get-docker/))
 
 See [packages/.build-terraform/README.md](packages/.build-terraform/README.md) for detailed documentation, installation instructions, and usage examples.
-
-#### .NET (C#) Starter Package
-
-.NET/C# application development tasks with automatic Docker fallback.
-
-**Included Tasks:** `format` (alias `fmt`), `restore`, `test`, `build`
-
-**Requirements:** .NET SDK 6.0+ ([Installation](https://dotnet.microsoft.com/download)) or Docker ([Installation](https://docs.docker.com/get-docker/))
-
-See [packages/.build-dotnet/README.md](packages/.build-dotnet/README.md) for detailed documentation, installation instructions, and usage examples.
 
 #### TypeScript Starter Package
 

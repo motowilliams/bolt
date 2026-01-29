@@ -156,6 +156,77 @@ coverage/
 .eslintcache
 
 # =============================================================================
+# Python Starter Package (.build-python)
+# =============================================================================
+# Based on: https://github.com/github/gitignore/blob/main/Python.gitignore
+# Python starter package: https://github.com/motowilliams/bolt/tree/main/packages/.build-python
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+env.bak/
+venv.bak/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+*.cover
+*.py,cover
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# =============================================================================
 # Test Results and Coverage
 # =============================================================================
 # Pester test output files
@@ -236,3 +307,4 @@ temp/
 test-module/**/*
 output/Bolt/bolt.ps1
 output/Bolt/Bolt.psm1
+.claude/settings.local.json
