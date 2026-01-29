@@ -14,16 +14,6 @@ if ($BoltConfig.PythonToolPath) {
         Write-Error "Python not found at configured path: $pythonToolPath. Please check PythonToolPath in bolt.config.json or install Python: https://www.python.org/downloads/"
         exit 1
     }
-    # When using custom python path, derive pip path
-    $pythonDir = Split-Path -Path $pythonToolPath -Parent
-    $pipCmd = Join-Path $pythonDir "pip"
-    if ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6 -or (-not $IsLinux -and -not $IsMacOS)) {
-        $pipCmd += ".exe"
-    }
-    if (-not (Test-Path -Path $pipCmd -PathType Leaf)) {
-        Write-Error "pip not found at expected path: $pipCmd. Please ensure pip is installed alongside Python"
-        exit 1
-    }
     $pythonCmd = $pythonToolPath
     $useDocker = $false
 }
