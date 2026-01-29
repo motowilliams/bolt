@@ -56,7 +56,7 @@ Add to your `bolt.config.json`:
 ```json
 {
   "PythonPath": "src",
-  "PythonToolPath": "/usr/bin/python3"  // Optional: Explicit Python path
+  "PythonToolPath": "/usr/bin/python3"
 }
 ```
 
