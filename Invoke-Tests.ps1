@@ -132,10 +132,8 @@ if ($ExcludeTag) {
 # Set output verbosity
 $config.Output.Verbosity = $Output
 
-# Enable PassThru if requested
-if ($PassThru) {
-    $config.Run.PassThru = $true
-}
+# Always enable PassThru to capture results for summary
+$config.Run.PassThru = $true
 
 # Run tests
 Write-Host "Discovering tests in:" -ForegroundColor Cyan
@@ -150,6 +148,127 @@ Write-Host ""
 
 $result = Invoke-Pester -Configuration $config
 
+# Display custom summary
+Write-Host ""
+Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "Test Summary" -ForegroundColor Cyan
+Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host ""
+
+# Overall stats
+$totalTests = $result.TotalCount
+$passedTests = $result.PassedCount
+$failedTests = $result.FailedCount
+$skippedTests = $result.SkippedCount
+
+Write-Host "Total:   $totalTests tests" -ForegroundColor Gray
+Write-Host "Passed:  $passedTests tests" -ForegroundColor Green
+if ($skippedTests -gt 0) {
+    Write-Host "Skipped: $skippedTests tests" -ForegroundColor Yellow
+}
+if ($failedTests -gt 0) {
+    Write-Host "Failed:  $failedTests tests" -ForegroundColor Red
+}
+
+# Show skipped test details if any
+if ($skippedTests -gt 0) {
+    Write-Host ""
+    Write-Host "───────────────────────────────────────────────────────────────────" -ForegroundColor Yellow
+    Write-Host "Skipped Tests" -ForegroundColor Yellow
+    Write-Host "───────────────────────────────────────────────────────────────────" -ForegroundColor Yellow
+    Write-Host ""
+
+    $skipCount = 1
+    foreach ($test in $result.Skipped) {
+        Write-Host "[$skipCount] " -ForegroundColor Yellow -NoNewline
+        Write-Host $test.ExpandedName -ForegroundColor White
+
+        # Show tags if available
+        if ($test.Tag -and $test.Tag.Count -gt 0) {
+            Write-Host "    Tags: " -ForegroundColor Cyan -NoNewline
+            Write-Host ($test.Tag -join ', ') -ForegroundColor Gray
+        }
+
+        # Show location
+        if ($test.ScriptBlock.File) {
+            $relativePath = [System.IO.Path]::GetRelativePath((Get-Location), $test.ScriptBlock.File)
+            Write-Host "    Location: $relativePath" -ForegroundColor Gray -NoNewline
+            if ($test.ScriptBlock.StartPosition.StartLine) {
+                Write-Host ":$($test.ScriptBlock.StartPosition.StartLine)" -ForegroundColor Gray
+            } else {
+                Write-Host ""
+            }
+        }
+
+        # Show skip reason if available
+        if ($test.ErrorRecord.Exception.Message) {
+            $skipReason = $test.ErrorRecord.Exception.Message
+            Write-Host "    Reason: " -ForegroundColor Yellow -NoNewline
+            Write-Host $skipReason -ForegroundColor Gray
+        }
+
+        Write-Host ""
+        $skipCount++
+    }
+}
+
+# Show failed test details if any
+if ($failedTests -gt 0) {
+    Write-Host ""
+    Write-Host "───────────────────────────────────────────────────────────────────" -ForegroundColor Red
+    Write-Host "Failed Tests" -ForegroundColor Red
+    Write-Host "───────────────────────────────────────────────────────────────────" -ForegroundColor Red
+    Write-Host ""
+
+    $failureCount = 1
+    foreach ($test in $result.Failed) {
+        Write-Host "[$failureCount] " -ForegroundColor Red -NoNewline
+        Write-Host $test.ExpandedName -ForegroundColor White
+
+        # Show tags if available
+        if ($test.Tag -and $test.Tag.Count -gt 0) {
+            Write-Host "    Tags: " -ForegroundColor Cyan -NoNewline
+            Write-Host ($test.Tag -join ', ') -ForegroundColor Gray
+        }
+
+        # Show location
+        if ($test.ScriptBlock.File) {
+            $relativePath = [System.IO.Path]::GetRelativePath((Get-Location), $test.ScriptBlock.File)
+            Write-Host "    Location: $relativePath" -ForegroundColor Gray -NoNewline
+            if ($test.ScriptBlock.StartPosition.StartLine) {
+                Write-Host ":$($test.ScriptBlock.StartPosition.StartLine)" -ForegroundColor Gray
+            } else {
+                Write-Host ""
+            }
+        }
+
+        # Show error message
+        if ($test.ErrorRecord) {
+            $errorMessage = $test.ErrorRecord.Exception.Message
+            # Truncate long error messages
+            if ($errorMessage.Length -gt 200) {
+                $errorMessage = $errorMessage.Substring(0, 200) + "..."
+            }
+            Write-Host "    Error: " -ForegroundColor Red -NoNewline
+            Write-Host $errorMessage -ForegroundColor Gray
+        }
+
+        Write-Host ""
+        $failureCount++
+    }
+}
+
+Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host ""
+
+# Return result if PassThru was requested
 if ($PassThru) {
     return $result
+}
+
+# Exit with appropriate code
+if ($failedTests -gt 0) {
+    exit 1
+} else {
+    exit 0
 }
