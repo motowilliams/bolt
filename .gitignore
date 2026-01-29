@@ -307,3 +307,4 @@ temp/
 test-module/**/*
 output/Bolt/bolt.ps1
 output/Bolt/Bolt.psm1
+.claude/settings.local.json
