@@ -75,41 +75,30 @@ if ($useDocker) {
     $hasRequirements = Test-Path -Path (Join-Path $pythonPath "requirements.txt")
 
     if ($hasPyprojectToml -or $hasSetupPy) {
-        Write-Host "  Installing build dependencies in Docker..." -ForegroundColor Gray
-        $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim pip install build 2>&1
+        Write-Host "  Building Python package in Docker (installing build tools and building)..." -ForegroundColor Gray
+        # Combine install and execution in single container to preserve installed packages
+        $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim sh -c "pip install build --quiet && python -m build" 2>&1
 
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "    ✗ Failed to install build dependencies" -ForegroundColor Red
-            $buildSuccess = $false
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "    ✓ Package built successfully" -ForegroundColor Green
+
+            # Check dist directory
+            $distPath = Join-Path $pythonPath "dist"
+            if (Test-Path -Path $distPath) {
+                $artifacts = Get-ChildItem -Path $distPath -File
+                Write-Host "    Generated $($artifacts.Count) artifact(s) in dist/" -ForegroundColor Gray
+            }
         }
         else {
-            Write-Host "    ✓ Build dependencies installed" -ForegroundColor Green
-
-            # Build package
-            Write-Host "  Building Python package..." -ForegroundColor Gray
-            $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim python -m build 2>&1
-
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "    ✓ Package built successfully" -ForegroundColor Green
-
-                # Check dist directory
-                $distPath = Join-Path $pythonPath "dist"
-                if (Test-Path -Path $distPath) {
-                    $artifacts = Get-ChildItem -Path $distPath -File
-                    Write-Host "    Generated $($artifacts.Count) artifact(s) in dist/" -ForegroundColor Gray
-                }
-            }
-            else {
-                Write-Host "    ✗ Package build failed" -ForegroundColor Red
-                $buildSuccess = $false
-                $output | ForEach-Object {
-                    Write-Host "      $_" -ForegroundColor Red
-                }
+            Write-Host "    ✗ Package build failed" -ForegroundColor Red
+            $buildSuccess = $false
+            $output | ForEach-Object {
+                Write-Host "      $_" -ForegroundColor Red
             }
         }
     }
     elseif ($hasRequirements) {
-        Write-Host "  Installing dependencies from requirements.txt..." -ForegroundColor Gray
+        Write-Host "  Installing dependencies from requirements.txt in Docker..." -ForegroundColor Gray
         $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim pip install -r requirements.txt 2>&1
 
         if ($LASTEXITCODE -eq 0) {

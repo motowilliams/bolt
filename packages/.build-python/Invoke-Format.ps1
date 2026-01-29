@@ -88,32 +88,18 @@ if ($useDocker) {
     # Use Docker with volume mount
     $absolutePath = [System.IO.Path]::GetFullPath($pythonPath)
 
-    Write-Host "  Installing black in Docker..." -ForegroundColor Gray
-    $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim pip install black 2>&1
+    Write-Host "  Running black in Docker (installing and formatting)..." -ForegroundColor Gray
+    # Combine install and execution in single container to preserve installed packages
+    $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim sh -c "pip install black --quiet && python -m black ." 2>&1
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "    ✗ Failed to install black" -ForegroundColor Red
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "    ✓ Files formatted successfully" -ForegroundColor Green
+    }
+    else {
+        Write-Host "    ✗ Format failed" -ForegroundColor Red
         $formatSuccess = $false
         $output | ForEach-Object {
             Write-Host "      $_" -ForegroundColor Red
-        }
-    }
-    else {
-        Write-Host "    ✓ black installed" -ForegroundColor Green
-
-        # Run black
-        Write-Host "  Running black..." -ForegroundColor Gray
-        $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim python -m black . 2>&1
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "    ✓ Files formatted successfully" -ForegroundColor Green
-        }
-        else {
-            Write-Host "    ✗ Format failed" -ForegroundColor Red
-            $formatSuccess = $false
-            $output | ForEach-Object {
-                Write-Host "      $_" -ForegroundColor Red
-            }
         }
     }
 }

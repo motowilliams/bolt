@@ -78,32 +78,18 @@ if ($useDocker) {
     # Use Docker with volume mount
     $absolutePath = [System.IO.Path]::GetFullPath($pythonPath)
 
-    Write-Host "  Installing ruff in Docker..." -ForegroundColor Gray
-    $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim pip install ruff 2>&1
+    Write-Host "  Running ruff in Docker (installing and linting)..." -ForegroundColor Gray
+    # Combine install and execution in single container to preserve installed packages
+    $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim sh -c "pip install ruff --quiet && python -m ruff check ." 2>&1
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "    ✗ Failed to install ruff" -ForegroundColor Red
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "    ✓ No linting errors found" -ForegroundColor Green
+    }
+    else {
+        Write-Host "    ✗ Linting errors found" -ForegroundColor Red
         $lintSuccess = $false
         $output | ForEach-Object {
             Write-Host "      $_" -ForegroundColor Red
-        }
-    }
-    else {
-        Write-Host "    ✓ ruff installed" -ForegroundColor Green
-
-        # Run ruff
-        Write-Host "  Running ruff..." -ForegroundColor Gray
-        $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim python -m ruff check . 2>&1
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "    ✓ No linting errors found" -ForegroundColor Green
-        }
-        else {
-            Write-Host "    ✗ Linting errors found" -ForegroundColor Red
-            $lintSuccess = $false
-            $output | ForEach-Object {
-                Write-Host "      $_" -ForegroundColor Red
-            }
         }
     }
 }

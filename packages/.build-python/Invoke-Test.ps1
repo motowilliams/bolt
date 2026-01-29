@@ -79,46 +79,27 @@ if ($useDocker) {
     # Use Docker with volume mount
     $absolutePath = [System.IO.Path]::GetFullPath($pythonPath)
 
-    Write-Host "  Installing pytest in Docker..." -ForegroundColor Gray
-    $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim pip install pytest 2>&1
+    # Build Docker command with dependencies if requirements.txt exists
+    $requirementsPath = Join-Path $pythonPath "requirements.txt"
+    if (Test-Path -Path $requirementsPath) {
+        Write-Host "  Running pytest in Docker (installing pytest, dependencies, and testing)..." -ForegroundColor Gray
+        # Combine all installs and execution in single container to preserve installed packages
+        $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim sh -c "pip install pytest --quiet && pip install -r requirements.txt --quiet && python -m pytest -v" 2>&1
+    }
+    else {
+        Write-Host "  Running pytest in Docker (installing and testing)..." -ForegroundColor Gray
+        # Combine install and execution in single container to preserve installed packages
+        $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim sh -c "pip install pytest --quiet && python -m pytest -v" 2>&1
+    }
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "    ✗ Failed to install pytest" -ForegroundColor Red
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "    ✓ All tests passed" -ForegroundColor Green
+    }
+    else {
+        Write-Host "    ✗ Some tests failed" -ForegroundColor Red
         $testSuccess = $false
         $output | ForEach-Object {
             Write-Host "      $_" -ForegroundColor Red
-        }
-    }
-    else {
-        Write-Host "    ✓ pytest installed" -ForegroundColor Green
-
-        # Install project dependencies if requirements.txt exists
-        $requirementsPath = Join-Path $pythonPath "requirements.txt"
-        if (Test-Path -Path $requirementsPath) {
-            Write-Host "  Installing dependencies from requirements.txt..." -ForegroundColor Gray
-            $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim pip install -r requirements.txt 2>&1
-
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "    ✓ Dependencies installed" -ForegroundColor Green
-            }
-            else {
-                Write-Host "    ⚠ Failed to install some dependencies" -ForegroundColor Yellow
-            }
-        }
-
-        # Run pytest
-        Write-Host "  Running pytest..." -ForegroundColor Gray
-        $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim python -m pytest -v 2>&1
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "    ✓ All tests passed" -ForegroundColor Green
-        }
-        else {
-            Write-Host "    ✗ Some tests failed" -ForegroundColor Red
-            $testSuccess = $false
-            $output | ForEach-Object {
-                Write-Host "      $_" -ForegroundColor Red
-            }
         }
     }
 }
