@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-01-29
+
 ### Added
 - **Python Starter Package**: Python application development tasks with Docker fallback support
   - **`format` task** (alias: `fmt`) - Formats Python files using `black` (industry standard formatter)
@@ -896,7 +898,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - EditorConfig for consistent code formatting
 
-[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/motowilliams/bolt/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/motowilliams/bolt/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/motowilliams/bolt/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/motowilliams/bolt/compare/v0.10.1...v0.10.2
