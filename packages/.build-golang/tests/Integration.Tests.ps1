@@ -28,6 +28,12 @@ BeforeAll {
 
     $script:GoAppPath = Join-Path $PSScriptRoot 'app'
 
+    # Check for Go or Docker availability
+    $goCmd = Get-Command go -ErrorAction SilentlyContinue
+    $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+
+    $script:hasGoOrDocker = ($null -ne $goCmd) -or ($null -ne $dockerCmd)
+
     # Helper function to invoke bolt with captured output
     function Invoke-Bolt {
         param(
@@ -68,11 +74,9 @@ BeforeAll {
 
 Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
     Context 'Format Task Integration' {
-        It 'Should format Go files if Go CLI is available' {
-            # Check if Go CLI is available
-            $goCmd = Get-Command go -ErrorAction SilentlyContinue
-            if (-not $goCmd) {
-                Set-ItResult -Skipped -Because "Go CLI not installed"
+        It 'Should format Go files if Go CLI or Docker is available' {
+            if (-not $script:hasGoOrDocker) {
+                Set-ItResult -Skipped -Because "Neither Go CLI nor Docker is installed"
                 return
             }
 
@@ -83,11 +87,9 @@ Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
     }
 
     Context 'Lint Task Integration' {
-        It 'Should lint Go files if Go CLI is available' {
-            # Check if Go CLI is available
-            $goCmd = Get-Command go -ErrorAction SilentlyContinue
-            if (-not $goCmd) {
-                Set-ItResult -Skipped -Because "Go CLI not installed"
+        It 'Should lint Go files if Go CLI or Docker is available' {
+            if (-not $script:hasGoOrDocker) {
+                Set-ItResult -Skipped -Because "Neither Go CLI nor Docker is installed"
                 return
             }
 
@@ -98,11 +100,9 @@ Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
     }
 
     Context 'Test Task Integration' {
-        It 'Should run Go tests if Go CLI is available' {
-            # Check if Go CLI is available
-            $goCmd = Get-Command go -ErrorAction SilentlyContinue
-            if (-not $goCmd) {
-                Set-ItResult -Skipped -Because "Go CLI not installed"
+        It 'Should run Go tests if Go CLI or Docker is available' {
+            if (-not $script:hasGoOrDocker) {
+                Set-ItResult -Skipped -Because "Neither Go CLI nor Docker is installed"
                 return
             }
 
@@ -113,18 +113,16 @@ Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
     }
 
     Context 'Build Task Integration' {
-        It 'Should build Go application if Go CLI is available' {
-            # Check if Go CLI is available
-            $goCmd = Get-Command go -ErrorAction SilentlyContinue
-            if (-not $goCmd) {
-                Set-ItResult -Skipped -Because "Go CLI not installed"
+        It 'Should build Go application if Go CLI or Docker is available' {
+            if (-not $script:hasGoOrDocker) {
+                Set-ItResult -Skipped -Because "Neither Go CLI nor Docker is installed"
                 return
             }
 
             Test-Path $script:GoAppPath | Should -Be $true
             $result = Invoke-Bolt -Arguments @('build') -Parameters @{ Only = $true }
             $result.ExitCode | Should -Be 0
-            
+
             # Verify binary was created
             $binPath = Join-Path $script:GoAppPath 'bin'
             Test-Path $binPath | Should -Be $true
@@ -133,10 +131,8 @@ Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
 
     Context 'Full Build Pipeline' {
         It 'Should execute complete build pipeline with dependencies' {
-            # Check if Go CLI is available
-            $goCmd = Get-Command go -ErrorAction SilentlyContinue
-            if (-not $goCmd) {
-                Set-ItResult -Skipped -Because "Go CLI not installed"
+            if (-not $script:hasGoOrDocker) {
+                Set-ItResult -Skipped -Because "Neither Go CLI nor Docker is installed"
                 return
             }
 
@@ -144,7 +140,7 @@ Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
             # Run build without -Only flag to test full dependency chain
             $result = Invoke-Bolt -Arguments @('build')
             $result.ExitCode | Should -Be 0
-            
+
             # Verify binary was created
             $binPath = Join-Path $script:GoAppPath 'bin'
             Test-Path $binPath | Should -Be $true

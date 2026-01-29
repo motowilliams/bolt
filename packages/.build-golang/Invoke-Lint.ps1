@@ -13,21 +13,30 @@ if ($BoltConfig.GoToolPath) {
         exit 1
     }
     $goCmd = $goToolPath
+    $useDocker = $false
 }
 else {
     # Fall back to PATH search
     $goCmdObj = Get-Command go -ErrorAction SilentlyContinue
     if (-not $goCmdObj) {
-        Write-Error "Go CLI not found. Please install: https://go.dev/doc/install or configure GoToolPath in bolt.config.json"
-        exit 1
+        # If go not found, check for Docker
+        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+        if (-not $dockerCmd) {
+            Write-Error "Go CLI not found and Docker is not available. Please install Go: https://go.dev/doc/install, Docker: https://docs.docker.com/get-docker/, or configure GoToolPath in bolt.config.json"
+            exit 1
+        }
+
+        Write-Host "  Using Docker container for Go (local CLI not found)" -ForegroundColor Gray
+        $useDocker = $true
     }
-    $goCmd = "go"
+    else {
+        $goCmd = "go"
+        $useDocker = $false
+    }
 }
 
 # ===== Find Go Project Path =====
-# Find all .go files (using configured path)
 if ($BoltConfig.GoPath) {
-    # Use configured path (relative to project root)
     $goPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.GoPath
 }
 else {
@@ -35,7 +44,6 @@ else {
     exit 1
 }
 
-# Check if path exists
 if (-not (Test-Path -Path $goPath)) {
     Write-Host "No Go project found at path: $goPath" -ForegroundColor Yellow
     exit 0
@@ -46,34 +54,39 @@ Write-Host ""
 
 $lintSuccess = $true
 
-# Run go vet on all packages
-Push-Location $goPath
-try {
-    Write-Host "  Running go vet..." -ForegroundColor Gray
+if ($useDocker) {
+    $absolutePath = [System.IO.Path]::GetFullPath($goPath)
+    Write-Host "  Running go vet in Docker..." -ForegroundColor Gray
+    $output = & docker run --rm -v "${absolutePath}:/project" -w /project golang:1.22-alpine go vet ./... 2>&1
 
-    # Run go vet and capture output
-    $output = & $goCmd vet ./... 2>&1
-    $exitCode = $LASTEXITCODE
-
-    if ($exitCode -ne 0) {
-        $lintSuccess = $false
-        Write-Host ""
-        Write-Host "  ✗ go vet found issues:" -ForegroundColor Red
-        foreach ($line in $output) {
-            Write-Host "    $line" -ForegroundColor Red
-        }
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "    ✓ No issues found" -ForegroundColor Green
     }
     else {
-        Write-Host "  ✓ No issues found" -ForegroundColor Green
+        Write-Host "    ✗ go vet found issues" -ForegroundColor Red
+        $lintSuccess = $false
+        $output | ForEach-Object { Write-Host "      $_" -ForegroundColor Red }
     }
 }
-finally {
-    Pop-Location
+else {
+    Push-Location $goPath
+    try {
+        Write-Host "  Running go vet..." -ForegroundColor Gray
+        $output = & $goCmd vet ./... 2>&1
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "    ✓ No issues found" -ForegroundColor Green
+        }
+        else {
+            Write-Host "    ✗ go vet found issues" -ForegroundColor Red
+            $lintSuccess = $false
+            $output | ForEach-Object { Write-Host "      $_" -ForegroundColor Red }
+        }
+    }
+    finally { Pop-Location }
 }
 
 Write-Host ""
-
-# Summary
 Write-Host "Lint Summary:" -ForegroundColor Cyan
 
 if (-not $lintSuccess) {

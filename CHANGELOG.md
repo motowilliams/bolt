@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Golang Starter Package**: Added Docker fallback support and enhanced format task
+  - All tasks (format, lint, test, build) now support automatic Docker fallback
+  - Uses `golang:1.22-alpine` container image when Go CLI is not installed
+  - Three-tier tool detection: Configured path → PATH search → Docker fallback
+  - Seamless module dependency handling via go.mod
+  - Binary output works transparently with Docker volume mounts
+  - Build task notes Linux binary output when using Docker
+  - Enhanced format task to use batch processing (`go fmt ./...`) instead of file-by-file iteration for better performance, especially with Docker
+  - Updated documentation with Docker usage and troubleshooting
+  - Enhanced integration tests to support Docker execution
+  - Maintains full backward compatibility with existing configurations
+
 ## [0.13.0] - 2026-01-29
 
 ### Added
