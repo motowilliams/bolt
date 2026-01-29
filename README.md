@@ -287,11 +287,11 @@ See [packages/.build-dotnet/README.md](packages/.build-dotnet/README.md) for det
 
 #### Golang Starter Package
 
-Go application development tasks for building, testing, and formatting Go code.
+Go application development tasks for building, testing, and formatting Go code with Docker fallback support.
 
 **Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
 
-**Requirements:** Go 1.21+ CLI ([Installation](https://go.dev/doc/install))
+**Requirements:** Go 1.21+ CLI ([Installation](https://go.dev/doc/install)) or Docker ([Installation](https://docs.docker.com/get-docker/))
 
 See [packages/.build-golang/README.md](packages/.build-golang/README.md) for detailed documentation, installation instructions, and usage examples.
 

@@ -52,7 +52,7 @@ Run tests with: `Invoke-Pester -Tag Bicep-Tasks`
 
 ### `.build-golang` - Golang Starter Package
 
-Go application development tasks for building, testing, and formatting Go code.
+Go application development tasks for building, testing, and formatting Go code with Docker fallback support.
 
 **Included Tasks:**
 - **`format`** - Formats Go files using `go fmt` (alias: `fmt`)
@@ -62,6 +62,8 @@ Go application development tasks for building, testing, and formatting Go code.
 
 **Requirements:**
 - Go 1.21+ CLI: https://go.dev/doc/install
+  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
+- Tasks automatically use Docker if Go is not installed
 
 **Installation:**
 
