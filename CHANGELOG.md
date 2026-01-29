@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dependencies: build → format, lint, test
   - Docker Fallback Support: Automatically uses `python:3.12-slim` when Python CLI not installed
   - Cross-platform compatibility (Windows, Linux, macOS)
-  - Comprehensive test suite (13 task validation + integration tests)
+  - Comprehensive test suite covering task validation and integration tests
   - Example Python calculator module with pytest tests
   - Complete documentation in `packages/.build-python/README.md`
   - Configuration via `PythonPath` and `PythonToolPath` in `bolt.config.json`
