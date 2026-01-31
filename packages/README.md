@@ -4,17 +4,20 @@ This directory contains **package starters** - pre-built task collections for sp
 
 ## Available Package Starters
 
-### `.build-bicep` - Bicep Starter Package
+### `.build-python` - Python Starter Package
 
-Infrastructure-as-Code tasks for Azure Bicep workflows.
+Python application development tasks for formatting, linting, testing, and building with Docker fallback support.
 
 **Included Tasks:**
-- **`format`** - Formats Bicep files using `bicep format`
-- **`lint`** - Validates Bicep syntax using `bicep lint`
-- **`build`** - Compiles Bicep files to ARM JSON templates
+- **`format`** - Formats Python files using `black` (alias: `fmt`)
+- **`lint`** - Validates Python code using `ruff`
+- **`test`** - Runs tests using `pytest`
+- **`build`** - Installs dependencies and validates package structure (depends on format, lint, test)
 
 **Requirements:**
-- Azure Bicep CLI: `winget install Microsoft.Bicep` (Windows) or https://aka.ms/bicep-install
+- Python 3.8+ (3.12 recommended): https://www.python.org/downloads/
+  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
+- Tasks automatically use Docker if Python is not installed
 
 **Installation:**
 
@@ -27,28 +30,39 @@ irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps
 **Option 2: Manual copy from source (for development)**
 ```powershell
 # From your project root
-Copy-Item -Path "packages/.build-bicep/Invoke-*.ps1" -Destination ".build/" -Force
+Copy-Item -Path "packages/.build-python/Invoke-*.ps1" -Destination ".build/" -Force
 ```
 
 **Usage:**
 ```powershell
-# Format all Bicep files
+# Format all Python files
 .\bolt.ps1 format
 
-# Validate Bicep syntax
+# Lint Python code
 .\bolt.ps1 lint
 
-# Full build pipeline (format → lint → build)
+# Run tests
+.\bolt.ps1 test
+
+# Full build pipeline (format → lint → test → build)
 .\bolt.ps1 build
 ```
 
-**Testing:**
-The Bicep starter package includes comprehensive tests:
-- `packages/.build-bicep/tests/Tasks.Tests.ps1` - Task structure validation
-- `packages/.build-bicep/tests/Integration.Tests.ps1` - End-to-end integration tests
-- `packages/.build-bicep/tests/iac/` - Example infrastructure templates
+**Docker Fallback:**
+If Python is not installed, tasks automatically use Docker:
+```powershell
+# No local Python? No problem!
+.\bolt.ps1 format    # Uses Docker: python:3.12-slim
+.\bolt.ps1 build     # Automatically falls back to Docker
+```
 
-Run tests with: `Invoke-Pester -Tag Bicep-Tasks`
+**Testing:**
+The Python starter package includes comprehensive tests:
+- `packages/.build-python/tests/Tasks.Tests.ps1` - Task structure validation
+- `packages/.build-python/tests/Integration.Tests.ps1` - End-to-end integration tests
+- `packages/.build-python/tests/app/` - Example Python application with pytest tests
+
+Run tests with: `Invoke-Pester -Tag Python-Tasks`
 
 ### `.build-golang` - Golang Starter Package
 
@@ -101,66 +115,6 @@ The Golang starter package includes comprehensive tests:
 - `packages/.build-golang/tests/app/` - Example Go application
 
 Run tests with: `Invoke-Pester -Tag Golang-Tasks`
-
-### `.build-dotnet` - .NET (C#) Starter Package
-
-.NET/C# application development tasks for building, testing, formatting, and restoring packages with Docker fallback support.
-
-**Included Tasks:**
-- **`format`** - Formats C# files using `dotnet format` (alias: `fmt`)
-- **`restore`** - Restores NuGet packages using `dotnet restore`
-- **`test`** - Runs .NET tests using `dotnet test`
-- **`build`** - Builds .NET projects (depends on format, restore, test)
-
-**Requirements:**
-- .NET SDK 6.0+ (8.0+ recommended): https://dotnet.microsoft.com/download
-  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
-- Tasks automatically use Docker if .NET SDK is not installed
-
-**Installation:**
-
-**Option 1: Download from GitHub Releases (recommended)**
-```powershell
-# Interactive script to download and install starter packages
-irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
-```
-
-**Option 2: Manual copy from source (for development)**
-```powershell
-# From your project root
-Copy-Item -Path "packages/.build-dotnet/Invoke-*.ps1" -Destination ".build/" -Force
-```
-
-**Usage:**
-```powershell
-# Format all C# files
-.\bolt.ps1 format
-
-# Restore NuGet packages
-.\bolt.ps1 restore
-
-# Run tests
-.\bolt.ps1 test
-
-# Full build pipeline (format → restore → test → build)
-.\bolt.ps1 build
-```
-
-**Docker Fallback:**
-If .NET SDK is not installed, tasks automatically use Docker:
-```powershell
-# No local .NET SDK? No problem!
-.\bolt.ps1 format    # Uses Docker: mcr.microsoft.com/dotnet/sdk:10.0
-.\bolt.ps1 build     # Automatically falls back to Docker
-```
-
-**Testing:**
-The .NET starter package includes comprehensive tests:
-- `packages/.build-dotnet/tests/Tasks.Tests.ps1` - Task structure validation
-- `packages/.build-dotnet/tests/Integration.Tests.ps1` - End-to-end integration tests
-- `packages/.build-dotnet/tests/app/` - Example .NET application with xUnit tests
-
-Run tests with: `Invoke-Pester -Tag DotNet-Tasks`
 
 ### `.build-typescript` - TypeScript Starter Package
 
@@ -222,20 +176,20 @@ The TypeScript starter package includes comprehensive tests:
 
 Run tests with: `Invoke-Pester -Tag TypeScript-Tasks`
 
-### `.build-python` - Python Starter Package
+### `.build-dotnet` - .NET (C#) Starter Package
 
-Python application development tasks for formatting, linting, testing, and building with Docker fallback support.
+.NET/C# application development tasks for building, testing, formatting, and restoring packages with Docker fallback support.
 
 **Included Tasks:**
-- **`format`** - Formats Python files using `black` (alias: `fmt`)
-- **`lint`** - Validates Python code using `ruff`
-- **`test`** - Runs tests using `pytest`
-- **`build`** - Installs dependencies and validates package structure (depends on format, lint, test)
+- **`format`** - Formats C# files using `dotnet format` (alias: `fmt`)
+- **`restore`** - Restores NuGet packages using `dotnet restore`
+- **`test`** - Runs .NET tests using `dotnet test`
+- **`build`** - Builds .NET projects (depends on format, restore, test)
 
 **Requirements:**
-- Python 3.8+ (3.12 recommended): https://www.python.org/downloads/
+- .NET SDK 6.0+ (8.0+ recommended): https://dotnet.microsoft.com/download
   - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
-- Tasks automatically use Docker if Python is not installed
+- Tasks automatically use Docker if .NET SDK is not installed
 
 **Installation:**
 
@@ -248,39 +202,39 @@ irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps
 **Option 2: Manual copy from source (for development)**
 ```powershell
 # From your project root
-Copy-Item -Path "packages/.build-python/Invoke-*.ps1" -Destination ".build/" -Force
+Copy-Item -Path "packages/.build-dotnet/Invoke-*.ps1" -Destination ".build/" -Force
 ```
 
 **Usage:**
 ```powershell
-# Format all Python files
+# Format all C# files
 .\bolt.ps1 format
 
-# Lint Python code
-.\bolt.ps1 lint
+# Restore NuGet packages
+.\bolt.ps1 restore
 
 # Run tests
 .\bolt.ps1 test
 
-# Full build pipeline (format → lint → test → build)
+# Full build pipeline (format → restore → test → build)
 .\bolt.ps1 build
 ```
 
 **Docker Fallback:**
-If Python is not installed, tasks automatically use Docker:
+If .NET SDK is not installed, tasks automatically use Docker:
 ```powershell
-# No local Python? No problem!
-.\bolt.ps1 format    # Uses Docker: python:3.12-slim
+# No local .NET SDK? No problem!
+.\bolt.ps1 format    # Uses Docker: mcr.microsoft.com/dotnet/sdk:10.0
 .\bolt.ps1 build     # Automatically falls back to Docker
 ```
 
 **Testing:**
-The Python starter package includes comprehensive tests:
-- `packages/.build-python/tests/Tasks.Tests.ps1` - Task structure validation
-- `packages/.build-python/tests/Integration.Tests.ps1` - End-to-end integration tests
-- `packages/.build-python/tests/app/` - Example Python application with pytest tests
+The .NET starter package includes comprehensive tests:
+- `packages/.build-dotnet/tests/Tasks.Tests.ps1` - Task structure validation
+- `packages/.build-dotnet/tests/Integration.Tests.ps1` - End-to-end integration tests
+- `packages/.build-dotnet/tests/app/` - Example .NET application with xUnit tests
 
-Run tests with: `Invoke-Pester -Tag Python-Tasks`
+Run tests with: `Invoke-Pester -Tag DotNet-Tasks`
 
 ### `.build-terraform` - Terraform Starter Package
 
@@ -341,6 +295,52 @@ The Terraform starter package includes comprehensive tests:
 - `packages/.build-terraform/tests/tf/` - Example Terraform configuration
 
 Run tests with: `Invoke-Pester -Tag Terraform-Tasks`
+
+### `.build-bicep` - Bicep Starter Package
+
+Infrastructure-as-Code tasks for Azure Bicep workflows.
+
+**Included Tasks:**
+- **`format`** - Formats Bicep files using `bicep format`
+- **`lint`** - Validates Bicep syntax using `bicep lint`
+- **`build`** - Compiles Bicep files to ARM JSON templates
+
+**Requirements:**
+- Azure Bicep CLI: `winget install Microsoft.Bicep` (Windows) or https://aka.ms/bicep-install
+
+**Installation:**
+
+**Option 1: Download from GitHub Releases (recommended)**
+```powershell
+# Interactive script to download and install starter packages
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
+```
+
+**Option 2: Manual copy from source (for development)**
+```powershell
+# From your project root
+Copy-Item -Path "packages/.build-bicep/Invoke-*.ps1" -Destination ".build/" -Force
+```
+
+**Usage:**
+```powershell
+# Format all Bicep files
+.\bolt.ps1 format
+
+# Validate Bicep syntax
+.\bolt.ps1 lint
+
+# Full build pipeline (format → lint → build)
+.\bolt.ps1 build
+```
+
+**Testing:**
+The Bicep starter package includes comprehensive tests:
+- `packages/.build-bicep/tests/Tasks.Tests.ps1` - Task structure validation
+- `packages/.build-bicep/tests/Integration.Tests.ps1` - End-to-end integration tests
+- `packages/.build-bicep/tests/iac/` - Example infrastructure templates
+
+Run tests with: `Invoke-Pester -Tag Bicep-Tasks`
 
 ## Using Multiple Package Starters (Multi-Namespace)
 

@@ -8,25 +8,15 @@ This document describes Bolt's package starter system, module installation, and 
 
 ### Available Package Starters
 
-#### Bicep Starter Package
+#### Python Starter Package
 
-Infrastructure-as-Code tasks for Azure Bicep workflows.
+Python application development tasks for formatting, linting, testing, and building with Docker fallback support.
 
-**Included Tasks:** `format`, `lint`, `build`
+**Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
 
-**Requirements:** Azure Bicep CLI ([Installation](https://aka.ms/bicep-install))
+**Requirements:** Python 3.8+ ([Installation](https://www.python.org/downloads/)) or Docker ([Installation](https://docs.docker.com/get-docker/))
 
-See [packages/.build-bicep/README.md](../packages/.build-bicep/README.md) for detailed documentation, installation instructions, and usage examples.
-
-#### .NET (C#) Starter Package
-
-.NET/C# application development tasks with automatic Docker fallback.
-
-**Included Tasks:** `format` (alias `fmt`), `restore`, `test`, `build`
-
-**Requirements:** .NET SDK 6.0+ ([Installation](https://dotnet.microsoft.com/download)) or Docker ([Installation](https://docs.docker.com/get-docker/))
-
-See [packages/.build-dotnet/README.md](../packages/.build-dotnet/README.md) for detailed documentation, installation instructions, and usage examples.
+See [packages/.build-python/README.md](../packages/.build-python/README.md) for detailed documentation, installation instructions, and usage examples.
 
 #### Golang Starter Package
 
@@ -38,15 +28,25 @@ Go application development tasks for building, testing, and formatting Go code w
 
 See [packages/.build-golang/README.md](../packages/.build-golang/README.md) for detailed documentation, installation instructions, and usage examples.
 
-#### Python Starter Package
+#### TypeScript Starter Package
 
-Python application development tasks for formatting, linting, testing, and building with Docker fallback support.
+TypeScript/JavaScript application development tasks with automatic Docker fallback.
 
 **Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
 
-**Requirements:** Python 3.8+ ([Installation](https://www.python.org/downloads/)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+**Requirements:** Node.js 18+ with npm ([Installation](https://nodejs.org/)) or Docker ([Installation](https://docs.docker.com/get-docker/))
 
-See [packages/.build-python/README.md](../packages/.build-python/README.md) for detailed documentation, installation instructions, and usage examples.
+See [packages/.build-typescript/README.md](../packages/.build-typescript/README.md) for detailed documentation, installation instructions, and usage examples.
+
+#### .NET (C#) Starter Package
+
+.NET/C# application development tasks with automatic Docker fallback.
+
+**Included Tasks:** `format` (alias `fmt`), `restore`, `test`, `build`
+
+**Requirements:** .NET SDK 6.0+ ([Installation](https://dotnet.microsoft.com/download)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+
+See [packages/.build-dotnet/README.md](../packages/.build-dotnet/README.md) for detailed documentation, installation instructions, and usage examples.
 
 #### Terraform Starter Package
 
@@ -58,15 +58,15 @@ Infrastructure-as-Code tasks for Terraform workflows with automatic Docker fallb
 
 See [packages/.build-terraform/README.md](../packages/.build-terraform/README.md) for detailed documentation, installation instructions, and usage examples.
 
-#### TypeScript Starter Package
+#### Bicep Starter Package
 
-TypeScript/JavaScript application development tasks with automatic Docker fallback.
+Infrastructure-as-Code tasks for Azure Bicep workflows.
 
-**Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
+**Included Tasks:** `format`, `lint`, `build`
 
-**Requirements:** Node.js 18+ with npm ([Installation](https://nodejs.org/)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+**Requirements:** Azure Bicep CLI ([Installation](https://aka.ms/bicep-install))
 
-See [packages/.build-typescript/README.md](../packages/.build-typescript/README.md) for detailed documentation, installation instructions, and usage examples.
+See [packages/.build-bicep/README.md](../packages/.build-bicep/README.md) for detailed documentation, installation instructions, and usage examples.
 
 See [`packages/README.md`](../packages/README.md) for details on available package starters.
 

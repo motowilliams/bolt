@@ -16,7 +16,7 @@ A self-contained, **cross-platform** PowerShell build system with automatic task
 - **🚫 Zero Dependencies**: Just PowerShell 7.0+ required - no external tools or frameworks
 - **🔍 Automatic Task Discovery**: Drop `.ps1` files in `.build/` with comment-based metadata - no registration needed
 - **�� Smart Dependency Resolution**: Tasks declare dependencies that execute automatically in the correct order
-- **📦 Package Starter Ecosystem**: Pre-built task collections for Bicep, .NET, Golang, Python, Terraform, and TypeScript
+- **📦 Package Starter Ecosystem**: Pre-built task collections for Python, Golang, TypeScript, .NET, Terraform, and Bicep
 - **⚡ Fast Iteration**: Skip dependencies with `-Only` flag for quick development cycles
 - **📊 Task Visualization**: Preview execution plans with `-Outline` before running tasks
 

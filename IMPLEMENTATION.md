@@ -26,7 +26,139 @@
 - **Config Caching**: Configuration cached per-invocation and invalidated on add/remove for fast multi-task execution
 - **Upward Config Search**: `bolt.config.json` discovered via upward directory search (same as `.build/`)
 
-### 2. Bicep Starter Package Tasks
+
+### 2. Golang Starter Package Tasks
+
+The Golang starter package (`packages/.build-golang`) provides Go application development tasks:
+
+#### **Format Task** (`.\bolt.ps1 format` or `.\bolt.ps1 fmt`)
+- Formats all Go files using `go fmt`
+- Recursively finds all `.go` files in project
+- Shows per-file formatting status
+- Returns exit code 1 if formatting fails
+
+#### **Lint Task** (`.\bolt.ps1 lint`)
+- Validates Go code using `go vet`
+- Detects common coding mistakes and potential bugs
+- Returns exit code 1 if linting fails
+
+#### **Test Task** (`.\bolt.ps1 test`)
+- Runs Go tests using `go test`
+- Depends on: `format`, `lint`
+- Shows test results and coverage
+- Returns exit code 1 if tests fail
+
+#### **Build Task** (`.\bolt.ps1 build`)
+- **Dependencies**: `format`, `lint`, `test` (auto-executed first)
+- Compiles Go application to binary
+- Outputs to `bin/` directory
+- Returns exit code 1 if build fails
+
+
+### 3. Terraform Starter Package Tasks
+
+The Terraform starter package (`packages/.build-terraform`) provides Infrastructure-as-Code tasks for Terraform workflows:
+
+#### **Format Task** (`.\bolt.ps1 format` or `.\bolt.ps1 fmt`)
+- Formats all Terraform files using `terraform fmt -recursive`
+- Recursively finds all `.tf` files
+- Shows per-file formatting status
+- **Docker Fallback**: Automatically uses `hashicorp/terraform:latest` if Terraform CLI not installed
+- Returns exit code 1 if formatting fails
+
+**Example Output:**
+```
+Formatting Terraform files...
+Found 3 Terraform file(s)
+
+  Formatting directory: .\infrastructure
+  ✓ Format successful
+  ...
+✓ Successfully formatted files in 1 director(ies)
+```
+
+#### **Validate Task** (`.\bolt.ps1 validate`)
+- Validates Terraform configuration syntax
+- Runs `terraform init -backend=false` before validation
+- Detects syntax errors and configuration issues
+- **Docker Fallback**: Uses Docker container if Terraform CLI not available
+- Returns exit code 1 if validation fails
+
+**Example Output:**
+```
+Validating Terraform configuration...
+Found 3 Terraform file(s) to validate
+
+  Validating module: .\infrastructure
+    Initializing...
+    ✓ Initialization successful
+    Validating...
+    ✓ Validation passed
+✓ Terraform validation successful
+```
+
+#### **Plan Task** (`.\bolt.ps1 plan`)
+- **Dependencies**: `format`, `validate` (auto-executed first)
+- Generates Terraform execution plan
+- Saves plan to `terraform.tfplan` file
+- Shows resource changes (create, update, delete)
+- Returns exit code 1 if plan generation fails
+
+**Example Output:**
+```
+Generating Terraform execution plan...
+Found 3 Terraform file(s)
+
+  Planning module: .\infrastructure
+    Initializing...
+    ✓ Initialization successful
+    Generating plan...
+    ✓ Plan generated: terraform.tfplan
+✓ Terraform plan generation successful
+```
+
+#### **Apply Task** (`.\bolt.ps1 apply` or `.\bolt.ps1 deploy`)
+- **Dependencies**: `format`, `validate`, `plan` (auto-executed first)
+- Applies Terraform changes from `terraform.tfplan`
+- Includes 5-second safety delay with warning
+- Creates/updates/destroys infrastructure
+- Returns exit code 1 if apply fails
+
+**Safety Warning:**
+```
+⚠️  WARNING: About to apply Terraform changes!
+⚠️  This will modify real infrastructure.
+⚠️  Waiting 5 seconds... (Ctrl+C to cancel)
+```
+
+#### **Docker Fallback Support**
+All Terraform tasks automatically detect and use Docker when Terraform CLI is not installed:
+- Uses `hashicorp/terraform:latest` Docker image
+- Volume mounts working directory for file access
+- Cross-platform support (Linux, macOS, Windows with Linux containers)
+- Transparent fallback - no configuration required
+
+**Note**: Windows Docker Desktop must be configured for Linux containers to use Docker fallback.
+
+#### **Test Suite**
+Comprehensive Pester test suite for Terraform starter package:
+- **Task Validation Tests** (`packages/.build-terraform/tests/Tasks.Tests.ps1`)
+  - Task file structure and syntax
+  - Metadata validation (TASK, DESCRIPTION, DEPENDS)
+  - Dependency declarations
+  - Tool availability checks
+- **Integration Tests** (`packages/.build-terraform/tests/Integration.Tests.ps1`)
+  - Format task execution
+  - Validate task execution
+  - Plan task execution
+  - Apply task metadata
+- **Example Configuration** (`packages/.build-terraform/tests/tf/main.tf`)
+  - Sample Terraform configuration for testing
+
+Run tests with: `Invoke-Pester -Tag Terraform-Tasks`
+
+
+### 4. Bicep Starter Package Tasks
 
 The Bicep starter package (`packages/.build-bicep`) provides infrastructure-as-code tasks:
 
@@ -132,136 +264,8 @@ Test Summary:
 ✓ All tests passed!
 ```
 
-### 3. Golang Starter Package Tasks
 
-The Golang starter package (`packages/.build-golang`) provides Go application development tasks:
-
-#### **Format Task** (`.\bolt.ps1 format` or `.\bolt.ps1 fmt`)
-- Formats all Go files using `go fmt`
-- Recursively finds all `.go` files in project
-- Shows per-file formatting status
-- Returns exit code 1 if formatting fails
-
-#### **Lint Task** (`.\bolt.ps1 lint`)
-- Validates Go code using `go vet`
-- Detects common coding mistakes and potential bugs
-- Returns exit code 1 if linting fails
-
-#### **Test Task** (`.\bolt.ps1 test`)
-- Runs Go tests using `go test`
-- Depends on: `format`, `lint`
-- Shows test results and coverage
-- Returns exit code 1 if tests fail
-
-#### **Build Task** (`.\bolt.ps1 build`)
-- **Dependencies**: `format`, `lint`, `test` (auto-executed first)
-- Compiles Go application to binary
-- Outputs to `bin/` directory
-- Returns exit code 1 if build fails
-
-### 4. Terraform Starter Package Tasks
-
-The Terraform starter package (`packages/.build-terraform`) provides Infrastructure-as-Code tasks for Terraform workflows:
-
-#### **Format Task** (`.\bolt.ps1 format` or `.\bolt.ps1 fmt`)
-- Formats all Terraform files using `terraform fmt -recursive`
-- Recursively finds all `.tf` files
-- Shows per-file formatting status
-- **Docker Fallback**: Automatically uses `hashicorp/terraform:latest` if Terraform CLI not installed
-- Returns exit code 1 if formatting fails
-
-**Example Output:**
-```
-Formatting Terraform files...
-Found 3 Terraform file(s)
-
-  Formatting directory: .\infrastructure
-  ✓ Format successful
-  ...
-✓ Successfully formatted files in 1 director(ies)
-```
-
-#### **Validate Task** (`.\bolt.ps1 validate`)
-- Validates Terraform configuration syntax
-- Runs `terraform init -backend=false` before validation
-- Detects syntax errors and configuration issues
-- **Docker Fallback**: Uses Docker container if Terraform CLI not available
-- Returns exit code 1 if validation fails
-
-**Example Output:**
-```
-Validating Terraform configuration...
-Found 3 Terraform file(s) to validate
-
-  Validating module: .\infrastructure
-    Initializing...
-    ✓ Initialization successful
-    Validating...
-    ✓ Validation passed
-✓ Terraform validation successful
-```
-
-#### **Plan Task** (`.\bolt.ps1 plan`)
-- **Dependencies**: `format`, `validate` (auto-executed first)
-- Generates Terraform execution plan
-- Saves plan to `terraform.tfplan` file
-- Shows resource changes (create, update, delete)
-- Returns exit code 1 if plan generation fails
-
-**Example Output:**
-```
-Generating Terraform execution plan...
-Found 3 Terraform file(s)
-
-  Planning module: .\infrastructure
-    Initializing...
-    ✓ Initialization successful
-    Generating plan...
-    ✓ Plan generated: terraform.tfplan
-✓ Terraform plan generation successful
-```
-
-#### **Apply Task** (`.\bolt.ps1 apply` or `.\bolt.ps1 deploy`)
-- **Dependencies**: `format`, `validate`, `plan` (auto-executed first)
-- Applies Terraform changes from `terraform.tfplan`
-- Includes 5-second safety delay with warning
-- Creates/updates/destroys infrastructure
-- Returns exit code 1 if apply fails
-
-**Safety Warning:**
-```
-⚠️  WARNING: About to apply Terraform changes!
-⚠️  This will modify real infrastructure.
-⚠️  Waiting 5 seconds... (Ctrl+C to cancel)
-```
-
-#### **Docker Fallback Support**
-All Terraform tasks automatically detect and use Docker when Terraform CLI is not installed:
-- Uses `hashicorp/terraform:latest` Docker image
-- Volume mounts working directory for file access
-- Cross-platform support (Linux, macOS, Windows with Linux containers)
-- Transparent fallback - no configuration required
-
-**Note**: Windows Docker Desktop must be configured for Linux containers to use Docker fallback.
-
-#### **Test Suite**
-Comprehensive Pester test suite for Terraform starter package:
-- **Task Validation Tests** (`packages/.build-terraform/tests/Tasks.Tests.ps1`)
-  - Task file structure and syntax
-  - Metadata validation (TASK, DESCRIPTION, DEPENDS)
-  - Dependency declarations
-  - Tool availability checks
-- **Integration Tests** (`packages/.build-terraform/tests/Integration.Tests.ps1`)
-  - Format task execution
-  - Validate task execution
-  - Plan task execution
-  - Apply task metadata
-- **Example Configuration** (`packages/.build-terraform/tests/tf/main.tf`)
-  - Sample Terraform configuration for testing
-
-Run tests with: `Invoke-Pester -Tag Terraform-Tasks`
-
-### 6. Azure Infrastructure (Bicep)
+### 5. Azure Infrastructure (Bicep)
 
 Created a complete Azure infrastructure setup for testing:
 
@@ -280,7 +284,7 @@ Created a complete Azure infrastructure setup for testing:
 - Firewall rules for Azure services
 - Secure connection strings
 
-### 7. Error Detection
+### 6. Error Detection
 
 The system properly detects and reports errors:
 
@@ -289,7 +293,7 @@ The system properly detects and reports errors:
 ✅ **Compilation Errors**: Failed builds return non-zero exit codes
 ✅ **Dependency Failures**: Build stops if lint/format fails
 
-### 8. Module Manifest Generation
+### 7. Module Manifest Generation
 
 Dedicated tooling for creating PowerShell module manifests from existing modules:
 
@@ -333,7 +337,7 @@ Dedicated tooling for creating PowerShell module manifests from existing modules
 - **CI/CD Ready**: Docker wrapper provides consistent containerized execution
 - **Validation**: Multiple validation layers ensure manifest correctness
 
-### 9. Configuration Variable System
+### 8. Configuration Variable System
 
 Project-level configuration management with automatic injection into task contexts:
 
