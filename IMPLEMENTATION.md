@@ -1378,52 +1378,79 @@ steps:
 
 ---
 
-## 🚫 Non-Goals
+## 🎯 Design Philosophy
 
-Bolt intentionally **does not** implement the following features. These decisions are permanent and documented for both human developers and AI agents working on this codebase.
+Bolt makes deliberate architectural choices that prioritize reliability, reproducibility, and immediate action over complexity. These decisions are permanent and documented for both human developers and AI agents working on this codebase.
 
-### ❌ Build System Caching
+### ⚡ Zero Analysis - Immediate Execution
 
-**Status**: Will not implement
+**Status**: Intentional design choice
 
-**Description**: Automatic file change detection to skip tasks if input files haven't changed.
+**Bolt starts working while other tools are still figuring out what to skip.**
 
-**Rationale**: 
-- Caching requires tracking file dependencies across tasks, adding significant complexity
-- Incorrect cache invalidation causes stale builds (broken builds are worse than slow builds)
-- Each project has unique caching needs that are better handled in task scripts
-- Developers already have explicit control via `-Only` flag for fast iteration
+**Why No Automatic Caching**: 
+- **No upfront analysis overhead** - tasks run immediately with zero delay
+- **No complex dependency tracking** that can break or become stale
+- **No cache invalidation bugs** that silently break builds
+- **Explicit control** - developers decide when tasks run via `-Only` flag
 
-**Alternative Approaches**:
-- Task scripts can implement custom caching logic if needed for their specific toolchain
-- Use `-Only` flag to skip dependency execution: `.\bolt.ps1 build -Only`
-- Tools like Bicep CLI have their own built-in caching mechanisms
+**The Bolt Advantage**: 
+- When you need speed, you get it instantly with `-Only`
+- When you need correctness, every task runs fresh
+- No hidden state, no cache bugs, no surprises
 
-### ❌ Task Parallelism
-
-**Status**: Will not implement
-
-**Description**: Running multiple tasks simultaneously in parallel threads or processes.
-
-**Rationale**:
-- **Race Condition Risk**: Common pattern where multiple tasks modify shared files (e.g., format and lint both touching source files)
-- **Debugging Complexity**: Interleaved output and non-deterministic failures make troubleshooting difficult
-- **Unpredictable Behavior**: Task execution order becomes non-deterministic
-- **Sequential is Clear**: Current sequential execution is simple, predictable, and easier to debug
-
-**Dangerous Pattern**:
+**Usage**:
 ```powershell
-# If these ran in parallel, both would touch the same files:
-.\bolt.ps1 format lint  # Safe (sequential)
-# Parallel would cause: format modifies file.bicep while lint reads it
+# Fast iteration during development - explicit skip
+.\bolt.ps1 build -Only
+
+# Full validation - guaranteed fresh execution
+.\bolt.ps1 build
 ```
 
 **Alternative Approaches**:
-- Task scripts can use PowerShell's built-in parallelism (`ForEach-Object -Parallel`, background jobs) for file-level operations
-- Tasks are already optimized to process multiple files efficiently
-- CI/CD systems can run multiple Bolt invocations in parallel if needed
+- Task scripts can implement custom caching logic for their specific toolchain
+- Tools like Bicep CLI have their own built-in caching mechanisms
+- Use `-Only` flag for fast development iteration
 
-**Design Philosophy**: Bolt prioritizes correctness and debuggability over execution speed. Sequential task execution eliminates entire classes of race condition bugs.
+### 🔒 Guaranteed Execution Order
+
+**Status**: Core feature (not a limitation)
+
+**Description**: Sequential task execution with 100% reproducible builds and zero race conditions.
+
+**Why Sequential Execution is a Strength**:
+- **Zero race conditions** - tasks never conflict over shared files
+- **Deterministic CI/CD** - builds succeed or fail for the same reason every time
+- **Debuggable failures** - clean output, clear execution order, no interleaved logs
+- **Predictable dependencies** - format → lint → build runs identically everywhere
+
+**Real-World Impact**:
+```powershell
+# Both tasks modify the same files - parallel execution would race
+.\bolt.ps1 format lint  # Sequential: format completes, then lint reads formatted files ✓
+
+# If parallel: format and lint both modify files simultaneously ✗
+# Result: non-deterministic failures, impossible to debug
+```
+
+**Power User Escape Hatch**: Need raw speed for processing many files? Implement parallelism **inside** your task using PowerShell's native capabilities:
+
+```powershell
+# Inside a task: parallel file processing
+$files | ForEach-Object -Parallel {
+    bicep build $_.FullName
+} -ThrottleLimit 10
+
+# Orchestrator stays sequential (safe), file processing runs parallel (fast)
+```
+
+**Alternative Approaches**:
+- Task scripts can use PowerShell's `ForEach-Object -Parallel` for file-level parallelism
+- CI/CD systems can run multiple Bolt invocations in parallel if needed
+- Tasks are optimized to process multiple files efficiently
+
+**Design Philosophy**: Bolt chooses reliability over speed at the orchestration level. This eliminates entire classes of race conditions and non-deterministic failures that plague parallel build systems. For processing many files within a single task, PowerShell's `ForEach-Object -Parallel` gives you speed without sacrificing build reproducibility.
 
 ### ❌ Task Argument Passing via Bolt CLI
 

@@ -431,40 +431,61 @@ Write-Host "✓ Build succeeded" -ForegroundColor Green
 exit 0
 ```
 
-## 🚫 Non-Goals
+## 🎯 Design Philosophy
 
-Bolt intentionally **does not** implement the following features to maintain simplicity and avoid dangerous patterns:
+Bolt makes deliberate architectural choices that prioritize reliability, reproducibility, and immediate action over complexity.
 
-### ❌ Build System Caching
+### ⚡ Zero Analysis - Immediate Execution
 
-**Not Implemented**: Automatic file change detection to skip tasks if files haven't changed.
+**Bolt starts working while other tools are still figuring out what to skip.**
 
-**Rationale**: 
-- Caching adds complexity to track file dependencies correctly
-- Incorrect cache invalidation leads to stale builds (worse than slow builds)
-- Task scripts can implement their own caching strategies if needed
-- Developers control when tasks run with explicit `-Only` flag for fast iteration
+**Why No Automatic Caching**: 
+- No upfront analysis overhead - tasks run immediately
+- No complex dependency tracking that can break
+- No stale cache invalidation bugs that silently break builds
+- **You control when tasks run** - explicit `-Only` flag for fast iteration
 
-**Alternative**: Use `-Only` flag to skip dependencies when iterating: `.\bolt.ps1 build -Only`
+**The Bolt Advantage**: When you need speed, you get it instantly with `-Only`. When you need correctness, every task runs fresh. No hidden state, no cache invalidation bugs, no surprises.
 
-### ❌ Task Parallelism
-
-**Not Implemented**: Running multiple tasks simultaneously in parallel.
-
-**Rationale**:
-- Common pattern of multiple tasks modifying shared files creates race conditions
-- Parallel execution makes debugging difficult (interleaved output, non-deterministic failures)
-- Task dependencies already provide execution order control
-- Simple sequential execution is predictable and easier to debug
-
-**Dangerous Pattern Example**:
 ```powershell
-# Both tasks might modify the same files simultaneously
-.\bolt.ps1 format lint  # Sequential (safe)
-# If parallel: format and lint could race on same files (unsafe)
+# Fast iteration during development - skip deps explicitly
+.\bolt.ps1 build -Only
+
+# Full validation when it matters - every time, guaranteed
+.\bolt.ps1 build
 ```
 
-**Design Decision**: Sequential task execution eliminates race conditions and maintains predictable behavior. Developers who need parallelism can implement it within individual task scripts using PowerShell's `-Parallel` flag in `ForEach-Object` or background jobs.
+### 🔒 Guaranteed Execution Order
+
+**Feature, not limitation**: Bolt ensures 100% reproducible builds with predictable task execution.
+
+**Why Sequential Execution is a Strength**:
+- **Zero race conditions** - tasks never conflict over shared files
+- **Deterministic CI/CD** - builds succeed or fail for the same reason every time
+- **Debuggable failures** - clean output, clear execution order, no interleaved logs
+- **Predictable dependencies** - format → lint → build runs identically everywhere
+
+**Real-World Impact**:
+```powershell
+# Both tasks modify the same files - parallel execution would race
+.\bolt.ps1 format lint  # Sequential: format completes, then lint reads formatted files ✓
+
+# If parallel: format and lint both modify files simultaneously ✗
+# Result: non-deterministic failures, impossible to debug
+```
+
+**Power User Escape Hatch**: Need raw speed for processing many files? Implement parallelism **inside** your task using PowerShell's native capabilities:
+
+```powershell
+# Inside a task: parallel file processing
+$files | ForEach-Object -Parallel {
+    bicep build $_.FullName
+} -ThrottleLimit 10
+
+# Orchestrator stays sequential (safe), file processing runs parallel (fast)
+```
+
+**Design Decision**: Bolt chooses reliability over speed at the orchestration level. This eliminates entire classes of race conditions and non-deterministic failures that plague parallel build systems. For processing many files within a single task, PowerShell's `ForEach-Object -Parallel` gives you speed without sacrificing build reproducibility.
 
 ### ❌ Task Argument Passing via Bolt CLI
 
