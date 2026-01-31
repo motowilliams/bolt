@@ -26,85 +26,114 @@ A self-contained, **cross-platform** PowerShell build system with automatic task
 
 Install Bolt as a PowerShell module for global access from any directory:
 
-```powershell
+```bash
 # Option 1: Download from GitHub Releases (Recommended)
 # Visit https://github.com/motowilliams/bolt/releases
 # Download the latest Bolt-X.Y.Z.zip and extract
 
 # Navigate to extracted directory
-cd path/to/bolt
+$ cd path/to/bolt
 
 # Install as module
-.\New-BoltModule.ps1 -Install
+$ pwsh New-BoltModule.ps1 -Install
 
-# Restart PowerShell or force import
-Import-Module Bolt -Force
+# Restart your shell or force import
+$ pwsh -Command "Import-Module Bolt -Force"
 
 # Use 'bolt' command from anywhere
-cd ~/projects/myproject
-bolt build
+$ cd ~/projects/myproject
+$ bolt build
 ```
 
-```powershell
-# Option 2: Quick install via download script
+```bash
+# Option 2: Quick install via download script (Windows/PowerShell)
+# From PowerShell:
 irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download.ps1 | iex
-# Follow prompts to download and install
 
 # Then install as module
 .\New-BoltModule.ps1 -Install
 ```
 
-```powershell
+```bash
 # Option 3: Clone from source (for development)
-git clone https://github.com/motowilliams/bolt.git
-cd bolt
-.\New-BoltModule.ps1 -Install
+$ git clone https://github.com/motowilliams/bolt.git
+$ cd bolt
+$ pwsh New-BoltModule.ps1 -Install
 ```
 
 ### First Build
 
-```powershell
+```bash
 # List available tasks
-bolt -Help
+$ bolt -Help
 
 # Run your first build
-bolt build
+$ bolt build
 
 # Preview execution plan (no execution)
-bolt build -Outline
+$ bolt build -Outline
 
 # Skip dependencies for faster iteration
-bolt build -Only
+$ bolt build -Only
 ```
 
 ### Common Commands
 
-```powershell
+```bash
 # Basic usage
-bolt build                    # Run task with dependencies
-bolt format lint build        # Multiple tasks in sequence
-bolt build -Only              # Skip dependencies
+$ bolt build                    # Run task with dependencies
+$ bolt format lint build        # Multiple tasks in sequence
+$ bolt build -Only              # Skip dependencies
 
 # Task management
-bolt -ListTasks               # Show all available tasks
-bolt -NewTask deploy          # Create new task template
-bolt build -Outline           # Preview execution plan
+$ bolt -ListTasks               # Show all available tasks
+$ bolt -NewTask deploy          # Create new task template
+$ bolt build -Outline           # Preview execution plan
 
 # Configuration
-bolt -ListVariables           # Show all config variables
-bolt -AddVariable -Name "Environment" -Value "prod"
-bolt -RemoveVariable -VariableName "OldSetting"
+$ bolt -ListVariables           # Show all config variables
+$ bolt -AddVariable -Name "Environment" -Value "prod"
+$ bolt -RemoveVariable -VariableName "OldSetting"
 
 # Module mode works from any subdirectory
-cd src/components/
-bolt build                    # Automatically finds .build/ upward
+$ cd src/components/
+$ bolt build                    # Automatically finds .build/ upward
 ```
 
 **Module Benefits:**
 - 🌍 Run `bolt` from any directory
 - 🔍 Automatic upward search for `.build/` folders (like git)
 - ⚡ Works from subdirectories within your projects
-- 🔄 Easy updates: re-run `.\New-BoltModule.ps1 -Install`
+- 🔄 Easy updates: re-run `pwsh New-BoltModule.ps1 -Install`
+
+### For Linux/Unix Users
+
+**Why PowerShell for builds?** PowerShell is a shell that handles **objects, not text**.
+
+Traditional Unix build tools chain text-processing utilities (sed, awk, grep) which are fragile and error-prone:
+- Text parsing breaks when output format changes
+- Complex regex patterns are hard to maintain
+- No type safety or structured data
+
+**Bolt gives you:**
+- **Structured task definitions** - typed objects instead of text parsing
+- **Cross-platform consistency** - same syntax on Linux, macOS, and Windows
+- **Rich data types** - work with JSON, arrays, hashtables natively
+- **Error handling** - proper exit codes and exception handling
+- **IDE support** - IntelliSense and debugging tools
+
+```bash
+# Traditional Bash (fragile text processing)
+$ cat config.txt | grep "version" | sed 's/.*=//' | awk '{print $1}'
+
+# PowerShell (structured objects)
+$ pwsh -Command "(Get-Content config.json | ConvertFrom-Json).version"
+
+# Bolt tasks handle complexity for you
+$ bolt build  # No text parsing needed
+```
+
+**Bottom line**: PowerShell is available on all Linux distributions via package managers (apt, yum, snap) and provides a modern, object-oriented alternative to traditional shell scripting.
 
 ## 📚 Documentation
 
@@ -129,20 +158,20 @@ Pre-built task collections for popular toolchains:
 
 | Package | Included Tasks | Requirements |
 |---------|---------------|-------------|
-| **[Bicep](packages/.build-bicep/README.md)** | format, lint, build | Bicep CLI |
-| **[.NET](packages/.build-dotnet/README.md)** | format, restore, test, build | .NET SDK 6.0+ or Docker |
-| **[Golang](packages/.build-golang/README.md)** | format, lint, test, build | Go 1.21+ or Docker |
 | **[Python](packages/.build-python/README.md)** | format, lint, test, build | Python 3.8+ or Docker |
-| **[Terraform](packages/.build-terraform/README.md)** | format, validate, plan, apply | Terraform CLI or Docker |
+| **[Golang](packages/.build-golang/README.md)** | format, lint, test, build | Go 1.21+ or Docker |
 | **[TypeScript](packages/.build-typescript/README.md)** | format, lint, test, build | Node.js 18+ or Docker |
+| **[.NET](packages/.build-dotnet/README.md)** | format, restore, test, build | .NET SDK 6.0+ or Docker |
+| **[Terraform](packages/.build-terraform/README.md)** | format, validate, plan, apply | Terraform CLI or Docker |
+| **[Bicep](packages/.build-bicep/README.md)** | format, lint, build | Bicep CLI |
 
 **Install package starters:**
-```powershell
-# Interactive installer
+```bash
+# Interactive installer (Windows/PowerShell)
 irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download-Starter.ps1 | iex
 
-# Manual installation
-Copy-Item -Path "packages/.build-bicep/Invoke-*.ps1" -Destination ".build/" -Force
+# Manual installation (cross-platform)
+$ pwsh -Command "Copy-Item -Path 'packages/.build-python/Invoke-*.ps1' -Destination '.build/' -Force"
 ```
 
 See [packages/README.md](packages/README.md) for complete package starter documentation.
@@ -153,34 +182,47 @@ See [packages/README.md](packages/README.md) for complete package starter docume
 
 ### Full Build Pipeline
 
-```powershell
+```bash
 # Format, lint, and compile with automatic dependencies
-bolt build
+$ bolt build
 
 # Execution: format → lint → build
 ```
 
 ### Development Iteration
 
-```powershell
+```bash
 # Fix formatting
-bolt format
+$ bolt format
 
 # Validate syntax
-bolt lint
+$ bolt lint
 
 # Quick rebuild without re-running format/lint
-bolt build -Only
+$ bolt build -Only
 ```
 
 ### CI/CD Integration
 
-```powershell
+```bash
 # Same command works locally and in CI
-pwsh -File bolt.ps1 build
+$ bolt build
 ```
 
 **GitHub Actions example:**
+```yaml
+steps:
+  - uses: actions/checkout@v4
+  - name: Install PowerShell
+    run: |
+      # Ubuntu/Debian
+      sudo apt-get update
+      sudo apt-get install -y powershell
+  - name: Build
+    run: bolt build
+```
+
+**Alternative - Direct script invocation:**
 ```yaml
 steps:
   - uses: actions/checkout@v4
@@ -194,13 +236,15 @@ See [docs/testing.md](docs/testing.md) for complete CI/CD integration examples.
 
 ### Quick Method
 
-```powershell
+```bash
 # Generate task with proper structure
-bolt -NewTask deploy
+$ bolt -NewTask deploy
 # Creates: .build/Invoke-Deploy.ps1 with metadata template
 ```
 
 ### Manual Method
+
+Create a PowerShell script in `.build/` directory with task metadata:
 
 ```powershell
 # .build/Invoke-Deploy.ps1
@@ -239,9 +283,9 @@ All tasks use consistent color coding:
 
 ### Module: Tab completion not working
 
-**Solution**: Restart PowerShell after installing the module or manually import:
-```powershell
-Import-Module Bolt -Force
+**Solution**: Restart your shell after installing the module or manually import:
+```bash
+$ pwsh -Command "Import-Module Bolt -Force"
 ```
 
 ### Module: Can't find .build directory
@@ -251,16 +295,21 @@ Import-Module Bolt -Force
 ### Task not found
 
 **Solution**: Check task file exists in `.build/` with proper metadata:
-```powershell
-bolt -ListTasks  # Verify task appears in list
+```bash
+$ bolt -ListTasks  # Verify task appears in list
 ```
 
-### External tool not found (e.g., Bicep)
+### External tool not found (e.g., Python, Go)
 
 **Solution**: Install the required tool for your package starter:
-```powershell
-# Example for Bicep
-winget install Microsoft.Bicep  # Windows
+```bash
+# Example for Python
+$ sudo apt install python3 python3-pip  # Ubuntu/Debian
+$ brew install python3                  # macOS
+
+# Example for Go
+$ sudo apt install golang-go            # Ubuntu/Debian
+$ brew install go                       # macOS
 
 # See package starter README for other platforms
 ```
@@ -303,17 +352,17 @@ See [docs/testing.md](docs/testing.md) for CI/CD integration details.
 
 ### Running CI Locally
 
-```powershell
+```bash
 # Install dependencies
-Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
+$ pwsh -Command "Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser"
 
 # Run tests (same as CI)
-Invoke-Pester -Tag Core           # Fast tests (~1s)
-Invoke-Pester -Tag Security       # Security tests (~10s)
-Invoke-Pester                     # All tests
+$ pwsh -Command "Invoke-Pester -Tag Core"           # Fast tests (~1s)
+$ pwsh -Command "Invoke-Pester -Tag Security"       # Security tests (~10s)
+$ pwsh -Command "Invoke-Pester"                     # All tests
 
 # Run build pipeline (same as CI)
-bolt build
+$ bolt build
 ```
 
 ## 📦 Releases
@@ -323,7 +372,7 @@ Automated releases via GitHub Actions when tags are pushed.
 **Install from releases:**
 1. Download from [GitHub Releases](https://github.com/motowilliams/bolt/releases)
 2. Verify checksum (SHA256 file provided)
-3. Extract and install as module: `.\New-BoltModule.ps1 -Install`
+3. Extract and install as module: `pwsh New-BoltModule.ps1 -Install`
 
 **Release types:**
 - **Production**: `v1.0.0`, `v2.1.0` (stable, recommended)
