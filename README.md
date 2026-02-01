@@ -16,7 +16,7 @@ A self-contained, **cross-platform** PowerShell build system with automatic task
 - **🚫 Zero Dependencies**: Just PowerShell 7.0+ required - no external tools or frameworks
 - **🔍 Automatic Task Discovery**: Drop `.ps1` files in `.build/` with comment-based metadata - no registration needed
 - **�� Smart Dependency Resolution**: Tasks declare dependencies that execute automatically in the correct order
-- **📦 Package Starter Ecosystem**: Pre-built task collections for Python, Golang, TypeScript, .NET, Terraform, and Bicep
+- **📦 Package Starter Ecosystem**: Pre-built task collections for Python, Golang, TypeScript, dotnet, Terraform, and Bicep
 - **⚡ Fast Iteration**: Skip dependencies with `-Only` flag for quick development cycles
 - **📊 Task Visualization**: Preview execution plans with `-Outline` before running tasks
 
@@ -161,7 +161,7 @@ Pre-built task collections for popular toolchains:
 | **[Python](packages/.build-python/README.md)** | format, lint, test, build | Python 3.8+ or Docker |
 | **[Golang](packages/.build-golang/README.md)** | format, lint, test, build | Go 1.21+ or Docker |
 | **[TypeScript](packages/.build-typescript/README.md)** | format, lint, test, build | Node.js 18+ or Docker |
-| **[.NET](packages/.build-dotnet/README.md)** | format, restore, test, build | .NET SDK 6.0+ or Docker |
+| **[dotnet](packages/.build-dotnet/README.md)** | format, restore, test, build | .NET SDK 6.0+ or Docker |
 | **[Terraform](packages/.build-terraform/README.md)** | format, validate, plan, apply | Terraform CLI or Docker |
 | **[Bicep](packages/.build-bicep/README.md)** | format, lint, build | Bicep CLI |
 

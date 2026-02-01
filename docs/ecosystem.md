@@ -38,9 +38,9 @@ TypeScript/JavaScript application development tasks with automatic Docker fallba
 
 See [packages/.build-typescript/README.md](../packages/.build-typescript/README.md) for detailed documentation, installation instructions, and usage examples.
 
-#### .NET (C#) Starter Package
+#### dotnet (C#) Starter Package
 
-.NET/C# application development tasks with automatic Docker fallback.
+dotnet/C# application development tasks with automatic Docker fallback.
 
 **Included Tasks:** `format` (alias `fmt`), `restore`, `test`, `build`
 

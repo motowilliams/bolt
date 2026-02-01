@@ -176,20 +176,20 @@ The TypeScript starter package includes comprehensive tests:
 
 Run tests with: `Invoke-Pester -Tag TypeScript-Tasks`
 
-### `.build-dotnet` - .NET (C#) Starter Package
+### `.build-dotnet` - dotnet (C#) Starter Package
 
-.NET/C# application development tasks for building, testing, formatting, and restoring packages with Docker fallback support.
+dotnet/C# application development tasks for building, testing, formatting, and restoring packages with Docker fallback support.
 
 **Included Tasks:**
 - **`format`** - Formats C# files using `dotnet format` (alias: `fmt`)
 - **`restore`** - Restores NuGet packages using `dotnet restore`
-- **`test`** - Runs .NET tests using `dotnet test`
-- **`build`** - Builds .NET projects (depends on format, restore, test)
+- **`test`** - Runs dotnet tests using `dotnet test`
+- **`build`** - Builds dotnet projects (depends on format, restore, test)
 
 **Requirements:**
 - .NET SDK 6.0+ (8.0+ recommended): https://dotnet.microsoft.com/download
   - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
-- Tasks automatically use Docker if .NET SDK is not installed
+- Tasks automatically use Docker if dotnet SDK is not installed
 
 **Installation:**
 
@@ -221,18 +221,18 @@ Copy-Item -Path "packages/.build-dotnet/Invoke-*.ps1" -Destination ".build/" -Fo
 ```
 
 **Docker Fallback:**
-If .NET SDK is not installed, tasks automatically use Docker:
+If dotnet SDK is not installed, tasks automatically use Docker:
 ```powershell
-# No local .NET SDK? No problem!
+# No local dotnet SDK? No problem!
 .\bolt.ps1 format    # Uses Docker: mcr.microsoft.com/dotnet/sdk:10.0
 .\bolt.ps1 build     # Automatically falls back to Docker
 ```
 
 **Testing:**
-The .NET starter package includes comprehensive tests:
+The dotnet starter package includes comprehensive tests:
 - `packages/.build-dotnet/tests/Tasks.Tests.ps1` - Task structure validation
 - `packages/.build-dotnet/tests/Integration.Tests.ps1` - End-to-end integration tests
-- `packages/.build-dotnet/tests/app/` - Example .NET application with xUnit tests
+- `packages/.build-dotnet/tests/app/` - Example dotnet application with xUnit tests
 
 Run tests with: `Invoke-Pester -Tag DotNet-Tasks`
 
