@@ -166,7 +166,7 @@ flowchart TD
     CheckTask -->|Yes| ExtractTask[Extract from: # TASK: name1, name2]
     CheckTask -->|No| ExtractFile[Derive from filename fallback]
     
-    ExtractTask --> ValidateName[Validate task name regex: ^[a-z0-9][a-z0-9\-]*$]
+    ExtractTask --> ValidateName["Validate task name regex: lowercase, alphanumeric, hyphens"]
     ExtractFile --> ValidateName
     
     ValidateName --> ValidLength{Length <= 50?}
@@ -226,12 +226,12 @@ flowchart TD
     
     LoopDeps --> HasNamespace{Current task has namespace?}
     
-    HasNamespace -->|Yes| TryNamespaced[Try {namespace}-{dependency}]
-    HasNamespace -->|No| TryDirect[Try {dependency} directly]
+    HasNamespace -->|Yes| TryNamespaced["Try namespace-dependency format"]
+    HasNamespace -->|No| TryDirect["Try dependency directly"]
     
     TryNamespaced --> NamespacedExists{Namespaced dep exists?}
     NamespacedExists -->|Yes| RecurseInvoke[Recursively call Invoke-Task for dependency]
-    NamespacedExists -->|No| FallbackRoot[Fall back to root-level {dependency}]
+    NamespacedExists -->|No| FallbackRoot["Fall back to root-level dependency"]
     
     FallbackRoot --> RootExists{Root dep exists?}
     RootExists -->|Yes| RecurseInvoke
