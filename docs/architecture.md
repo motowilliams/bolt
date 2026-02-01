@@ -119,7 +119,7 @@ flowchart TD
 
 #### Example Flow
 
-**Scenario**: User types `.\bolt.ps1 b<TAB>`
+**Scenario:** User types `.\bolt.ps1 b<TAB>`
 
 1. PowerShell invokes the completer with `wordToComplete = "b"`
 2. Completer scans `.build/` directory
@@ -129,7 +129,7 @@ flowchart TD
 6. Returns `[CompletionResult]` for "build"
 7. PowerShell displays "build" as completion option
 
-**Result**: User sees `.\bolt.ps1 build` and can press Enter to execute
+**Result:** User sees `.\bolt.ps1 build` and can press Enter to execute
 
 ### Bolt Task Discovery and Execution Flow
 
@@ -298,32 +298,32 @@ flowchart TD
 
 **Script Locator**
 
-**Purpose**: Finds all task scripts in the specified directory.
+**Purpose:** Finds all task scripts in the specified directory.
 
-**Process**:
+**Process:**
 1. Accepts `-TaskDirectory` parameter (default: `.build`)
 2. Validates path is relative and doesn't escape project root
 3. Resolves absolute path and performs security check
 4. Scans for `*.ps1` files (excludes `*.Tests.ps1`)
 5. Returns list of script paths for metadata parsing
 
-**Security Features**:
+**Security Features:**
 - Path traversal protection (no `..` sequences)
 - Absolute path validation (must be within project root)
 - Relative path enforcement
 
 #### Metadata Parser
 
-**Purpose**: Extracts task configuration from script file comments.
+**Purpose:** Extracts task configuration from script file comments.
 
-**Metadata Format**:
+**Metadata Format:**
 ```powershell
 # TASK: build, compile          # Task names (comma-separated for aliases)
 # DESCRIPTION: Compiles source  # Human-readable description
 # DEPENDS: format, lint          # Dependencies (comma-separated)
 ```
 
-**Parsing Logic**:
+**Parsing Logic:**
 1. Read first 30 lines of script file
 2. Use regex to match comment patterns:
    - `(?m)^#\s*TASK:\s*(.+)$` - Extract task names
@@ -334,7 +334,7 @@ flowchart TD
    - `Invoke-Build.ps1` → `build`
    - `Invoke-My-Task.ps1` → `my-task`
 
-**Metadata Object**:
+**Metadata Object:**
 ```powershell
 @{
     Names = @('build', 'compile')  # Array of task names (first is primary)
@@ -348,9 +348,9 @@ flowchart TD
 
 ##### Task Dependency Resolution
 
-**Purpose**: Execute tasks in correct order respecting dependencies.
+**Purpose:** Execute tasks in correct order respecting dependencies.
 
-**Algorithm**:
+**Algorithm:**
 1. **Duplicate Prevention**: Check `ExecutedTasks` hashtable
    - If task already executed, return immediately (prevents circular deps)
    - Otherwise, mark as executed BEFORE processing dependencies
@@ -371,7 +371,7 @@ flowchart TD
    - Log security events (execution start/completion)
    - Return boolean result up the call stack
 
-**Circular Dependency Protection**:
+**Circular Dependency Protection:**
 ```
 Task A depends on B
 Task B depends on C  
@@ -384,7 +384,7 @@ Execution:
 4. Check deps: A → Already executed! Skip (prevents infinite loop)
 ```
 
-**Example Execution Tree**:
+**Example Execution Tree:**
 ```
 bolt build
 ├── format (dependency)
@@ -439,13 +439,13 @@ Bolt makes deliberate architectural choices that prioritize reliability, reprodu
 
 **Bolt starts working while other tools are still figuring out what to skip.**
 
-**Why No Automatic Caching**: 
+**Why No Automatic Caching:** 
 - No upfront analysis overhead - tasks run immediately
 - No complex dependency tracking that can break
 - No stale cache invalidation bugs that silently break builds
 - **You control when tasks run** - explicit `-Only` flag for fast iteration
 
-**The Bolt Advantage**: When you need speed, you get it instantly with `-Only`. When you need correctness, every task runs fresh. No hidden state, no cache invalidation bugs, no surprises.
+**The Bolt Advantage:** When you need speed, you get it instantly with `-Only`. When you need correctness, every task runs fresh. No hidden state, no cache invalidation bugs, no surprises.
 
 ```powershell
 # Fast iteration during development - skip deps explicitly
@@ -457,15 +457,15 @@ Bolt makes deliberate architectural choices that prioritize reliability, reprodu
 
 ### 🔒 Guaranteed Execution Order
 
-**Feature, not limitation**: Bolt ensures 100% reproducible builds with predictable task execution.
+**Feature, not limitation:** Bolt ensures 100% reproducible builds with predictable task execution.
 
-**Why Sequential Execution is a Strength**:
+**Why Sequential Execution is a Strength:**
 - **Zero race conditions** - tasks never conflict over shared files
 - **Deterministic CI/CD** - builds succeed or fail for the same reason every time
 - **Debuggable failures** - clean output, clear execution order, no interleaved logs
 - **Predictable dependencies** - format → lint → build runs identically everywhere
 
-**Real-World Impact**:
+**Real-World Impact:**
 ```powershell
 # Both tasks modify the same files - parallel execution would race
 .\bolt.ps1 format lint  # Sequential: format completes, then lint reads formatted files ✓
@@ -474,7 +474,7 @@ Bolt makes deliberate architectural choices that prioritize reliability, reprodu
 # Result: non-deterministic failures, impossible to debug
 ```
 
-**Power User Escape Hatch**: Need raw speed for processing many files? Implement parallelism **inside** your task using PowerShell's native capabilities:
+**Power User Escape Hatch:** Need raw speed for processing many files? Implement parallelism **inside** your task using PowerShell's native capabilities:
 
 ```powershell
 # Inside a task: parallel file processing
@@ -485,18 +485,18 @@ $files | ForEach-Object -Parallel {
 # Orchestrator stays sequential (safe), file processing runs parallel (fast)
 ```
 
-**Design Decision**: Bolt chooses reliability over speed at the orchestration level. This eliminates entire classes of race conditions and non-deterministic failures that plague parallel build systems. For processing many files within a single task, PowerShell's `ForEach-Object -Parallel` gives you speed without sacrificing build reproducibility.
+**Design Decision:** Bolt chooses reliability over speed at the orchestration level. This eliminates entire classes of race conditions and non-deterministic failures that plague parallel build systems. For processing many files within a single task, PowerShell's `ForEach-Object -Parallel` gives you speed without sacrificing build reproducibility.
 
 ### ❌ Task Argument Passing via Bolt CLI
 
-**Not Implemented**: Passing named arguments to task scripts through the bolt command (e.g., `.\bolt.ps1 deploy -Environment prod`).
+**Not Implemented:** Passing named arguments to task scripts through the bolt command (e.g., `.\bolt.ps1 deploy -Environment prod`).
 
-**Rationale**:
+**Rationale:**
 - When bolt runs multiple tasks (`format lint deploy`), it's unclear which task gets which arguments
 - Task arguments would conflict with bolt's own parameters (`-Task`, `-Only`, `-Outline`)
 - Task scripts can use `param()` blocks, but parameters only work when calling directly (bypassing dependency resolution): `.\Invoke-Deploy.ps1 -Environment prod`
 
-**What to Use Instead**:
+**What to Use Instead:**
 
 1. **`bolt.config.json` (Recommended)** - Type-safe configuration:
    ```json
@@ -517,7 +517,7 @@ $files | ForEach-Object -Parallel {
 
 3. **Configuration Files** - Load JSON/YAML/XML in your task scripts as needed.
 
-**Design Decision**: Configuration should be declarative (config files) not imperative (command-line arguments). Type safety and validation through `bolt.config.json` provide more value than CLI convenience.
+**Design Decision:** Configuration should be declarative (config files) not imperative (command-line arguments). Type safety and validation through `bolt.config.json` provide more value than CLI convenience.
 
 ---
 
