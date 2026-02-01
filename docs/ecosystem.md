@@ -2,31 +2,6 @@
 
 This document describes Bolt's package starter system, module installation, and manifest generation tools.
 
-## Table of Contents
-
-- [Package Starters](#-package-starters)
-  - [Available Package Starters](#available-package-starters)
-    - [Python Starter Package](#python-starter-package)
-    - [Golang Starter Package](#golang-starter-package)
-    - [TypeScript Starter Package](#typescript-starter-package)
-    - [.NET (C#) Starter Package](#net-c-starter-package)
-    - [Terraform Starter Package](#terraform-starter-package)
-    - [Bicep Starter Package](#bicep-starter-package)
-  - [Using Multiple Package Starters (Multi-Namespace)](#using-multiple-package-starters-multi-namespace)
-- [Module Installation](#-module-installation)
-  - [Installing the Module](#installing-the-module)
-  - [Using the Module](#using-the-module)
-  - [Updating the Module](#updating-the-module)
-  - [How It Works](#how-it-works)
-  - [Module vs Script Mode](#module-vs-script-mode)
-  - [Uninstalling](#uninstalling)
-- [Module Manifest Generation](#-module-manifest-generation)
-  - [Generate Manifest Script](#generate-manifest-script)
-  - [Docker-Based Generation](#docker-based-generation)
-  - [Usage Examples](#usage-examples)
-  - [Parameters](#parameters)
-  - [Output](#output)
-
 ## 📦 Package Starters
 
 **Package starters** are pre-built task collections for specific toolchains and workflows. They provide ready-to-use task templates that you can install into your project's `.build/` directory.
@@ -63,9 +38,9 @@ TypeScript/JavaScript application development tasks with automatic Docker fallba
 
 See [packages/.build-typescript/README.md](../packages/.build-typescript/README.md) for detailed documentation, installation instructions, and usage examples.
 
-#### .NET (C#) Starter Package
+#### dotnet (C#) Starter Package
 
-.NET/C# application development tasks with automatic Docker fallback.
+dotnet/C# application development tasks with automatic Docker fallback.
 
 **Included Tasks:** `format` (alias `fmt`), `restore`, `test`, `build`
 

@@ -26,7 +26,139 @@
 - **Config Caching**: Configuration cached per-invocation and invalidated on add/remove for fast multi-task execution
 - **Upward Config Search**: `bolt.config.json` discovered via upward directory search (same as `.build/`)
 
-### 2. Bicep Starter Package Tasks
+
+### 2. Golang Starter Package Tasks
+
+The Golang starter package (`packages/.build-golang`) provides Go application development tasks:
+
+#### **Format Task** (`.\bolt.ps1 format` or `.\bolt.ps1 fmt`)
+- Formats all Go files using `go fmt`
+- Recursively finds all `.go` files in project
+- Shows per-file formatting status
+- Returns exit code 1 if formatting fails
+
+#### **Lint Task** (`.\bolt.ps1 lint`)
+- Validates Go code using `go vet`
+- Detects common coding mistakes and potential bugs
+- Returns exit code 1 if linting fails
+
+#### **Test Task** (`.\bolt.ps1 test`)
+- Runs Go tests using `go test`
+- Depends on: `format`, `lint`
+- Shows test results and coverage
+- Returns exit code 1 if tests fail
+
+#### **Build Task** (`.\bolt.ps1 build`)
+- **Dependencies**: `format`, `lint`, `test` (auto-executed first)
+- Compiles Go application to binary
+- Outputs to `bin/` directory
+- Returns exit code 1 if build fails
+
+
+### 3. Terraform Starter Package Tasks
+
+The Terraform starter package (`packages/.build-terraform`) provides Infrastructure-as-Code tasks for Terraform workflows:
+
+#### **Format Task** (`.\bolt.ps1 format` or `.\bolt.ps1 fmt`)
+- Formats all Terraform files using `terraform fmt -recursive`
+- Recursively finds all `.tf` files
+- Shows per-file formatting status
+- **Docker Fallback**: Automatically uses `hashicorp/terraform:latest` if Terraform CLI not installed
+- Returns exit code 1 if formatting fails
+
+**Example Output:**
+```
+Formatting Terraform files...
+Found 3 Terraform file(s)
+
+  Formatting directory: .\infrastructure
+  ✓ Format successful
+  ...
+✓ Successfully formatted files in 1 director(ies)
+```
+
+#### **Validate Task** (`.\bolt.ps1 validate`)
+- Validates Terraform configuration syntax
+- Runs `terraform init -backend=false` before validation
+- Detects syntax errors and configuration issues
+- **Docker Fallback**: Uses Docker container if Terraform CLI not available
+- Returns exit code 1 if validation fails
+
+**Example Output:**
+```
+Validating Terraform configuration...
+Found 3 Terraform file(s) to validate
+
+  Validating module: .\infrastructure
+    Initializing...
+    ✓ Initialization successful
+    Validating...
+    ✓ Validation passed
+✓ Terraform validation successful
+```
+
+#### **Plan Task** (`.\bolt.ps1 plan`)
+- **Dependencies**: `format`, `validate` (auto-executed first)
+- Generates Terraform execution plan
+- Saves plan to `terraform.tfplan` file
+- Shows resource changes (create, update, delete)
+- Returns exit code 1 if plan generation fails
+
+**Example Output:**
+```
+Generating Terraform execution plan...
+Found 3 Terraform file(s)
+
+  Planning module: .\infrastructure
+    Initializing...
+    ✓ Initialization successful
+    Generating plan...
+    ✓ Plan generated: terraform.tfplan
+✓ Terraform plan generation successful
+```
+
+#### **Apply Task** (`.\bolt.ps1 apply` or `.\bolt.ps1 deploy`)
+- **Dependencies**: `format`, `validate`, `plan` (auto-executed first)
+- Applies Terraform changes from `terraform.tfplan`
+- Includes 5-second safety delay with warning
+- Creates/updates/destroys infrastructure
+- Returns exit code 1 if apply fails
+
+**Safety Warning:**
+```
+⚠️  WARNING: About to apply Terraform changes!
+⚠️  This will modify real infrastructure.
+⚠️  Waiting 5 seconds... (Ctrl+C to cancel)
+```
+
+#### **Docker Fallback Support**
+All Terraform tasks automatically detect and use Docker when Terraform CLI is not installed:
+- Uses `hashicorp/terraform:latest` Docker image
+- Volume mounts working directory for file access
+- Cross-platform support (Linux, macOS, Windows with Linux containers)
+- Transparent fallback - no configuration required
+
+**Note**: Windows Docker Desktop must be configured for Linux containers to use Docker fallback.
+
+#### **Test Suite**
+Comprehensive Pester test suite for Terraform starter package:
+- **Task Validation Tests** (`packages/.build-terraform/tests/Tasks.Tests.ps1`)
+  - Task file structure and syntax
+  - Metadata validation (TASK, DESCRIPTION, DEPENDS)
+  - Dependency declarations
+  - Tool availability checks
+- **Integration Tests** (`packages/.build-terraform/tests/Integration.Tests.ps1`)
+  - Format task execution
+  - Validate task execution
+  - Plan task execution
+  - Apply task metadata
+- **Example Configuration** (`packages/.build-terraform/tests/tf/main.tf`)
+  - Sample Terraform configuration for testing
+
+Run tests with: `Invoke-Pester -Tag Terraform-Tasks`
+
+
+### 4. Bicep Starter Package Tasks
 
 The Bicep starter package (`packages/.build-bicep`) provides infrastructure-as-code tasks:
 
@@ -132,136 +264,8 @@ Test Summary:
 ✓ All tests passed!
 ```
 
-### 3. Golang Starter Package Tasks
 
-The Golang starter package (`packages/.build-golang`) provides Go application development tasks:
-
-#### **Format Task** (`.\bolt.ps1 format` or `.\bolt.ps1 fmt`)
-- Formats all Go files using `go fmt`
-- Recursively finds all `.go` files in project
-- Shows per-file formatting status
-- Returns exit code 1 if formatting fails
-
-#### **Lint Task** (`.\bolt.ps1 lint`)
-- Validates Go code using `go vet`
-- Detects common coding mistakes and potential bugs
-- Returns exit code 1 if linting fails
-
-#### **Test Task** (`.\bolt.ps1 test`)
-- Runs Go tests using `go test`
-- Depends on: `format`, `lint`
-- Shows test results and coverage
-- Returns exit code 1 if tests fail
-
-#### **Build Task** (`.\bolt.ps1 build`)
-- **Dependencies**: `format`, `lint`, `test` (auto-executed first)
-- Compiles Go application to binary
-- Outputs to `bin/` directory
-- Returns exit code 1 if build fails
-
-### 4. Terraform Starter Package Tasks
-
-The Terraform starter package (`packages/.build-terraform`) provides Infrastructure-as-Code tasks for Terraform workflows:
-
-#### **Format Task** (`.\bolt.ps1 format` or `.\bolt.ps1 fmt`)
-- Formats all Terraform files using `terraform fmt -recursive`
-- Recursively finds all `.tf` files
-- Shows per-file formatting status
-- **Docker Fallback**: Automatically uses `hashicorp/terraform:latest` if Terraform CLI not installed
-- Returns exit code 1 if formatting fails
-
-**Example Output:**
-```
-Formatting Terraform files...
-Found 3 Terraform file(s)
-
-  Formatting directory: .\infrastructure
-  ✓ Format successful
-  ...
-✓ Successfully formatted files in 1 director(ies)
-```
-
-#### **Validate Task** (`.\bolt.ps1 validate`)
-- Validates Terraform configuration syntax
-- Runs `terraform init -backend=false` before validation
-- Detects syntax errors and configuration issues
-- **Docker Fallback**: Uses Docker container if Terraform CLI not available
-- Returns exit code 1 if validation fails
-
-**Example Output:**
-```
-Validating Terraform configuration...
-Found 3 Terraform file(s) to validate
-
-  Validating module: .\infrastructure
-    Initializing...
-    ✓ Initialization successful
-    Validating...
-    ✓ Validation passed
-✓ Terraform validation successful
-```
-
-#### **Plan Task** (`.\bolt.ps1 plan`)
-- **Dependencies**: `format`, `validate` (auto-executed first)
-- Generates Terraform execution plan
-- Saves plan to `terraform.tfplan` file
-- Shows resource changes (create, update, delete)
-- Returns exit code 1 if plan generation fails
-
-**Example Output:**
-```
-Generating Terraform execution plan...
-Found 3 Terraform file(s)
-
-  Planning module: .\infrastructure
-    Initializing...
-    ✓ Initialization successful
-    Generating plan...
-    ✓ Plan generated: terraform.tfplan
-✓ Terraform plan generation successful
-```
-
-#### **Apply Task** (`.\bolt.ps1 apply` or `.\bolt.ps1 deploy`)
-- **Dependencies**: `format`, `validate`, `plan` (auto-executed first)
-- Applies Terraform changes from `terraform.tfplan`
-- Includes 5-second safety delay with warning
-- Creates/updates/destroys infrastructure
-- Returns exit code 1 if apply fails
-
-**Safety Warning:**
-```
-⚠️  WARNING: About to apply Terraform changes!
-⚠️  This will modify real infrastructure.
-⚠️  Waiting 5 seconds... (Ctrl+C to cancel)
-```
-
-#### **Docker Fallback Support**
-All Terraform tasks automatically detect and use Docker when Terraform CLI is not installed:
-- Uses `hashicorp/terraform:latest` Docker image
-- Volume mounts working directory for file access
-- Cross-platform support (Linux, macOS, Windows with Linux containers)
-- Transparent fallback - no configuration required
-
-**Note**: Windows Docker Desktop must be configured for Linux containers to use Docker fallback.
-
-#### **Test Suite**
-Comprehensive Pester test suite for Terraform starter package:
-- **Task Validation Tests** (`packages/.build-terraform/tests/Tasks.Tests.ps1`)
-  - Task file structure and syntax
-  - Metadata validation (TASK, DESCRIPTION, DEPENDS)
-  - Dependency declarations
-  - Tool availability checks
-- **Integration Tests** (`packages/.build-terraform/tests/Integration.Tests.ps1`)
-  - Format task execution
-  - Validate task execution
-  - Plan task execution
-  - Apply task metadata
-- **Example Configuration** (`packages/.build-terraform/tests/tf/main.tf`)
-  - Sample Terraform configuration for testing
-
-Run tests with: `Invoke-Pester -Tag Terraform-Tasks`
-
-### 6. Azure Infrastructure (Bicep)
+### 5. Azure Infrastructure (Bicep)
 
 Created a complete Azure infrastructure setup for testing:
 
@@ -280,7 +284,7 @@ Created a complete Azure infrastructure setup for testing:
 - Firewall rules for Azure services
 - Secure connection strings
 
-### 7. Error Detection
+### 6. Error Detection
 
 The system properly detects and reports errors:
 
@@ -289,7 +293,7 @@ The system properly detects and reports errors:
 ✅ **Compilation Errors**: Failed builds return non-zero exit codes
 ✅ **Dependency Failures**: Build stops if lint/format fails
 
-### 8. Module Manifest Generation
+### 7. Module Manifest Generation
 
 Dedicated tooling for creating PowerShell module manifests from existing modules:
 
@@ -333,7 +337,7 @@ Dedicated tooling for creating PowerShell module manifests from existing modules
 - **CI/CD Ready**: Docker wrapper provides consistent containerized execution
 - **Validation**: Multiple validation layers ensure manifest correctness
 
-### 9. Configuration Variable System
+### 8. Configuration Variable System
 
 Project-level configuration management with automatic injection into task contexts:
 
@@ -1378,52 +1382,79 @@ steps:
 
 ---
 
-## 🚫 Non-Goals
+## 🎯 Design Philosophy
 
-Bolt intentionally **does not** implement the following features. These decisions are permanent and documented for both human developers and AI agents working on this codebase.
+Bolt makes deliberate architectural choices that prioritize reliability, reproducibility, and immediate action over complexity. These decisions are permanent and documented for both human developers and AI agents working on this codebase.
 
-### ❌ Build System Caching
+### ⚡ Zero Analysis - Immediate Execution
 
-**Status**: Will not implement
+**Status**: Intentional design choice
 
-**Description**: Automatic file change detection to skip tasks if input files haven't changed.
+**Bolt starts working while other tools are still figuring out what to skip.**
 
-**Rationale**: 
-- Caching requires tracking file dependencies across tasks, adding significant complexity
-- Incorrect cache invalidation causes stale builds (broken builds are worse than slow builds)
-- Each project has unique caching needs that are better handled in task scripts
-- Developers already have explicit control via `-Only` flag for fast iteration
+**Why No Automatic Caching**: 
+- **No upfront analysis overhead** - tasks run immediately with zero delay
+- **No complex dependency tracking** that can break or become stale
+- **No cache invalidation bugs** that silently break builds
+- **Explicit control** - developers decide when tasks run via `-Only` flag
 
-**Alternative Approaches**:
-- Task scripts can implement custom caching logic if needed for their specific toolchain
-- Use `-Only` flag to skip dependency execution: `.\bolt.ps1 build -Only`
-- Tools like Bicep CLI have their own built-in caching mechanisms
+**The Bolt Advantage**: 
+- When you need speed, you get it instantly with `-Only`
+- When you need correctness, every task runs fresh
+- No hidden state, no cache bugs, no surprises
 
-### ❌ Task Parallelism
-
-**Status**: Will not implement
-
-**Description**: Running multiple tasks simultaneously in parallel threads or processes.
-
-**Rationale**:
-- **Race Condition Risk**: Common pattern where multiple tasks modify shared files (e.g., format and lint both touching source files)
-- **Debugging Complexity**: Interleaved output and non-deterministic failures make troubleshooting difficult
-- **Unpredictable Behavior**: Task execution order becomes non-deterministic
-- **Sequential is Clear**: Current sequential execution is simple, predictable, and easier to debug
-
-**Dangerous Pattern**:
+**Usage**:
 ```powershell
-# If these ran in parallel, both would touch the same files:
-.\bolt.ps1 format lint  # Safe (sequential)
-# Parallel would cause: format modifies file.bicep while lint reads it
+# Fast iteration during development - explicit skip
+.\bolt.ps1 build -Only
+
+# Full validation - guaranteed fresh execution
+.\bolt.ps1 build
 ```
 
 **Alternative Approaches**:
-- Task scripts can use PowerShell's built-in parallelism (`ForEach-Object -Parallel`, background jobs) for file-level operations
-- Tasks are already optimized to process multiple files efficiently
-- CI/CD systems can run multiple Bolt invocations in parallel if needed
+- Task scripts can implement custom caching logic for their specific toolchain
+- Tools like Bicep CLI have their own built-in caching mechanisms
+- Use `-Only` flag for fast development iteration
 
-**Design Philosophy**: Bolt prioritizes correctness and debuggability over execution speed. Sequential task execution eliminates entire classes of race condition bugs.
+### 🔒 Guaranteed Execution Order
+
+**Status**: Core feature (not a limitation)
+
+**Description**: Sequential task execution with 100% reproducible builds and zero race conditions.
+
+**Why Sequential Execution is a Strength**:
+- **Zero race conditions** - tasks never conflict over shared files
+- **Deterministic CI/CD** - builds succeed or fail for the same reason every time
+- **Debuggable failures** - clean output, clear execution order, no interleaved logs
+- **Predictable dependencies** - format → lint → build runs identically everywhere
+
+**Real-World Impact**:
+```powershell
+# Both tasks modify the same files - parallel execution would race
+.\bolt.ps1 format lint  # Sequential: format completes, then lint reads formatted files ✓
+
+# If parallel: format and lint both modify files simultaneously ✗
+# Result: non-deterministic failures, impossible to debug
+```
+
+**Power User Escape Hatch**: Need raw speed for processing many files? Implement parallelism **inside** your task using PowerShell's native capabilities:
+
+```powershell
+# Inside a task: parallel file processing
+$files | ForEach-Object -Parallel {
+    bicep build $_.FullName
+} -ThrottleLimit 10
+
+# Orchestrator stays sequential (safe), file processing runs parallel (fast)
+```
+
+**Alternative Approaches**:
+- Task scripts can use PowerShell's `ForEach-Object -Parallel` for file-level parallelism
+- CI/CD systems can run multiple Bolt invocations in parallel if needed
+- Tasks are optimized to process multiple files efficiently
+
+**Design Philosophy**: Bolt chooses reliability over speed at the orchestration level. This eliminates entire classes of race conditions and non-deterministic failures that plague parallel build systems. For processing many files within a single task, PowerShell's `ForEach-Object -Parallel` gives you speed without sacrificing build reproducibility.
 
 ### ❌ Task Argument Passing via Bolt CLI
 
