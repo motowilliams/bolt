@@ -14,27 +14,49 @@ A self-contained, **cross-platform** PowerShell build system with automatic task
 
 - **🌍 Cross-Platform**: Works identically on Windows, Linux, and macOS with PowerShell Core
 - **🚫 Zero Dependencies**: Just PowerShell 7.0+ required - no external tools or frameworks
-- **🔍 Automatic Task Discovery**: Drop `.ps1` files in `.build/` with comment-based metadata - no registration needed
-- **�� Smart Dependency Resolution**: Tasks declare dependencies that execute automatically in the correct order
+- **🔍 Automatic Task Discovery**: Drop `Invoke-*.ps1` files in `.build/` with comment-based metadata - no registration needed
+- **🔗 Smart Dependency Resolution**: Tasks declare dependencies that execute automatically in the correct order
 - **📦 Package Starter Ecosystem**: Pre-built task collections for Python, Golang, TypeScript, dotnet, Terraform, and Bicep
 - **⚡ Fast Iteration**: Skip dependencies with `-Only` flag for quick development cycles
 - **📊 Task Visualization**: Preview execution plans with `-Outline` before running tasks
 
 ## 🚀 Quick Start
 
-### Installation (Module Mode - Recommended)
+### Option 1: Script Mode (Quick Start)
 
-Install Bolt as a PowerShell module for global access from any directory:
+Download and run Bolt directly without module installation:
 
 ```bash
-# Option 1: Download from GitHub Releases (Recommended)
+# Download from GitHub Releases
 # Visit https://github.com/motowilliams/bolt/releases
 # Download the latest Bolt-X.Y.Z.zip and extract
 
 # Navigate to extracted directory
 $ cd path/to/bolt
 
-# Install as module
+# List available tasks
+$ pwsh bolt.ps1 -Help
+
+# Run your first build
+$ pwsh bolt.ps1 build
+```
+
+Or use the quick install script (Windows/PowerShell):
+```bash
+# From PowerShell - downloads and extracts latest release
+irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download.ps1 | iex
+
+# Then use directly
+.\bolt.ps1 build
+```
+
+### Option 2: Module Mode (Recommended for Regular Use)
+
+Install Bolt as a PowerShell module for global access from any directory:
+
+```bash
+# After downloading and extracting (see Option 1), install as module
+$ cd path/to/bolt
 $ pwsh New-BoltModule.ps1 -Install
 
 # Restart your shell or force import
@@ -45,17 +67,8 @@ $ cd ~/projects/myproject
 $ bolt build
 ```
 
+Or clone from source (for development):
 ```bash
-# Option 2: Quick install via download script (Windows/PowerShell)
-# From PowerShell:
-irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download.ps1 | iex
-
-# Then install as module
-.\New-BoltModule.ps1 -Install
-```
-
-```bash
-# Option 3: Clone from source (for development)
 $ git clone https://github.com/motowilliams/bolt.git
 $ cd bolt
 $ pwsh New-BoltModule.ps1 -Install
