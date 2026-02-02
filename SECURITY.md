@@ -91,7 +91,7 @@ This document contains **16 total security items**: **7 code-level fixes (all co
 ## Executive Summary
 
 **Security Status:** 🟢 **ALL CODE-LEVEL SECURITY ACTION ITEMS COMPLETE** (October 24, 2025)  
-**Operational Security Status:** � **ALL P0 CRITICAL OPERATIONAL ITEMS COMPLETE** (October 26, 2025)
+**Operational Security Status:** 🟢 **ALL P0 CRITICAL OPERATIONAL ITEMS COMPLETE** (October 26, 2025)
 
 This document contains a comprehensive security analysis of `bolt.ps1`, identifying **16 total security items** across two categories:
 

@@ -314,7 +314,7 @@ Write like you're explaining something to a coworker - no fluff, no fancy words,
 7. **Avoid needless adjectives**: Don't say "powerful tool" or "flexible system" - just say what it does
 
 8. **Use valid emojis only**: Only use standard, valid Unicode emojis in documentation
-   - ❌ Invalid or corrupted emoji characters (�, �️, etc.)
+   - ❌ Invalid or corrupted emoji characters (avoid broken/unknown emoji glyphs)
    - ✅ Valid standard emojis (🎉, ✅, ❌, etc.)
    - Test emoji rendering before committing
    - When in doubt, use ASCII alternatives instead
