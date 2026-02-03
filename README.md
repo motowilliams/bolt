@@ -121,32 +121,41 @@ $ bolt build                    # Automatically finds .build/ upward
 
 ### For Linux/Unix Users
 
-**Why PowerShell for builds?** PowerShell is a shell that handles **objects, not text**.
+**Why PowerShell for builds?** The pain point isn't Bash - it's **cross-platform consistency**.
 
-Traditional Unix build tools chain text-processing utilities (sed, awk, grep) which are fragile and error-prone:
-- Text parsing breaks when output format changes
-- Complex regex patterns are hard to maintain
-- No type safety or structured data
+Standard Unix tools like `sed`, `awk`, and `grep` have different behavior between macOS (BSD) and Linux (GNU). This creates subtle bugs when your build scripts work locally but fail in CI, or work on Ubuntu but break on CentOS.
 
-**Bolt gives you:**
-- **Structured task definitions** - typed objects instead of text parsing
-- **Cross-platform consistency** - same syntax on Linux, macOS, and Windows
-- **Rich data types** - work with JSON, arrays, hashtables natively
-- **Error handling** - proper exit codes and exception handling
-- **IDE support** - IntelliSense and debugging tools
+**PowerShell guarantees identical behavior** on Linux, macOS, and Windows. Write once, run everywhere.
+
+**Side-by-side comparison:**
 
 ```bash
-# Traditional Bash (fragile text processing)
-$ cat config.txt | grep "version" | sed 's/.*=//' | awk '{print $1}'
+# Bash with jq (realistic approach)
+$ jq -r '.version' config.json
+# Requires jq installation on all systems
+# Another dependency to manage across environments
 
-# PowerShell (structured objects)
-$ pwsh -Command "(Get-Content config.json | ConvertFrom-Json).version"
+# PowerShell/Bolt tasks - JSON parsing built-in
+$version = (Get-Content config.json | ConvertFrom-Json).version
+# No external dependencies, works everywhere
 
-# Bolt tasks handle complexity for you
-$ bolt build  # No text parsing needed
+# Real cross-platform pain point - in-place file editing
+$ sed -i 's/old/new/g' file.txt        # Works on Linux (GNU sed)
+$ sed -i '' 's/old/new/g' file.txt     # Required on macOS (BSD sed)
+# Different syntax breaks scripts across platforms
+
+# PowerShell/Bolt tasks - identical syntax everywhere
+(Get-Content file.txt) -replace 'old','new' | Set-Content file.txt
+# Same command on Windows, Linux, and macOS
 ```
 
-**Bottom line**: PowerShell is available on all Linux distributions via package managers (apt, yum, snap) and provides a modern, object-oriented alternative to traditional shell scripting.
+**What Bolt gives you:**
+- **Cross-platform consistency** - same syntax, same behavior across all platforms
+- **Structured data** - work with JSON, arrays, hashtables as objects, not text
+- **Type safety** - catch errors at script time, not runtime
+- **Modern tooling** - IDE support with IntelliSense and debugging
+
+**Bottom line**: PowerShell is available on all Linux distributions via package managers (apt, yum, snap). If cross-platform builds matter to your team, Bolt eliminates "works on my machine" issues.
 
 ## 📚 Documentation
 
@@ -365,17 +374,17 @@ See [docs/testing.md](docs/testing.md) for CI/CD integration details.
 
 ### Running CI Locally
 
-```bash
+```powershell
 # Install dependencies
-$ pwsh -Command "Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser"
+Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
 
 # Run tests (same as CI)
-$ pwsh -Command "Invoke-Pester -Tag Core"           # Fast tests (~1s)
-$ pwsh -Command "Invoke-Pester -Tag Security"       # Security tests (~10s)
-$ pwsh -Command "Invoke-Pester"                     # All tests
+Invoke-Pester -Tag Core           # Fast tests (~1s)
+Invoke-Pester -Tag Security       # Security tests (~10s)
+Invoke-Pester                     # All tests
 
 # Run build pipeline (same as CI)
-$ bolt build
+bolt build
 ```
 
 ## 📦 Releases
