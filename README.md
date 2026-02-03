@@ -6,14 +6,14 @@
 
 > **Lightning-fast Build Orchestration for PowerShell!**
 
-A self-contained, **cross-platform** PowerShell build system with automatic task discovery and dependency resolution. Inspired by PSake, Make, and Rake. **Zero external dependencies** - just PowerShell 7.0+ with no additional tools required!
+A self-contained, **cross-platform** PowerShell build system with automatic task discovery and dependency resolution. Inspired by PSake, Make, and Rake. **Zero dependency orchestration** - Bolt itself requires only PowerShell 7.0+, then uses the tools already in your environment.
 
 **Runs seamlessly on Windows, Linux, and macOS** - perfect for infrastructure-as-code, application builds, testing pipelines, deployment automation, and more.
 
 ## ✨ Key Features
 
 - **🌍 Cross-Platform**: Works identically on Windows, Linux, and macOS with PowerShell Core
-- **🚫 Zero Dependencies**: Just PowerShell 7.0+ required - no external tools or frameworks
+- **🎯 Zero Dependency Orchestration**: Bolt itself requires only PowerShell 7.0+ - no bundled tools or frameworks. Uses your native toolchain (Python, Go, Terraform, etc.) exactly as configured in your environment
 - **🔍 Automatic Task Discovery**: Drop `Invoke-*.ps1` files in `.build/` with comment-based metadata - no registration needed
 - **🔗 Smart Dependency Resolution**: Tasks declare dependencies that execute automatically in the correct order
 - **📦 Package Starter Ecosystem**: Pre-built task collections for Python, Golang, TypeScript, dotnet, Terraform, and Bicep
@@ -89,7 +89,7 @@ $ jq -r '.version' config.json
 
 # PowerShell/Bolt tasks - JSON parsing built-in
 $version = (Get-Content config.json | ConvertFrom-Json).version
-# No external dependencies, works everywhere
+# Built into PowerShell, works everywhere
 
 # Real cross-platform pain point - in-place file editing
 $ sed -i 's/old/new/g' file.txt        # Works on Linux (GNU sed)
@@ -128,7 +128,7 @@ $ sed -i '' 's/old/new/g' file.txt     # Required on macOS (BSD sed)
 
 ## 📦 Package Starters
 
-Pre-built task collections for popular toolchains:
+Pre-built task collections for popular toolchains. Each package uses your installed tools - no bundled versions, respecting your exact configuration.
 
 | Package | Included Tasks | Requirements |
 |---------|---------------|-------------|
@@ -239,11 +239,14 @@ See [docs/usage.md](docs/usage.md) for detailed task creation guide.
 
 ## 🔧 Requirements
 
-- **PowerShell 7.0+** (cross-platform)
+**To run Bolt (the orchestrator):**
+- **PowerShell 7.0+** (cross-platform) - Install: https://aka.ms/powershell
 - **Git** (optional, for `check-index` task)
-- **Package starter tools** (optional, e.g., Bicep CLI for Bicep tasks)
 
-Install PowerShell 7: https://aka.ms/powershell
+**To run tasks (your workload):**
+- Tasks use **your existing toolchain** - Python, Go, Terraform, Bicep, etc.
+- Bolt respects your specific tool versions and configurations
+- Package starters include examples for popular toolchains (see Package Starters section)
 
 ## 🌍 Global Installation (Optional)
 
