@@ -109,6 +109,93 @@ $ sed -i '' 's/old/new/g' file.txt     # Required on macOS (BSD sed)
 
 **Bottom line**: PowerShell is available on all Linux distributions via package managers (apt, yum, snap). If cross-platform builds matter to your team, Bolt eliminates "works on my machine" issues.
 
+## 🎯 Why Bolt?
+
+Every build tool has tasks and dependencies - that's table stakes. **Bolt differentiates on Developer Experience.**
+
+### IDE Integration You'll Actually Use
+
+**Make/Rake:**
+```makefile
+# No autocomplete, no IntelliSense, no debugging
+# Just a text file with mysterious tab requirements
+deploy:
+	@echo "Deploying..."
+	@if [ "$$ENV" = "prod" ]; then \
+		echo "Production deploy"; \
+	fi
+```
+
+**Bolt:**
+```powershell
+# Full IntelliSense, autocomplete, step-through debugging in VS Code
+# TASK: deploy
+# DESCRIPTION: Deploys to environment
+# DEPENDS: build
+
+$env = $BoltConfig.Environment
+if ($env -eq "prod") {
+    Write-Host "Production deploy" -ForegroundColor Yellow
+    # Set breakpoint here, inspect variables, step through
+}
+```
+
+**The difference:** In VS Code, Bolt tasks give you the full PowerShell development experience - set breakpoints, hover for documentation, autocomplete cmdlets, catch errors before running.
+
+### Modern Language, Zero Frustration
+
+| Pain Point | Make/Bash | Bolt/PowerShell |
+|------------|-----------|-----------------|
+| **Tabs vs Spaces** | Makefiles REQUIRE tabs (invisible errors) | Use whatever you want |
+| **Conditionals** | `[ "$VAR" = "value" ]` (fragile spacing) | `if ($var -eq "value")` (clear syntax) |
+| **Error Handling** | `set -e` maybe works | Proper try/catch blocks |
+| **String Manipulation** | `sed`, `awk`, `cut` chains | Native string methods |
+| **JSON Parsing** | Install `jq` or suffer | `ConvertFrom-Json` built-in |
+| **Arrays/Objects** | "Arrays" are space-separated strings | Real typed collections |
+
+### Professional Polish Out-of-the-Box
+
+**Make output:**
+```
+format
+lint
+build
+```
+
+Gray text. That's it.
+
+**Bolt output:**
+```
+⚡ Running task: format
+  Processing: main.bicep
+  Processing: modules/app.bicep
+✓ Formatted 2 files
+
+⚡ Running task: lint
+  Validating: main.bicep
+✓ No issues found
+
+⚡ Running task: build
+  Compiling: main.bicep → main.json
+✓ Build complete
+```
+
+Color-coded (Cyan headers, Green success, Red errors), progress indicators, consistent formatting - no configuration needed.
+
+### Bolt vs. The World
+
+| Feature | Make | Rake | Bolt |
+|---------|------|------|------|
+| **IDE Support** | Text editor only | Basic Ruby LSP | Full PowerShell IntelliSense + debugging |
+| **Syntax Gotchas** | Tabs required, shell quoting hell | Ruby knowledge required | Standard PowerShell |
+| **Cross-Platform** | macOS/Linux (WSL for Windows) | Needs Ruby installed | Windows, Linux, macOS native |
+| **Type Safety** | None (shell variables are strings) | Ruby dynamic typing | PowerShell strong typing |
+| **Debugging** | `echo` statements | Ruby debugger (if configured) | VS Code integrated debugger |
+| **Output Formatting** | DIY with `echo` + color codes | DIY with gems | Built-in color coding |
+| **Learning Curve** | Steep (shell + Make quirks) | Steep (Ruby + Rake DSL) | Gentle (if you know any scripting) |
+
+**Bottom line:** If you're writing complex build logic, Bolt gives you a real programming environment with proper tooling. If you're just running `npm build`, stick with npm scripts.
+
 ## 📚 Documentation
 
 ### Core Documentation
