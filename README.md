@@ -22,102 +22,54 @@ A self-contained, **cross-platform** PowerShell build system with automatic task
 
 ## 🚀 Quick Start
 
-### Option 1: Script Mode (Quick Start)
+### Try it in 30 Seconds
 
-Download and run Bolt directly without module installation:
-
-```bash
-# Download from GitHub Releases
-# Visit https://github.com/motowilliams/bolt/releases
-# Download the latest Bolt-X.Y.Z.zip and extract
-
-# Navigate to extracted directory
-$ cd path/to/bolt
-
-# List available tasks
-$ pwsh bolt.ps1 -Help
-
-# Run your first build
-$ pwsh bolt.ps1 build
-```
-
-Or use the quick install script (Windows/PowerShell):
-```bash
-# From PowerShell - downloads and extracts latest release
+```powershell
+# Download and extract (Windows/PowerShell)
 irm https://raw.githubusercontent.com/motowilliams/bolt/main/Download.ps1 | iex
 
-# Then use directly
+# Run your first build
 .\bolt.ps1 build
 ```
 
-### Option 2: Module Mode (Recommended for Regular Use)
+**That's it!** Bolt automatically discovers tasks in `.build/` and runs them with dependencies.
 
-Install Bolt as a PowerShell module for global access from any directory:
-
-```bash
-# After downloading and extracting (see Option 1), install as module
-$ cd path/to/bolt
-$ pwsh New-BoltModule.ps1 -Install
-
-# Restart your shell or force import
-$ pwsh -Command "Import-Module Bolt -Force"
-
-# Use 'bolt' command from anywhere
-$ cd ~/projects/myproject
-$ bolt build
-```
-
-Or clone from source (for development):
-```bash
-$ git clone https://github.com/motowilliams/bolt.git
-$ cd bolt
-$ pwsh New-BoltModule.ps1 -Install
-```
+**Cross-platform?** Download the latest release from [GitHub Releases](https://github.com/motowilliams/bolt/releases), extract, and run `pwsh bolt.ps1 build` from any platform.
 
 ### First Build
 
-```bash
+```powershell
 # List available tasks
-$ bolt -Help
+.\bolt.ps1 -Help
 
 # Run your first build
-$ bolt build
+.\bolt.ps1 build
 
 # Preview execution plan (no execution)
-$ bolt build -Outline
+.\bolt.ps1 build -Outline
 
 # Skip dependencies for faster iteration
-$ bolt build -Only
+.\bolt.ps1 build -Only
 ```
 
 ### Common Commands
 
-```bash
+```powershell
 # Basic usage
-$ bolt build                    # Run task with dependencies
-$ bolt format lint build        # Multiple tasks in sequence
-$ bolt build -Only              # Skip dependencies
+.\bolt.ps1 build                    # Run task with dependencies
+.\bolt.ps1 format lint build        # Multiple tasks in sequence
+.\bolt.ps1 build -Only              # Skip dependencies
 
 # Task management
-$ bolt -ListTasks               # Show all available tasks
-$ bolt -NewTask deploy          # Create new task template
-$ bolt build -Outline           # Preview execution plan
+.\bolt.ps1 -ListTasks               # Show all available tasks
+.\bolt.ps1 -NewTask deploy          # Create new task template
+.\bolt.ps1 build -Outline           # Preview execution plan
 
 # Configuration
-$ bolt -ListVariables           # Show all config variables
-$ bolt -AddVariable -Name "Environment" -Value "prod"
-$ bolt -RemoveVariable -VariableName "OldSetting"
-
-# Module mode works from any subdirectory
-$ cd src/components/
-$ bolt build                    # Automatically finds .build/ upward
+.\bolt.ps1 -ListVariables           # Show all config variables
+.\bolt.ps1 -AddVariable -Name "Environment" -Value "prod"
+.\bolt.ps1 -RemoveVariable -VariableName "OldSetting"
 ```
-
-**Module Benefits:**
-- 🌍 Run `bolt` from any directory
-- 🔍 Automatic upward search for `.build/` folders (like git)
-- ⚡ Works from subdirectories within your projects
-- 🔄 Easy updates: re-run `pwsh New-BoltModule.ps1 -Install`
 
 ### For Linux/Unix Users
 
@@ -204,34 +156,42 @@ See [packages/README.md](packages/README.md) for complete package starter docume
 
 ### Full Build Pipeline
 
-```bash
+```powershell
 # Format, lint, and compile with automatic dependencies
-$ bolt build
+.\bolt.ps1 build
 
 # Execution: format → lint → build
 ```
 
 ### Development Iteration
 
-```bash
+```powershell
 # Fix formatting
-$ bolt format
+.\bolt.ps1 format
 
 # Validate syntax
-$ bolt lint
+.\bolt.ps1 lint
 
 # Quick rebuild without re-running format/lint
-$ bolt build -Only
+.\bolt.ps1 build -Only
 ```
 
 ### CI/CD Integration
 
 ```bash
 # Same command works locally and in CI
-$ bolt build
+pwsh -File bolt.ps1 build
 ```
 
 **GitHub Actions example:**
+```yaml
+steps:
+  - uses: actions/checkout@v4
+  - name: Build
+    run: pwsh -File bolt.ps1 build
+```
+
+**With module installed in CI:**
 ```yaml
 steps:
   - uses: actions/checkout@v4
@@ -240,16 +200,10 @@ steps:
       # Ubuntu/Debian
       sudo apt-get update
       sudo apt-get install -y powershell
+  - name: Install Bolt Module
+    run: pwsh New-BoltModule.ps1 -Install
   - name: Build
     run: bolt build
-```
-
-**Alternative - Direct script invocation:**
-```yaml
-steps:
-  - uses: actions/checkout@v4
-  - name: Build
-    run: pwsh -File bolt.ps1 build
 ```
 
 See [docs/testing.md](docs/testing.md) for complete CI/CD integration examples.
@@ -258,9 +212,9 @@ See [docs/testing.md](docs/testing.md) for complete CI/CD integration examples.
 
 ### Quick Method
 
-```bash
+```powershell
 # Generate task with proper structure
-$ bolt -NewTask deploy
+.\bolt.ps1 -NewTask deploy
 # Creates: .build/Invoke-Deploy.ps1 with metadata template
 ```
 
@@ -291,6 +245,53 @@ See [docs/usage.md](docs/usage.md) for detailed task creation guide.
 
 Install PowerShell 7: https://aka.ms/powershell
 
+## 🌍 Global Installation (Optional)
+
+For long-term users who want to run `bolt` from anywhere without typing `.\bolt.ps1`:
+
+### Install as PowerShell Module
+
+```powershell
+# After downloading and extracting, install as module
+cd path/to/bolt
+pwsh New-BoltModule.ps1 -Install
+
+# Restart your shell or force import
+pwsh -Command "Import-Module Bolt -Force"
+
+# Now use 'bolt' command from anywhere
+cd ~/projects/myproject
+bolt build
+```
+
+Or clone from source (for development):
+```powershell
+git clone https://github.com/motowilliams/bolt.git
+cd bolt
+pwsh New-BoltModule.ps1 -Install
+```
+
+### Module Mode Benefits
+
+- 🌍 Run `bolt` from any directory
+- 🔍 Automatic upward search for `.build/` folders (like git)
+- ⚡ Works from subdirectories within your projects
+- 🔄 Easy updates: re-run `pwsh New-BoltModule.ps1 -Install`
+
+### Module Mode Commands
+
+```powershell
+# Module mode works from any subdirectory
+cd src/components/
+bolt build                    # Automatically finds .build/ upward
+
+# All the same commands, shorter syntax
+bolt -ListTasks
+bolt -NewTask deploy
+bolt build -Outline
+bolt format lint build -Only
+```
+
 ## 🎨 Output Formatting
 
 All tasks use consistent color coding:
@@ -317,8 +318,8 @@ $ pwsh -Command "Import-Module Bolt -Force"
 ### Task not found
 
 **Solution**: Check task file exists in `.build/` with proper metadata:
-```bash
-$ bolt -ListTasks  # Verify task appears in list
+```powershell
+.\bolt.ps1 -ListTasks  # Verify task appears in list
 ```
 
 ### External tool not found (e.g., Python, Go)
@@ -384,7 +385,7 @@ Invoke-Pester -Tag Security       # Security tests (~10s)
 Invoke-Pester                     # All tests
 
 # Run build pipeline (same as CI)
-bolt build
+.\bolt.ps1 build
 ```
 
 ## 📦 Releases
