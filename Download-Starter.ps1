@@ -76,30 +76,35 @@ $releasesResponse = $filteredReleases
 
 # Sort releases by semantic version ascending (oldest first, newest last)
 # Parse version numbers for proper semver comparison
-$sortedReleases = $releasesResponse | Sort-Object -Property {
-    # Extract version string (remove 'v' prefix if present)
-    $versionString = $_.name -replace '^v', ''
+$sortedReleases = $releasesResponse |
+    Select-Object -Property *, @{
+        Name       = 'SortKey'
+        Expression = {
+            # Extract version string (remove 'v' prefix if present)
+            $versionString = $_.name -replace '^v', ''
 
-    # Parse major.minor.patch and prerelease components
-    if ($versionString -match '^(\d+)\.(\d+)\.(\d+)(-(.+))?$') {
-        $major = [int]$matches[1]
-        $minor = [int]$matches[2]
-        $patch = [int]$matches[3]
-        $prerelease = $matches[5]
+            # Parse major.minor.patch and prerelease components
+            if ($versionString -match '^(\d+)\.(\d+)\.(\d+)(-(.+))?$') {
+                $major = [int]$matches[1]
+                $minor = [int]$matches[2]
+                $patch = [int]$matches[3]
+                $prerelease = $matches[5]
 
-        # Use Int64 arithmetic to avoid Int32 overflow for large version components
-        # Prereleases sort before releases (subtract 0.5 if prerelease)
-        $sortValue = ([int64]$major * 1000000) + ([int64]$minor * 1000) + [int64]$patch
-        if ($prerelease) {
-            $sortValue -= 0.5
+                # Create sortable value: major * 1000000 + minor * 1000 + patch
+                # Prereleases sort before releases (subtract 0.5 if prerelease)
+                $sortValue = ($major * 1000000) + ($minor * 1000) + $patch
+                if ($prerelease) {
+                    $sortValue -= 0.5
+                }
+
+                return [double]$sortValue
+            }
+
+            # Fallback: non semver names sort after valid versions
+            return [double]::PositiveInfinity
         }
-
-        return [double]$sortValue
-    }
-
-    # Fallback: non-semver names sort after valid versions
-    return [double]::PositiveInfinity
-}
+    } |
+    Sort-Object -Property SortKey, name
 
 # Display interactive menu
 Write-Host "`nAvailable Releases with Starter Packages:" -ForegroundColor Cyan
