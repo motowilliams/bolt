@@ -54,18 +54,18 @@ $sortedReleases = $releasesResponse | Sort-Object -Property {
         $patch = [int]$matches[3]
         $prerelease = $matches[5]
 
-        # Create sortable value: major * 1000000 + minor * 1000 + patch
+        # Use Int64 arithmetic to avoid Int32 overflow for large version components
         # Prereleases sort before releases (subtract 0.5 if prerelease)
-        $sortValue = ($major * 1000000) + ($minor * 1000) + $patch
+        $sortValue = ([int64]$major * 1000000) + ($minor * 1000) + $patch
         if ($prerelease) {
             $sortValue -= 0.5
         }
 
-        return $sortValue
+        return [double]$sortValue
     }
 
-    # Fallback to alphabetical if version parsing fails
-    return $_.name
+    # Fallback: non-semver names sort after valid versions
+    return [double]::PositiveInfinity
 }
 
 # Determine which release to download
