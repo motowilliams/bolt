@@ -231,13 +231,14 @@ while ($attempts -lt $maxAttempts) {
 
 # Download and validate the selected starter package
 $zipAsset = $selectedStarter.Asset
+if (-not $zipAsset) {
+    Write-Error "No zip file found in release assets"
+    return
+}
+
 $shaAsset = $selectedRelease.assets | Where-Object -FilterScript {
     $_.name -eq "$($zipAsset.name).sha256"
 } | Select-Object -First 1
-if (-not $zipAsset) {
-    Write-Error "No zip file found in release assets"
-}
-
 if (-not $shaAsset) {
     Write-Error "No SHA256 checksum file found for $($zipAsset.name). Cannot proceed without validation."
 }
