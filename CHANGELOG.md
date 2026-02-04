@@ -20,6 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced integration tests to support Docker execution
   - Maintains full backward compatibility with existing configurations
 
+## [0.13.1] - 2026-02-04
+
+### Fixed
+- **Download Scripts**: Improved release filtering and sorting logic in `Download.ps1` and `Download-Starter.ps1`
+  - Enhanced semantic version sorting with proper handling of major.minor.patch versioning
+  - Fixed type mixing in sort values (numeric vs string) for more predictable sorting behavior
+  - Fixed Int32 overflow issues by using Int64 arithmetic for version calculations
+  - Added support for prerelease tags (alpha, beta, rc) with correct sorting order
+  - Improved null reference error handling in asset validation
+  - Enhanced error messages to include specific asset names for better debugging
+  - Moved null checks before asset usage to prevent potential null reference errors
+
 ## [0.13.0] - 2026-01-29
 
 ### Added
@@ -911,7 +923,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIT License
 - EditorConfig for consistent code formatting
 
-[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/motowilliams/bolt/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/motowilliams/bolt/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/motowilliams/bolt/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/motowilliams/bolt/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/motowilliams/bolt/compare/v0.10.2...v0.11.0
