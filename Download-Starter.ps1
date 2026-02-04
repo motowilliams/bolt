@@ -44,7 +44,7 @@ if (-not $releasesResponse -or $releasesResponse.Count -eq 0) {
 # Filter releases to only those with starter packages (bolt-starter-*.zip)
 Write-Host "Filtering releases with starter packages..." -ForegroundColor Cyan
 
-$releasesWithStarters = @()
+$filteredReleases = @()
 foreach ($release in $releasesResponse) {
     $starterAssets = $release.assets | Where-Object -FilterScript {
         $_.name -like "bolt-starter-*.zip" -and $_.name -notlike "*.sha256"
@@ -61,19 +61,22 @@ foreach ($release in $releasesResponse) {
         }
 
         $release | Add-Member -MemberType NoteProperty -Name "StarterPackages" -Value $starterNames -Force
-        $releasesWithStarters += $release
+        $filteredReleases += $release
     }
 }
 
-if ($releasesWithStarters.Count -eq 0) {
+if ($filteredReleases.Count -eq 0) {
     Write-Error "No releases with starter packages found. Starter packages are distributed with releases starting from a specific version."
 }
 
-Write-Host "Found $($releasesWithStarters.Count) release(s) with starter packages" -ForegroundColor Green
+Write-Host "Found $($filteredReleases.Count) release(s) with starter packages" -ForegroundColor Green
+
+# Reassign to $releasesResponse for consistency with Download.ps1
+$releasesResponse = $filteredReleases
 
 # Sort releases by semantic version ascending (oldest first, newest last)
 # Parse version numbers for proper semver comparison
-$sortedReleases = $releasesWithStarters | Sort-Object -Property {
+$sortedReleases = $releasesResponse | Sort-Object -Property {
     # Extract version string (remove 'v' prefix if present)
     $versionString = $_.name -replace '^v', ''
 
@@ -231,6 +234,9 @@ $zipAsset = $selectedStarter.Asset
 $shaAsset = $selectedRelease.assets | Where-Object -FilterScript {
     $_.name -eq "$($zipAsset.name).sha256"
 } | Select-Object -First 1
+if (-not $zipAsset) {
+    Write-Error "No zip file found in release assets"
+}
 
 if (-not $shaAsset) {
     Write-Error "No SHA256 checksum file found for $($zipAsset.name). Cannot proceed without validation."
@@ -250,7 +256,7 @@ try {
     try {
         Invoke-WebRequest -Uri $zipAsset.browser_download_url -OutFile $zipPath -ErrorAction Stop
     } catch {
-        Write-Error "Failed to download starter package: $_"
+        Write-Error "Failed to download zip file: $_"
     }
 
     Write-Banner -Color Green "✓ Downloaded $($zipAsset.name)"

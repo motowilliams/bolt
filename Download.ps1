@@ -15,6 +15,7 @@
 # ==============================================================================
 
 $ProjectUri = "https://api.github.com/repos/motowilliams/bolt"
+
 function Write-Banner {
     param (
         [string] $Message,
@@ -25,7 +26,6 @@ function Write-Banner {
     Write-Host ("=" * $Width) -ForegroundColor Gray
     Write-Host $Message -ForegroundColor $Color
     Write-Host ("=" * $Width) -ForegroundColor Gray
-
 }
 
 # Fetch all releases from GitHub API
@@ -41,8 +41,32 @@ if (-not $releasesResponse -or $releasesResponse.Count -eq 0) {
     Write-Error "No releases found"
 }
 
-# Sort releases by name ascending (oldest first, newest last)
-$sortedReleases = $releasesResponse | Sort-Object -Property name
+# Sort releases by semantic version ascending (oldest first, newest last)
+# Parse version numbers for proper semver comparison
+$sortedReleases = $releasesResponse | Sort-Object -Property {
+    # Extract version string (remove 'v' prefix if present)
+    $versionString = $_.name -replace '^v', ''
+
+    # Parse major.minor.patch and prerelease components
+    if ($versionString -match '^(\d+)\.(\d+)\.(\d+)(-(.+))?$') {
+        $major = [int]$matches[1]
+        $minor = [int]$matches[2]
+        $patch = [int]$matches[3]
+        $prerelease = $matches[5]
+
+        # Create sortable value: major * 1000000 + minor * 1000 + patch
+        # Prereleases sort before releases (subtract 0.5 if prerelease)
+        $sortValue = ($major * 1000000) + ($minor * 1000) + $patch
+        if ($prerelease) {
+            $sortValue -= 0.5
+        }
+
+        return $sortValue
+    }
+
+    # Fallback to alphabetical if version parsing fails
+    return $_.name
+}
 
 # Determine which release to download
 $selectedRelease = $null
@@ -94,7 +118,8 @@ if ($PSCmdlet.ParameterSetName -eq 'AutoDownload') {
         }
     }
 
-    # Prompt for selection
+    # Prompt for release selection
+    $selectedRelease = $null
     $attempts = 0
     $maxAttempts = 2
 
@@ -145,7 +170,7 @@ if (-not $zipAsset) {
 }
 
 if (-not $shaAsset) {
-    Write-Error "No SHA256 checksum file found in release assets. Cannot proceed without validation."
+    Write-Error "No SHA256 checksum file found for $($zipAsset.name). Cannot proceed without validation."
 }
 
 # Create temporary directory for downloads
