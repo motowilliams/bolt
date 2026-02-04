@@ -44,7 +44,7 @@ if (-not $releasesResponse -or $releasesResponse.Count -eq 0) {
 # Filter releases to only those with starter packages (bolt-starter-*.zip)
 Write-Host "Filtering releases with starter packages..." -ForegroundColor Cyan
 
-$releasesWithStarters = @()
+$filteredReleases = @()
 foreach ($release in $releasesResponse) {
     $starterAssets = $release.assets | Where-Object -FilterScript {
         $_.name -like "bolt-starter-*.zip" -and $_.name -notlike "*.sha256"
@@ -61,42 +61,50 @@ foreach ($release in $releasesResponse) {
         }
 
         $release | Add-Member -MemberType NoteProperty -Name "StarterPackages" -Value $starterNames -Force
-        $releasesWithStarters += $release
+        $filteredReleases += $release
     }
 }
 
-if ($releasesWithStarters.Count -eq 0) {
+if ($filteredReleases.Count -eq 0) {
     Write-Error "No releases with starter packages found. Starter packages are distributed with releases starting from a specific version."
 }
 
-Write-Host "Found $($releasesWithStarters.Count) release(s) with starter packages" -ForegroundColor Green
+Write-Host "Found $($filteredReleases.Count) release(s) with starter packages" -ForegroundColor Green
+
+# Reassign to $releasesResponse for consistency with Download.ps1
+$releasesResponse = $filteredReleases
 
 # Sort releases by semantic version ascending (oldest first, newest last)
 # Parse version numbers for proper semver comparison
-$sortedReleases = $releasesWithStarters | Sort-Object -Property {
-    # Extract version string (remove 'v' prefix if present)
-    $versionString = $_.name -replace '^v', ''
+$sortedReleases = $releasesResponse |
+    Select-Object -Property *, @{
+        Name       = 'SortKey'
+        Expression = {
+            # Extract version string (remove 'v' prefix if present)
+            $versionString = $_.name -replace '^v', ''
 
-    # Parse major.minor.patch and prerelease components
-    if ($versionString -match '^(\d+)\.(\d+)\.(\d+)(-(.+))?$') {
-        $major = [int]$matches[1]
-        $minor = [int]$matches[2]
-        $patch = [int]$matches[3]
-        $prerelease = $matches[5]
+            # Parse major.minor.patch and prerelease components
+            if ($versionString -match '^(\d+)\.(\d+)\.(\d+)(-(.+))?$') {
+                $major = [int]$matches[1]
+                $minor = [int]$matches[2]
+                $patch = [int]$matches[3]
+                $prerelease = $matches[5]
 
-        # Create sortable value: major * 1000000 + minor * 1000 + patch
-        # Prereleases sort before releases (subtract 0.5 if prerelease)
-        $sortValue = ($major * 1000000) + ($minor * 1000) + $patch
-        if ($prerelease) {
-            $sortValue -= 0.5
+                # Create sortable value: major * 1000000 + minor * 1000 + patch
+                # Prereleases sort before releases (subtract 0.5 if prerelease)
+                $sortValue = ($major * 1000000) + ($minor * 1000) + $patch
+                if ($prerelease) {
+                    $sortValue -= 0.5
+                }
+
+                return [double]$sortValue
+            }
+
+            # Fallback: non semver names sort after valid versions
+            return [double]::PositiveInfinity
         }
-
-        return $sortValue
-    }
-
-    # Fallback to alphabetical if version parsing fails
-    return $_.name
-}
+    } |
+    Sort-Object -Property SortKey, name
 
 # Display interactive menu
 Write-Host "`nAvailable Releases with Starter Packages:" -ForegroundColor Cyan
@@ -228,10 +236,14 @@ while ($attempts -lt $maxAttempts) {
 
 # Download and validate the selected starter package
 $zipAsset = $selectedStarter.Asset
+if (-not $zipAsset) {
+    Write-Error "No zip file found in release assets"
+    return
+}
+
 $shaAsset = $selectedRelease.assets | Where-Object -FilterScript {
     $_.name -eq "$($zipAsset.name).sha256"
 } | Select-Object -First 1
-
 if (-not $shaAsset) {
     Write-Error "No SHA256 checksum file found for $($zipAsset.name). Cannot proceed without validation."
 }
@@ -250,7 +262,7 @@ try {
     try {
         Invoke-WebRequest -Uri $zipAsset.browser_download_url -OutFile $zipPath -ErrorAction Stop
     } catch {
-        Write-Error "Failed to download starter package: $_"
+        Write-Error "Failed to download zip file: $_"
     }
 
     Write-Banner -Color Green "✓ Downloaded $($zipAsset.name)"

@@ -15,6 +15,7 @@
 # ==============================================================================
 
 $ProjectUri = "https://api.github.com/repos/motowilliams/bolt"
+
 function Write-Banner {
     param (
         [string] $Message,
@@ -25,7 +26,6 @@ function Write-Banner {
     Write-Host ("=" * $Width) -ForegroundColor Gray
     Write-Host $Message -ForegroundColor $Color
     Write-Host ("=" * $Width) -ForegroundColor Gray
-
 }
 
 # Fetch all releases from GitHub API
@@ -41,8 +41,37 @@ if (-not $releasesResponse -or $releasesResponse.Count -eq 0) {
     Write-Error "No releases found"
 }
 
-# Sort releases by name ascending (oldest first, newest last)
-$sortedReleases = $releasesResponse | Sort-Object -Property name
+# Sort releases by semantic version ascending (oldest first, newest last)
+# Parse version numbers for proper semver comparison
+$sortedReleases = $releasesResponse |
+    Select-Object -Property *, @{
+        Name       = 'SortKey'
+        Expression = {
+            # Extract version string (remove 'v' prefix if present)
+            $versionString = $_.name -replace '^v', ''
+
+            # Parse major.minor.patch and prerelease components
+            if ($versionString -match '^(\d+)\.(\d+)\.(\d+)(-(.+))?$') {
+                $major = [int]$matches[1]
+                $minor = [int]$matches[2]
+                $patch = [int]$matches[3]
+                $prerelease = $matches[5]
+
+                # Create sortable value: major * 1000000 + minor * 1000 + patch
+                # Prereleases sort before releases (subtract 0.5 if prerelease)
+                $sortValue = ($major * 1000000) + ($minor * 1000) + $patch
+                if ($prerelease) {
+                    $sortValue -= 0.5
+                }
+
+                return [double]$sortValue
+            }
+
+            # Fallback: non semver names sort after valid versions
+            return [double]::PositiveInfinity
+        }
+    } |
+    Sort-Object -Property SortKey, name
 
 # Determine which release to download
 $selectedRelease = $null
@@ -94,7 +123,7 @@ if ($PSCmdlet.ParameterSetName -eq 'AutoDownload') {
         }
     }
 
-    # Prompt for selection
+    # Prompt for release selection
     $attempts = 0
     $maxAttempts = 2
 
@@ -140,12 +169,15 @@ if (Test-Path -Path $extractPath) {
 $zipAsset = $selectedRelease.assets | Where-Object -FilterScript { $_.name -like "*.zip" -and $_.name -notlike "*.sha256" } | Select-Object -First 1
 $shaAsset = $selectedRelease.assets | Where-Object -FilterScript { $_.name -like "*.zip.sha256" } | Select-Object -First 1
 
-if (-not $zipAsset) {
-    Write-Error "No zip file found in release assets"
-}
-
-if (-not $shaAsset) {
-    Write-Error "No SHA256 checksum file found in release assets. Cannot proceed without validation."
+# Check both assets before attempting to use them in error messages
+if (-not $zipAsset -or -not $shaAsset) {
+    if (-not $zipAsset) {
+        Write-Error "No zip file found in release assets"
+    }
+    if (-not $shaAsset) {
+        Write-Error "No SHA256 checksum file found. Cannot proceed without validation."
+    }
+    return
 }
 
 # Create temporary directory for downloads
