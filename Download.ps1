@@ -164,12 +164,15 @@ if (Test-Path -Path $extractPath) {
 $zipAsset = $selectedRelease.assets | Where-Object -FilterScript { $_.name -like "*.zip" -and $_.name -notlike "*.sha256" } | Select-Object -First 1
 $shaAsset = $selectedRelease.assets | Where-Object -FilterScript { $_.name -like "*.zip.sha256" } | Select-Object -First 1
 
-if (-not $zipAsset) {
-    Write-Error "No zip file found in release assets"
-}
-
-if (-not $shaAsset) {
-    Write-Error "No SHA256 checksum file found for $($zipAsset.name). Cannot proceed without validation."
+# Check both assets before attempting to use them in error messages
+if (-not $zipAsset -or -not $shaAsset) {
+    if (-not $zipAsset) {
+        Write-Error "No zip file found in release assets"
+    }
+    if (-not $shaAsset) {
+        Write-Error "No SHA256 checksum file found. Cannot proceed without validation."
+    }
+    return
 }
 
 # Create temporary directory for downloads
