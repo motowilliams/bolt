@@ -89,7 +89,7 @@ $sortedReleases = $releasesResponse | Sort-Object -Property {
 
         # Use Int64 arithmetic to avoid Int32 overflow for large version components
         # Prereleases sort before releases (subtract 0.5 if prerelease)
-        $sortValue = ([int64]$major * 1000000) + ($minor * 1000) + $patch
+        $sortValue = ([int64]$major * 1000000) + ([int64]$minor * 1000) + [int64]$patch
         if ($prerelease) {
             $sortValue -= 0.5
         }
