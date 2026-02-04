@@ -119,7 +119,6 @@ if ($PSCmdlet.ParameterSetName -eq 'AutoDownload') {
     }
 
     # Prompt for release selection
-    $selectedRelease = $null
     $attempts = 0
     $maxAttempts = 2
 
