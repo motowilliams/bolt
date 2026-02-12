@@ -350,6 +350,24 @@ $subscriptionId = if ($env:AZURE_SUBSCRIPTION_ID) {
 
 ### Testing
 
+**⚠️ MANDATORY: ALL code changes MUST include comprehensive tests. No exceptions.**
+
+**For Package Starters:**
+- **Minimum 15+ task structure tests** (syntax, metadata, aliases)
+- **Minimum 5+ integration tests** (task execution, exit codes, artifacts)
+- **Real example files** in `tests/[example-project]/` (not empty placeholders)
+- **Tagged appropriately** (`[Toolchain]-Tasks` or `[Toolchain]-Docker-Tasks`)
+- See `.github/instructions/package-starter-development.instructions.md` for full requirements
+
+**For Core Changes:**
+- Add tests to `tests/bolt.Tests.ps1` (orchestration) or `tests/security/Security.Tests.ps1` (security)
+- Tag with `Core` or `Security` as appropriate
+- Verify cross-platform compatibility
+
+**Testing is not optional. If tests don't exist or don't pass, changes will not be merged.**
+
+---
+
 Before submitting changes:
 
 - **Run the complete test suite**: Use `.\Invoke-Tests.ps1` to run all tests (includes starter packages)
@@ -357,7 +375,7 @@ Before submitting changes:
 - **Use test tags for faster feedback**:
   - `.\Invoke-Tests.ps1 -Tag Core` - Quick orchestration tests (fast, ~1s)
   - `.\Invoke-Tests.ps1 -Tag Security` - Security validation tests (moderate, ~10s)
-  - `.\Invoke-Tests.ps1 -Tag Bicep-Tasks` - Bicep starter package validation tests (slower, ~22s)
+  - `.\Invoke-Tests.ps1 -Tag Package-Bicep-Tasks` - Bicep starter package validation tests (slower, ~22s)
 - **Test tasks individually**: Verify your task works standalone
 - **Test with dependencies**: Check dependency resolution and `-Only` flag
 - **Test with custom directories**: Verify `-TaskDirectory` parameter works correctly
@@ -366,19 +384,43 @@ Before submitting changes:
 - **Add new tests**: Choose the appropriate test file:
   - **Core orchestration changes** → `tests/bolt.Tests.ps1` (uses mock fixtures, tag with `Core`)
   - **Security changes** → `tests/security/Security.Tests.ps1` (validates security fixes, tag with `Security`)
-  - **New Bicep starter package tasks** → `packages/.build-bicep/tests/Tasks.Tests.ps1` (validates task structure, tag with `Bicep-Tasks`)
-  - **Bicep starter package integrations** → `packages/.build-bicep/tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Bicep-Tasks`)
+  - **New Bicep starter package tasks** → `packages/.build-bicep/tests/Tasks.Tests.ps1` (validates task structure, tag with `Package-Bicep-Tasks`)
+  - **Bicep starter package integrations** → `packages/.build-bicep/tests/Integration.Tests.ps1` (requires Bicep CLI, tag with `Package-Bicep-Tasks`)
 
 > **Note**: Tests for starter packages live within their package directories (e.g., `packages/.build-bicep/tests/`). This supports future separation of starter packages into their own repositories. The `Invoke-Tests.ps1` script automatically discovers tests in both `tests/` and `packages/` directories.
 
 ### Adding New Starter Packages
 
-Want to contribute a starter package for a new toolchain (Python, Node.js, Docker, etc.)? Follow this comprehensive checklist based on the conventions established by the Bicep and Golang starter packages.
+Want to contribute a starter package for a new toolchain? Bolt supports TWO types of package starters:
+
+#### Package Starter Types
+
+**1. Non-Docker Packages (Preferred)**
+
+Use for toolchains with well-supported local CLIs (Go, Node.js, .NET SDK, Terraform, etc.):
+- **Pattern**: `packages/.build-<toolchain>/`
+- **Requires**: Local tool installation only
+- **No Docker references**: Clean, simple task scripts
+- **Better DX**: Faster execution, native debugging, IDE integration
+- **Example**: `.build-bicep`, `.build-golang`, `.build-typescript`
+
+**2. Docker-Only Packages (Alternative)**
+
+Use for containerized workflows or when avoiding local tool installation:
+- **Pattern**: `packages/.build-<toolchain>-docker/`
+- **Requires**: Docker with Linux containers (important on Windows)
+- **Includes**: Dockerfile for custom image builds
+- **Env var**: Force rebuild (e.g., `BOLT_TYPESCRIPT_DOCKER_REBUILD=1`)
+- **Docker-only**: All `docker run` execution, no local CLI detection
+- **Example**: `.build-typescript-docker`, `.build-python-docker`
+
+**Recommendation**: For popular toolchains, create BOTH variants (non-Docker for local dev, Docker for containerized workflows). For specialized tools, choose the variant that makes most sense.
 
 #### 1. Create Package Directory Structure
 
-Create a new directory under `packages/` following the naming convention:
+Create a new directory under `packages/` following the appropriate naming convention:
 
+**Non-Docker Package:**
 ```powershell
 packages/.build-<toolchain>/
 ├── Invoke-Format.ps1          # Format source files
@@ -386,6 +428,7 @@ packages/.build-<toolchain>/
 ├── Invoke-Test.ps1            # Run tests (optional if toolchain supports testing)
 ├── Invoke-Build.ps1           # Build application (with dependencies)
 ├── Create-Release.ps1         # Release packaging script
+├── bolt.config.json           # Configuration template (optional)
 ├── README.md                  # Package-specific documentation
 └── tests/
     ├── Tasks.Tests.ps1        # Task validation tests
@@ -393,7 +436,26 @@ packages/.build-<toolchain>/
     └── app/                   # Example application for testing
 ```
 
-**Naming Convention**: Use `.build-<toolchain>` where `<toolchain>` is lowercase (e.g., `.build-python`, `.build-docker`, `.build-terraform`).
+**Docker-Only Package:**
+```powershell
+packages/.build-<toolchain>-docker/
+├── Invoke-Format.ps1          # Format source files (via Docker)
+├── Invoke-Lint.ps1            # Validate/lint code (via Docker)
+├── Invoke-Test.ps1            # Run tests (via Docker)
+├── Invoke-Build.ps1           # Build application (via Docker)
+├── Dockerfile                 # Custom image definition
+├── Create-Release.ps1         # Release packaging script
+├── bolt.config.json           # Configuration template (optional)
+├── README.md                  # Package-specific documentation
+└── tests/
+    ├── Tasks.Tests.ps1        # Task validation tests
+    ├── Integration.Tests.ps1  # End-to-end integration tests
+    └── app/                   # Example application for testing
+```
+
+**Naming Convention**: 
+- Non-Docker: `.build-<toolchain>` where `<toolchain>` is lowercase (e.g., `.build-python`, `.build-golang`, `.build-terraform`)
+- Docker-Only: `.build-<toolchain>-docker` (e.g., `.build-python-docker`, `.build-golang-docker`)
 
 #### 2. Implement Task Files
 
@@ -532,6 +594,21 @@ finally {
 
 #### 4. Add Comprehensive Tests
 
+**⚠️ CRITICAL: TESTING IS NOT OPTIONAL**
+
+**Package starters without comprehensive tests will NOT be merged. Period.**
+
+Every package starter MUST include:
+- **Minimum 15+ task structure assertions** (file existence, syntax validation, metadata)
+- **Minimum 5+ integration assertions** (task execution, exit codes, artifacts)
+- **Real example application files** in `tests/[example-project]/` (not empty placeholders)
+- **Proper test tags** (`[Toolchain]-Tasks` or `[Toolchain]-Docker-Tasks`)
+- **Graceful tool detection** - Skip tests when tools not installed, don't fail
+
+**See `.github/instructions/package-starter-development.instructions.md` for complete requirements.**
+
+---
+
 Create two test files in `tests/` subdirectory:
 
 **`Tasks.Tests.ps1` - Task structure validation:**
@@ -609,7 +686,9 @@ Describe 'Task Integration Tests' -Tag '<Toolchain>-Tasks' {
 }
 ```
 
-**Tag Convention**: Use `<Toolchain>-Tasks` (e.g., `Python-Tasks`, `Docker-Tasks`)
+**Tag Convention**: 
+- Non-Docker packages: `<Toolchain>-Tasks` (e.g., `Package-Python-Tasks`, `Package-Golang-Tasks`)
+- Docker-only packages: `<Toolchain>-Docker-Tasks` (e.g., `Package-Python-Tasks-Docker`, `Package-Golang-Tasks-Docker`)
 
 #### 5. Create Package-Specific README
 
@@ -693,7 +772,7 @@ Add your new tag to `Invoke-Tests.ps1`:
 
 ```powershell
 # Update ValidateSet in both -Tag and -ExcludeTag parameters
-[ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', '<Toolchain>-Tasks', ...)]
+[ValidateSet('Core', 'Security', 'Package-Bicep-Tasks', 'Package-Golang-Tasks', 'Package-Terraform-Tasks', '<Toolchain>-Tasks', ...)]
 
 # Add to test discovery paths
 $config.Run.Path = @(
@@ -735,13 +814,23 @@ Write-Host "  - packages/.build-<toolchain>/tests/" -ForegroundColor Gray
 **Usage:** (examples)
 
 **Testing:**
+
+**Non-Docker packages:**
+```
 Run tests with: `Invoke-Pester -Tag <Toolchain>-Tasks`
 ```
+
+**Docker-only packages:**
+```
+Run tests with: `Invoke-Pester -Tag <Toolchain>-Docker-Tasks`
+```
+
 
 **Main `README.md`** - Add to "Available Package Starters" section (follow Bicep/Golang pattern)
 
 **`CHANGELOG.md`** - Document in next release notes:
 
+**For non-Docker package:**
 ```markdown
 ### Added
 - **<Toolchain> Starter Package**: Complete workflow package (`packages/.build-<toolchain>`)
@@ -749,6 +838,17 @@ Run tests with: `Invoke-Pester -Tag <Toolchain>-Tasks`
   - Configuration support via `bolt.config.json`
   - Cross-platform support
   - Test suite: XX tests tagged `<Toolchain>-Tasks`
+```
+
+**For Docker-only package:**
+```markdown
+### Added
+- **<Toolchain> Docker Starter Package**: Containerized workflow package (`packages/.build-<toolchain>-docker`)
+  - Tasks: format, lint, test, build (all via Docker)
+  - Includes Dockerfile for custom image builds
+  - Environment variable for image rebuild: `BOLT_<TOOLCHAIN>_DOCKER_REBUILD`
+  - Cross-platform support (requires Docker with Linux containers)
+  - Test suite: XX tests tagged `<Toolchain>-Docker-Tasks`
 ```
 
 #### 8. Testing Checklist
@@ -775,13 +875,18 @@ Before submitting your PR:
 
 Study these existing packages as templates:
 
-- **Bicep Starter** (`packages/.build-bicep/`) - Infrastructure-as-Code toolchain
-- **Golang Starter** (`packages/.build-golang/`) - Application development with testing
-- **Terraform Starter** (`packages/.build-terraform/`) - Infrastructure-as-Code with Docker fallback
+**Non-Docker Packages:**
+- **Bicep Starter** (`packages/.build-bicep/`) - Infrastructure-as-Code toolchain (local CLI only, no Docker)
+- **Golang Starter** (`packages/.build-golang/`) - Application development with testing (local CLI only)
+- **TypeScript Starter** (`packages/.build-typescript/`) - Node.js/TypeScript development (local CLI only)
 
-All three follow the same conventions and provide excellent examples of:
+**Docker-Only Packages:**
+- **TypeScript Docker Starter** (`packages/.build-typescript-docker/`) - Node.js/TypeScript via Docker containers
+- **Python Docker Starter** (`packages/.build-python-docker/`) - Python development via Docker containers
+
+All packages follow the same conventions and provide excellent examples of:
 - Task structure and metadata
-- External tool validation
+- External tool validation (local CLI for non-Docker, Docker for Docker-only)
 - Configuration handling
 - Test organization
 - Documentation patterns
@@ -797,6 +902,9 @@ All three follow the same conventions and provide excellent examples of:
 - ❌ Missing package-specific README
 - ❌ Not providing example application in `tests/app/`
 - ❌ Archive naming doesn't follow `bolt-starter-{toolchain}-{version}.zip` pattern
+- ❌ **Non-Docker packages**: Including Docker references or fallback logic
+- ❌ **Docker-only packages**: Missing Dockerfile or rebuild environment variable
+- ❌ **Docker-only packages**: Not mentioning Linux containers requirement for Windows users
 
 ### Cross-Platform Guidelines
 
@@ -854,7 +962,7 @@ Describe "Your New Feature" -Tag 'Core' {
 **For new tasks in Bicep starter package**:
 ```powershell
 # Add to packages/.build-bicep/tests/Tasks.Tests.ps1
-Describe "YourNewTask Task" -Tag 'Bicep-Tasks' {
+Describe "YourNewTask Task" -Tag 'Package-Bicep-Tasks' {
     It "Should exist" {
         $taskPath = Join-Path $moduleRoot "Invoke-YourNewTask.ps1"
         Test-Path $taskPath | Should -Be $true

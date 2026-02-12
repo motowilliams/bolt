@@ -28,11 +28,10 @@ BeforeAll {
 
     $script:GoAppPath = Join-Path $PSScriptRoot 'app'
 
-    # Check for Go or Docker availability
+    # Check for Go availability
     $goCmd = Get-Command go -ErrorAction SilentlyContinue
-    $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
 
-    $script:hasGoOrDocker = ($null -ne $goCmd) -or ($null -ne $dockerCmd)
+    $script:hasGo = ($null -ne $goCmd)
 
     # Helper function to invoke bolt with captured output
     function Invoke-Bolt {
@@ -72,11 +71,11 @@ BeforeAll {
     }
 }
 
-Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
+Describe 'Task Integration Tests' -Tag 'Package-Golang-Tasks' {
     Context 'Format Task Integration' {
-        It 'Should format Go files if Go CLI or Docker is available' {
-            if (-not $script:hasGoOrDocker) {
-                Set-ItResult -Skipped -Because "Neither Go CLI nor Docker is installed"
+        It 'Should format Go files if Go CLI is available' {
+            if (-not $script:hasGo) {
+                Set-ItResult -Skipped -Because "Go CLI is not installed"
                 return
             }
 
@@ -87,9 +86,9 @@ Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
     }
 
     Context 'Lint Task Integration' {
-        It 'Should lint Go files if Go CLI or Docker is available' {
-            if (-not $script:hasGoOrDocker) {
-                Set-ItResult -Skipped -Because "Neither Go CLI nor Docker is installed"
+        It 'Should lint Go files if Go CLI is available' {
+            if (-not $script:hasGo) {
+                Set-ItResult -Skipped -Because "Go CLI is not installed"
                 return
             }
 
@@ -100,9 +99,9 @@ Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
     }
 
     Context 'Test Task Integration' {
-        It 'Should run Go tests if Go CLI or Docker is available' {
-            if (-not $script:hasGoOrDocker) {
-                Set-ItResult -Skipped -Because "Neither Go CLI nor Docker is installed"
+        It 'Should run Go tests if Go CLI is available' {
+            if (-not $script:hasGo) {
+                Set-ItResult -Skipped -Because "Go CLI is not installed"
                 return
             }
 
@@ -113,9 +112,9 @@ Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
     }
 
     Context 'Build Task Integration' {
-        It 'Should build Go application if Go CLI or Docker is available' {
-            if (-not $script:hasGoOrDocker) {
-                Set-ItResult -Skipped -Because "Neither Go CLI nor Docker is installed"
+        It 'Should build Go application if Go CLI is available' {
+            if (-not $script:hasGo) {
+                Set-ItResult -Skipped -Because "Go CLI is not installed"
                 return
             }
 
@@ -131,8 +130,8 @@ Describe 'Task Integration Tests' -Tag 'Golang-Tasks' {
 
     Context 'Full Build Pipeline' {
         It 'Should execute complete build pipeline with dependencies' {
-            if (-not $script:hasGoOrDocker) {
-                Set-ItResult -Skipped -Because "Neither Go CLI nor Docker is installed"
+            if (-not $script:hasGo) {
+                Set-ItResult -Skipped -Because "Go CLI is not installed"
                 return
             }
 

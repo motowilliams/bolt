@@ -63,7 +63,6 @@ The Terraform starter package (`packages/.build-terraform`) provides Infrastruct
 - Formats all Terraform files using `terraform fmt -recursive`
 - Recursively finds all `.tf` files
 - Shows per-file formatting status
-- **Docker Fallback**: Automatically uses `hashicorp/terraform:latest` if Terraform CLI not installed
 - Returns exit code 1 if formatting fails
 
 **Example Output:**
@@ -81,7 +80,6 @@ Found 3 Terraform file(s)
 - Validates Terraform configuration syntax
 - Runs `terraform init -backend=false` before validation
 - Detects syntax errors and configuration issues
-- **Docker Fallback**: Uses Docker container if Terraform CLI not available
 - Returns exit code 1 if validation fails
 
 **Example Output:**
@@ -131,15 +129,6 @@ Found 3 Terraform file(s)
 ⚠️  Waiting 5 seconds... (Ctrl+C to cancel)
 ```
 
-#### **Docker Fallback Support**
-All Terraform tasks automatically detect and use Docker when Terraform CLI is not installed:
-- Uses `hashicorp/terraform:latest` Docker image
-- Volume mounts working directory for file access
-- Cross-platform support (Linux, macOS, Windows with Linux containers)
-- Transparent fallback - no configuration required
-
-**Note**: Windows Docker Desktop must be configured for Linux containers to use Docker fallback.
-
 #### **Test Suite**
 Comprehensive Pester test suite for Terraform starter package:
 - **Task Validation Tests** (`packages/.build-terraform/tests/Tasks.Tests.ps1`)
@@ -155,7 +144,7 @@ Comprehensive Pester test suite for Terraform starter package:
 - **Example Configuration** (`packages/.build-terraform/tests/tf/main.tf`)
   - Sample Terraform configuration for testing
 
-Run tests with: `Invoke-Pester -Tag Terraform-Tasks`
+Run tests with: `Invoke-Pester -Tag Package-Terraform-Tasks`
 
 
 ### 4. Bicep Starter Package Tasks
@@ -1075,9 +1064,9 @@ Invoke-Pester -Path packages/.build-bicep/tests/
 # Run tests by tag
 Invoke-Pester -Tag Core           # Only core orchestration tests (fast, ~1s)
 Invoke-Pester -Tag Security       # Only security validation tests (fast, ~1s)
-Invoke-Pester -Tag Bicep-Tasks    # Only Bicep task tests (slower, requires Bicep CLI)
-Invoke-Pester -Tag Golang-Tasks   # Only Golang task tests (slower, requires Go)
-Invoke-Pester -Tag Terraform-Tasks # Only Terraform task tests (slower, requires Terraform/Docker)
+Invoke-Pester -Tag Package-Bicep-Tasks    # Only Bicep task tests (slower, requires Bicep CLI)
+Invoke-Pester -Tag Package-Golang-Tasks   # Only Golang task tests (slower, requires Go)
+Invoke-Pester -Tag Package-Terraform-Tasks # Only Terraform task tests (slower, requires Terraform CLI)
 ```
 
 ### Test Tags
@@ -1098,7 +1087,7 @@ The test suite uses Pester tags for flexible test execution:
 - Ensures secure input handling and error modes
 - Critical for security compliance
 
-**`Bicep-Tasks` Tag** (16 tests, ~22 seconds)
+**`Package-Bicep-Tasks` Tag** (16 tests, ~22 seconds)
 - Tests Bicep starter package implementation in `packages/.build-bicep/` directory
 - Includes `Tasks.Tests.ps1` (structure validation)
 - Includes `Integration.Tests.ps1` (actual Bicep execution)
@@ -1111,7 +1100,7 @@ The test suite uses Pester tags for flexible test execution:
 Invoke-Pester -Tag Core
 
 # Validate Bicep starter package before committing changes
-Invoke-Pester -Tag Bicep-Tasks
+Invoke-Pester -Tag Package-Bicep-Tasks
 
 # Complete validation (default)
 Invoke-Pester

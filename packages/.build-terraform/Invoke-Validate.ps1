@@ -12,27 +12,17 @@ if ($BoltConfig.TerraformToolPath) {
         exit 1
     }
     $terraformCmd = $terraformToolPath
-    $useDocker = $false
 }
 else {
     # Fall back to PATH search
     $terraformCmdObj = Get-Command terraform -ErrorAction SilentlyContinue
-    
-    # If terraform not found, check for Docker
+
     if (-not $terraformCmdObj) {
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        if (-not $dockerCmd) {
-            Write-Error "Terraform CLI not found and Docker is not available. Please install Terraform: https://developer.hashicorp.com/terraform/downloads, Docker: https://docs.docker.com/get-docker/, or configure TerraformToolPath in bolt.config.json"
-            exit 1
-        }
-        
-        Write-Host "  Using Docker container for Terraform (local CLI not found)" -ForegroundColor Gray
-        $useDocker = $true
+        Write-Error "Terraform CLI not found. Please install Terraform: https://developer.hashicorp.com/terraform/downloads or configure TerraformToolPath in bolt.config.json"
+        exit 1
     }
-    else {
-        $terraformCmd = "terraform"
-        $useDocker = $false
-    }
+
+    $terraformCmd = "terraform"
 }
 
 # ===== Find Terraform Root Modules =====
@@ -69,50 +59,30 @@ $directories = $tfFiles | ForEach-Object { Split-Path -Path $_.FullName -Parent 
 foreach ($dir in $directories) {
     $relativePath = Resolve-Path -Relative $dir
     Write-Host "  Validating module: $relativePath" -ForegroundColor Gray
-    
+
     # Initialize Terraform (required before validate)
     Push-Location $dir
     try {
-        if ($useDocker) {
-            # Use Docker with volume mount
-            $absolutePath = [System.IO.Path]::GetFullPath($dir)
-            
-            # Initialize without downloading providers (faster validation)
-            Write-Host "    Initializing..." -ForegroundColor Gray
-            $initOutput = & docker run --rm -v "${absolutePath}:/tf" -w /tf hashicorp/terraform:latest init -backend=false -upgrade 2>&1
-            
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "    ✗ Initialization failed" -ForegroundColor Red
-                Write-Host "      $initOutput" -ForegroundColor Red
-                $validateSuccess = $false
-                continue
-            }
-            
-            # Run validate
-            $output = & docker run --rm -v "${absolutePath}:/tf" -w /tf hashicorp/terraform:latest validate -no-color 2>&1
+        # Use terraform CLI (configured path or PATH search)
+        Write-Host "    Initializing..." -ForegroundColor Gray
+        & $terraformCmd init -backend=false 2>&1 | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "    ✗ Initialization failed" -ForegroundColor Red
+            $validateSuccess = $false
+            continue
         }
-        else {
-            # Use local terraform CLI (configured path or PATH search)
-            Write-Host "    Initializing..." -ForegroundColor Gray
-            & $terraformCmd init -backend=false 2>&1 | Out-Null
-            
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "    ✗ Initialization failed" -ForegroundColor Red
-                $validateSuccess = $false
-                continue
-            }
-            
-            # Run validate
-            $output = & $terraformCmd validate -no-color 2>&1
-        }
-        
+
+        # Run validate
+        $output = & $terraformCmd validate -no-color 2>&1
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host "    ✓ Configuration is valid" -ForegroundColor Green
         }
         else {
             Write-Host "    ✗ Validation failed" -ForegroundColor Red
             $validateSuccess = $false
-            
+
             # Display validation errors
             $output | ForEach-Object {
                 Write-Host "      $_" -ForegroundColor Red
@@ -122,7 +92,7 @@ foreach ($dir in $directories) {
     finally {
         Pop-Location
     }
-    
+
     Write-Host ""
 }
 

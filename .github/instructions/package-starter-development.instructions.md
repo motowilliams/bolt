@@ -17,6 +17,59 @@ A **package starter** is a pre-built collection of task scripts for a specific t
 - Support both single and multi-namespace installations
 - Can be released independently of core Bolt
 
+## ⚠️ MANDATORY: COMPREHENSIVE TESTING
+
+**ALL package starters MUST include comprehensive test suites. No exceptions.**
+
+### Required Test Files
+
+Every package starter must have:
+
+1. **`tests/Tasks.Tests.ps1`** - Validates task file structure and metadata
+   - Minimum 15+ assertions
+   - Tests for every task file existence
+   - PowerShell syntax validation
+   - Metadata validation (TASK, DESCRIPTION, DEPENDS)
+   - Alias validation
+   
+2. **`tests/Integration.Tests.ps1`** - End-to-end task execution tests
+   - Minimum 5+ assertions
+   - Tool/Docker availability checks
+   - Graceful skipping when tools not available
+   - Each task executed and exit code verified
+   - Output artifacts validated
+   - Full pipeline dependency test
+
+3. **`tests/[example-project]/`** - Real sample files for testing
+   - Not empty placeholders
+   - Actual files that tasks process
+   - Demonstrates common patterns
+
+### Test Requirements
+
+- **Tag all tests** with `[Toolchain]-Tasks` or `[Toolchain]-Docker-Tasks`
+- **Use BeforeAll/AfterAll** for setup and cleanup
+- **Skip gracefully** when tools not installed (`Set-ItResult -Skipped`)
+- **Verify exit codes** - All successful tasks must exit with 0
+- **Test dependencies** - Verify dep resolution works
+- **Cross-platform** - Test on Windows and Linux/macOS when possible
+
+### Anti-Pattern: Never Skip Tests
+
+❌ **DO NOT:**
+- Create package starters without tests
+- Add placeholder test files with no assertions
+- Skip test creation "to save time"
+- Plan to "add tests later"
+
+✅ **DO:**
+- Write tests as you create tasks
+- Test both happy and error paths
+- Include real-world example files
+- Verify output artifacts are created
+
+**If tests don't exist or don't pass, the package starter is incomplete and cannot be merged.**
+
 ## When to Create a Package Starter
 
 Create a package starter when:
@@ -330,12 +383,12 @@ Describe "[Toolchain] Package Starter - Integration Tests" -Tag "[Toolchain]-Tas
 
 Use consistent tags for test filtering:
 - `[Toolchain]-Tasks` - For package-specific tests
-- Examples: `Bicep-Tasks`, `Golang-Tasks`, `TypeScript-Tasks`
+- Examples: `Package-Bicep-Tasks`, `Package-Golang-Tasks`, `Package-Typescript-Tasks`
 
 This allows:
 ```powershell
-Invoke-Pester -Tag Bicep-Tasks    # Only Bicep tests
-Invoke-Pester -Tag Golang-Tasks   # Only Golang tests
+Invoke-Pester -Tag Package-Bicep-Tasks    # Only Bicep tests
+Invoke-Pester -Tag Package-Golang-Tasks   # Only Golang tests
 ```
 
 ## Release Script Pattern
@@ -626,7 +679,7 @@ The `Invoke-Tests.ps1` script at the repository root is the primary test runner.
 
 2. **Add the tag** to both `ValidateSet` attributes:
    ```powershell
-   [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', '[Toolchain]-Tasks', ...)]
+   [ValidateSet('Core', 'Security', 'Package-Bicep-Tasks', 'Package-Golang-Tasks', 'Package-Terraform-Tasks', '[Toolchain]-Tasks', ...)]
    ```
 
 3. **Update the parameter documentation** in `.PARAMETER Tag` section:

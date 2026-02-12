@@ -14,10 +14,6 @@ TypeScript application development tasks for building, testing, linting, and for
 - Node.js 18+ with npm: https://nodejs.org/
 - PowerShell 7.0+
 
-**OR**
-
-- Docker: https://docs.docker.com/get-docker/ (automatic fallback if Node.js not installed)
-
 ## Installation
 
 ### Option 1: Download from GitHub Releases (Recommended)
@@ -184,7 +180,7 @@ If Node.js is installed in a non-standard location, configure the executable pat
 }
 ```
 
-If `NodeToolPath` is not configured, Bolt searches for `node` in your system PATH or falls back to Docker. npm path is automatically derived from the Node.js path.
+If `NodeToolPath` is not configured, Bolt searches for `node` in your system PATH. npm path is automatically derived from the Node.js path.
 
 ## Example Project Structure
 
@@ -207,17 +203,6 @@ myproject/
     └── index.test.ts
 ```
 
-## Docker Fallback
-
-If Node.js/npm is not installed, tasks automatically use Docker with the `node:22-alpine` image:
-
-- All tasks work identically with Docker
-- No local Node.js installation required
-- Volume mounts preserve file changes
-- Slightly slower than native npm due to container overhead
-
-**Note**: Docker must be installed and running. See https://docs.docker.com/get-docker/
-
 ## Testing
 
 This package includes comprehensive tests:
@@ -229,16 +214,16 @@ This package includes comprehensive tests:
 Run tests with:
 
 ```powershell
-Invoke-Pester -Path packages/.build-typescript/tests/ -Tag TypeScript-Tasks
+Invoke-Pester -Path packages/.build-typescript/tests/ -Tag Package-Typescript-Tasks
 ```
 
 ## Troubleshooting
 
 ### Node.js/npm not found
 
-Error: `Node.js/npm not found and Docker is not available.`
+Error: `Node.js/npm not found.`
 
-**Solution**: Install Node.js from https://nodejs.org/ and ensure it's in your PATH, or install Docker.
+**Solution**: Install Node.js from https://nodejs.org/ and ensure it's in your PATH, or configure `NodeToolPath` in bolt.config.json.
 
 ### No package.json found
 
@@ -262,10 +247,6 @@ If Jest tests don't execute:
 1. Ensure `jest` is in `devDependencies`
 2. Check `jest.config.js` configuration
 3. Verify test files match `*.test.ts` or `*.spec.ts` pattern
-
-### Docker on Windows
-
-On Windows, ensure Docker Desktop is running and configured for Linux containers.
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 # Terraform Starter Package for Bolt
 
-Infrastructure-as-Code tasks for Terraform workflows with Docker fallback support.
+Infrastructure-as-Code tasks for Terraform workflows.
 
 ## Included Tasks
 
@@ -11,18 +11,10 @@ Infrastructure-as-Code tasks for Terraform workflows with Docker fallback suppor
 
 ## Requirements
 
-**Option 1: Local Terraform CLI** (Recommended)
 - Terraform 1.0+ CLI: https://developer.hashicorp.com/terraform/downloads
   - **Windows**: `winget install Hashicorp.Terraform`
   - **macOS**: `brew install terraform`
   - **Linux**: Download from https://developer.hashicorp.com/terraform/downloads
-
-**Option 2: Docker Fallback**
-- Docker Engine: https://docs.docker.com/get-docker/
-- If Terraform CLI is not found, tasks automatically use `hashicorp/terraform:latest` Docker image
-- Requires Docker volume mount support for working directory
-
-**Additional Requirements:**
 - PowerShell 7.0+
 
 ## Installation
@@ -94,30 +86,6 @@ Runs format → validate → plan → apply:
 
 ```powershell
 .\bolt.ps1 apply -Outline     # Show dependency tree without executing
-```
-
-## Docker Fallback Mode
-
-If Terraform CLI is not installed locally, tasks automatically detect and use Docker:
-
-```powershell
-# No local Terraform CLI? No problem!
-# Tasks will automatically use: docker run hashicorp/terraform:latest
-
-.\bolt.ps1 format    # Uses Docker if terraform command not found
-.\bolt.ps1 validate  # Uses Docker if terraform command not found
-```
-
-**Docker Requirements:**
-- Docker must be running
-- Tasks use volume mounts to access Terraform files
-- Cross-platform path handling is automatic
-
-**Example output when using Docker:**
-```
-Formatting Terraform files...
-  Using Docker container for Terraform (local CLI not found)
-Found 3 Terraform file(s)
 ```
 
 ## Task Details
@@ -196,7 +164,7 @@ If Terraform CLI is installed in a non-standard location, configure the executab
 }
 ```
 
-If `TerraformToolPath` is not configured, Bolt searches for `terraform` in your system PATH or falls back to Docker.
+If `TerraformToolPath` is not configured, Bolt searches for `terraform` in your system PATH.
 
 ## Example Project Structure
 
@@ -234,26 +202,24 @@ This package includes comprehensive tests:
 Run tests with:
 
 ```powershell
-# Requires Pester 5.0+ and either Terraform CLI or Docker
+# Requires Pester 5.0+ and Terraform CLI
 Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
 
 # Run all Terraform tests
-Invoke-Pester -Path packages/.build-terraform/tests/ -Tag Terraform-Tasks
+Invoke-Pester -Path packages/.build-terraform/tests/ -Tag Package-Terraform-Tasks
 ```
 
 ## Troubleshooting
 
-### Terraform CLI not found and Docker not available
+### Terraform CLI not found
 
-Error: `Terraform CLI not found and Docker is not available. Please install...`
+Error: `Terraform CLI not found. Please install...`
 
-**Solution**: Install either Terraform CLI or Docker:
+**Solution**: Install Terraform CLI:
 - Terraform: https://developer.hashicorp.com/terraform/downloads
-- Docker: https://docs.docker.com/get-docker/
 
 Verify installation:
 - Terraform: `terraform --version`
-- Docker: `docker --version`
 
 ### No Terraform files found
 
@@ -279,13 +245,6 @@ If you see validation errors:
   - Provider version mismatches
   - Missing provider requirements
 
-### Docker volume mount issues
-
-If using Docker fallback and getting path errors:
-- Ensure Docker has access to your project directory
-- On Windows: Check Docker Desktop file sharing settings
-- On Linux/macOS: Verify Docker has permission to mount paths
-
 ### Plan file not found during apply
 
 Warning: Tasks will generate a new plan if `terraform.tfplan` is not found.
@@ -305,14 +264,6 @@ The `apply` task includes safety features:
 - Press Ctrl+C to cancel during delay
 - Use `-Outline` flag to preview without executing
 - Review plan output before running apply
-
-### Docker Security
-
-When using Docker fallback:
-- Docker container runs with current user permissions
-- Volume mounts grant container access to Terraform files
-- Uses official HashiCorp Terraform image
-- Container is removed after execution (--rm flag)
 
 ## Contributing
 

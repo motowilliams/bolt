@@ -15,7 +15,6 @@ if ($BoltConfig.PythonToolPath) {
         exit 1
     }
     $pythonCmd = $pythonToolPath
-    $useDocker = $false
 }
 else {
     # Fall back to PATH search
@@ -25,21 +24,12 @@ else {
         $pythonCmdObj = Get-Command python3 -ErrorAction SilentlyContinue
     }
 
-    # If python not found, check for Docker
     if (-not $pythonCmdObj) {
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        if (-not $dockerCmd) {
-            Write-Error "Python not found and Docker is not available. Please install Python: https://www.python.org/downloads/, Docker: https://docs.docker.com/get-docker/, or configure PythonToolPath in bolt.config.json"
-            exit 1
-        }
+        Write-Error "Python not found. Please install Python: https://www.python.org/downloads/ or configure PythonToolPath in bolt.config.json"
+        exit 1
+    }
 
-        Write-Host "  Using Docker container for Python (local CLI not found)" -ForegroundColor Gray
-        $useDocker = $true
-    }
-    else {
-        $pythonCmd = $pythonCmdObj.Source
-        $useDocker = $false
-    }
+    $pythonCmd = $pythonCmdObj.Source
 }
 
 # ===== Find Python Source Files =====
@@ -74,60 +64,39 @@ Write-Host ""
 # ===== Lint Files =====
 $lintSuccess = $true
 
-if ($useDocker) {
-    # Use Docker with volume mount
-    $absolutePath = [System.IO.Path]::GetFullPath($pythonPath)
+# Use local Python CLI
+Write-Host "  Installing ruff..." -ForegroundColor Gray
+$output = & $pythonCmd -m pip install ruff --quiet 2>&1
 
-    Write-Host "  Running ruff in Docker (installing and linting)..." -ForegroundColor Gray
-    # Combine install and execution in single container to preserve installed packages
-    $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim sh -c "pip install ruff --quiet && python -m ruff check ." 2>&1
-
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "    ✓ No linting errors found" -ForegroundColor Green
-    }
-    else {
-        Write-Host "    ✗ Linting errors found" -ForegroundColor Red
-        $lintSuccess = $false
-        $output | ForEach-Object {
-            Write-Host "      $_" -ForegroundColor Red
-        }
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "    ✗ Failed to install ruff" -ForegroundColor Red
+    $lintSuccess = $false
+    $output | ForEach-Object {
+        Write-Host "      $_" -ForegroundColor Red
     }
 }
 else {
-    # Use local Python CLI
-    Write-Host "  Installing ruff..." -ForegroundColor Gray
-    $output = & $pythonCmd -m pip install ruff --quiet 2>&1
+    Write-Host "    ✓ ruff installed" -ForegroundColor Green
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "    ✗ Failed to install ruff" -ForegroundColor Red
-        $lintSuccess = $false
-        $output | ForEach-Object {
-            Write-Host "      $_" -ForegroundColor Red
+    # Run ruff
+    Write-Host "  Running ruff..." -ForegroundColor Gray
+    Push-Location $pythonPath
+    try {
+        $output = & $pythonCmd -m ruff check . 2>&1
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "    ✓ No linting errors found" -ForegroundColor Green
+        }
+        else {
+            Write-Host "    ✗ Linting errors found" -ForegroundColor Red
+            $lintSuccess = $false
+            $output | ForEach-Object {
+                Write-Host "      $_" -ForegroundColor Red
+            }
         }
     }
-    else {
-        Write-Host "    ✓ ruff installed" -ForegroundColor Green
-
-        # Run ruff
-        Write-Host "  Running ruff..." -ForegroundColor Gray
-        Push-Location $pythonPath
-        try {
-            $output = & $pythonCmd -m ruff check . 2>&1
-
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "    ✓ No linting errors found" -ForegroundColor Green
-            }
-            else {
-                Write-Host "    ✗ Linting errors found" -ForegroundColor Red
-                $lintSuccess = $false
-                $output | ForEach-Object {
-                    Write-Host "      $_" -ForegroundColor Red
-                }
-            }
-        }
-        finally {
-            Pop-Location
-        }
+    finally {
+        Pop-Location
     }
 }
 

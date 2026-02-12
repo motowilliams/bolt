@@ -12,27 +12,17 @@ if ($BoltConfig.TerraformToolPath) {
         exit 1
     }
     $terraformCmd = $terraformToolPath
-    $useDocker = $false
 }
 else {
     # Fall back to PATH search
     $terraformCmdObj = Get-Command terraform -ErrorAction SilentlyContinue
-    
-    # If terraform not found, check for Docker
+
     if (-not $terraformCmdObj) {
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        if (-not $dockerCmd) {
-            Write-Error "Terraform CLI not found and Docker is not available. Please install Terraform: https://developer.hashicorp.com/terraform/downloads, Docker: https://docs.docker.com/get-docker/, or configure TerraformToolPath in bolt.config.json"
-            exit 1
-        }
-        
-        Write-Host "  Using Docker container for Terraform (local CLI not found)" -ForegroundColor Gray
-        $useDocker = $true
+        Write-Error "Terraform CLI not found. Please install Terraform: https://developer.hashicorp.com/terraform/downloads or configure TerraformToolPath in bolt.config.json"
+        exit 1
     }
-    else {
-        $terraformCmd = "terraform"
-        $useDocker = $false
-    }
+
+    $terraformCmd = "terraform"
 }
 
 # ===== Find Terraform Files =====
@@ -70,21 +60,10 @@ $directories = $tfFiles | ForEach-Object { Split-Path -Path $_.FullName -Parent 
 foreach ($dir in $directories) {
     $relativePath = Resolve-Path -Relative $dir
     Write-Host "  Formatting directory: $relativePath" -ForegroundColor Gray
-    
-    if ($useDocker) {
-        # Use Docker with volume mount
-        # Convert path to absolute and handle cross-platform paths
-        $absolutePath = [System.IO.Path]::GetFullPath($dir)
-        
-        # Docker volume mount syntax: host_path:container_path
-        # Use splatting for proper argument handling
-        & docker run --rm -v "${absolutePath}:/tf" -w /tf hashicorp/terraform:latest fmt -recursive | Out-Null
-    }
-    else {
-        # Use local terraform CLI (configured path or PATH search)
-        & $terraformCmd fmt -recursive $dir | Out-Null
-    }
-    
+
+    # Use terraform CLI (configured path or PATH search)
+    & $terraformCmd fmt -recursive $dir | Out-Null
+
     if ($LASTEXITCODE -eq 0) {
         $filesInDir = ($tfFiles | Where-Object { (Split-Path -Path $_.FullName -Parent) -eq $dir }).Count
         Write-Host "    ✓ Formatted $filesInDir file(s)" -ForegroundColor Green

@@ -11,16 +11,10 @@ Go application development tasks for building, testing, and formatting Go code.
 
 ## Requirements
 
-**Option 1: Local Go Installation**
 - Go 1.21+ CLI: https://go.dev/doc/install
   - **Windows**: `winget install GoLang.Go`
   - **Linux**: Download from https://go.dev/dl/
   - **macOS**: `brew install go`
-
-**Option 2: Docker (Automatic Fallback)**
-- Docker Engine: https://docs.docker.com/get-docker/
-- Tasks automatically use `golang:1.22-alpine` image when Go is not installed
-
 - PowerShell 7.0+
 
 ## Installation
@@ -136,27 +130,6 @@ Runs format → lint → test → build:
 .\bolt.ps1 build -Outline
 ```
 
-## Docker Fallback
-
-If Go is not installed, tasks automatically use Docker:
-
-```powershell
-# No local Go? No problem!
-.\bolt.ps1 format    # Uses Docker: golang:1.22-alpine
-.\bolt.ps1 build     # Automatically falls back to Docker
-```
-
-**Docker behavior:**
-- Uses `golang:1.22-alpine` container image
-- Mounts your project directory as `/project`
-- Executes Go commands inside container
-- Build output appears in your local `bin/` directory
-- **Note**: Docker builds Linux binaries (not Windows .exe files)
-
-**Module dependencies:**
-- Go automatically downloads dependencies from go.mod on first use
-- No separate `go mod download` step needed
-
 ## Task Details
 
 ### Format Task
@@ -221,7 +194,7 @@ This package includes comprehensive tests:
 Run tests with:
 
 ```powershell
-Invoke-Pester -Path packages/.build-golang/tests/ -Tag Golang-Tasks
+Invoke-Pester -Path packages/.build-golang/tests/ -Tag Package-Golang-Tasks
 ```
 
 ## Troubleshooting
@@ -234,7 +207,6 @@ Error: `Go CLI not found. Please install: https://go.dev/doc/install`
 1. **Install Go**: https://go.dev/doc/install
 2. **Verify installation**: `go version`
 3. **Configure explicit path**: Add `GoToolPath` to `bolt.config.json`
-4. **Use Docker**: Install Docker for automatic fallback
 
 ### No Go files found
 

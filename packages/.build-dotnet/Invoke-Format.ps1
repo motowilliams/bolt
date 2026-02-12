@@ -13,27 +13,17 @@ if ($BoltConfig.DotNetToolPath) {
         exit 1
     }
     $dotnetCmd = $dotnetToolPath
-    $useDocker = $false
 }
 else {
     # Fall back to PATH search
     $dotnetCmdObj = Get-Command dotnet -ErrorAction SilentlyContinue
-    
-    # If dotnet not found, check for Docker
+
     if (-not $dotnetCmdObj) {
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        if (-not $dockerCmd) {
-            Write-Error ".NET SDK not found and Docker is not available. Please install .NET SDK: https://dotnet.microsoft.com/download, Docker: https://docs.docker.com/get-docker/, or configure DotNetToolPath in bolt.config.json"
-            exit 1
-        }
-        
-        Write-Host "  Using Docker container for .NET SDK (local CLI not found)" -ForegroundColor Gray
-        $useDocker = $true
+        Write-Error ".NET SDK not found. Please install .NET SDK: https://dotnet.microsoft.com/download or configure DotNetToolPath in bolt.config.json"
+        exit 1
     }
-    else {
-        $dotnetCmd = "dotnet"
-        $useDocker = $false
-    }
+
+    $dotnetCmd = "dotnet"
 }
 
 # ===== Find .NET Projects =====
@@ -63,68 +53,39 @@ $formatSuccess = $true
 foreach ($project in $projectFiles) {
     $projectDir = Split-Path -Path $project.FullName -Parent
     $relativePath = Resolve-Path -Relative $project.FullName
-    
+
     Write-Host "  Formatting project: $relativePath" -ForegroundColor Gray
-    
+
     Push-Location $projectDir
     try {
-        if ($useDocker) {
-            # Use Docker with volume mount
-            $absolutePath = [System.IO.Path]::GetFullPath($projectDir)
-            
-            # Run dotnet format in Docker container
-            $output = & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:10.0 dotnet format --verify-no-changes 2>&1
-            
-            # If verify-no-changes returns non-zero, format is needed
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "    Formatting needed, applying changes..." -ForegroundColor Gray
-                $output = & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:10.0 dotnet format 2>&1
-                
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Host "    ✓ Project formatted successfully" -ForegroundColor Green
-                }
-                else {
-                    Write-Host "    ✗ Format failed" -ForegroundColor Red
-                    $formatSuccess = $false
-                    $output | ForEach-Object {
-                        Write-Host "      $_" -ForegroundColor Red
-                    }
-                }
+        # Use dotnet CLI (configured path or PATH search)
+        # First check if formatting is needed
+        $output = & $dotnetCmd format --verify-no-changes 2>&1
+
+        # If verify-no-changes returns non-zero, format is needed
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "    Formatting needed, applying changes..." -ForegroundColor Gray
+            $output = & $dotnetCmd format 2>&1
+
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "    ✓ Project formatted successfully" -ForegroundColor Green
             }
             else {
-                Write-Host "    ✓ Project already formatted" -ForegroundColor Green
+                Write-Host "    ✗ Format failed" -ForegroundColor Red
+                $formatSuccess = $false
+                $output | ForEach-Object {
+                    Write-Host "      $_" -ForegroundColor Red
+                }
             }
         }
         else {
-            # Use local dotnet CLI (configured path or PATH search)
-            # First check if formatting is needed
-            $output = & $dotnetCmd format --verify-no-changes 2>&1
-            
-            # If verify-no-changes returns non-zero, format is needed
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "    Formatting needed, applying changes..." -ForegroundColor Gray
-                $output = & $dotnetCmd format 2>&1
-                
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Host "    ✓ Project formatted successfully" -ForegroundColor Green
-                }
-                else {
-                    Write-Host "    ✗ Format failed" -ForegroundColor Red
-                    $formatSuccess = $false
-                    $output | ForEach-Object {
-                        Write-Host "      $_" -ForegroundColor Red
-                    }
-                }
-            }
-            else {
-                Write-Host "    ✓ Project already formatted" -ForegroundColor Green
-            }
+            Write-Host "    ✓ Project already formatted" -ForegroundColor Green
         }
     }
     finally {
         Pop-Location
     }
-    
+
     Write-Host ""
 }
 

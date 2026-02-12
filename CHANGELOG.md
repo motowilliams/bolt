@@ -7,18 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-02-11
+
+### Added
+- **Package Starter Architecture Split**: Separated package starters into non-Docker and Docker-only variants
+  - **5 New Docker-Only Package Starters**: Dedicated containerized workflow packages
+    - `.build-typescript-docker` - TypeScript/Node.js via Docker (uses `node:22-alpine`)
+    - `.build-python-docker` - Python development via Docker (uses `python:3.12-slim`)
+    - `.build-golang-docker` - Go application development via Docker (uses `golang:1.22-alpine`)
+    - `.build-dotnet-docker` - .NET development via Docker (uses `mcr.microsoft.com/dotnet/sdk:10.0`)
+    - `.build-terraform-docker` - Infrastructure-as-Code via Docker (uses `hashicorp/terraform:latest`)
+  - Each Docker package includes custom `Dockerfile` for image customization
+  - Environment variable triggers for custom image builds (e.g., `BOLT_TYPESCRIPT_DOCKER_REBUILD=1`)
+  - Windows users require Docker Desktop configured for Linux containers
+  - Comprehensive test suites with new tags: `Package-Golang-Tasks-Docker`, `Package-Python-Tasks-Docker`, `Package-Typescript-Tasks-Docker`, `Package-Dotnet-Tasks-Docker`, `Package-Package-Terraform-Tasks-Docker`
+
 ### Changed
-- **Golang Starter Package**: Added Docker fallback support and enhanced format task
-  - All tasks (format, lint, test, build) now support automatic Docker fallback
-  - Uses `golang:1.22-alpine` container image when Go CLI is not installed
-  - Three-tier tool detection: Configured path → PATH search → Docker fallback
-  - Seamless module dependency handling via go.mod
-  - Binary output works transparently with Docker volume mounts
-  - Build task notes Linux binary output when using Docker
-  - Enhanced format task to use batch processing (`go fmt ./...`) instead of file-by-file iteration for better performance, especially with Docker
-  - Updated documentation with Docker usage and troubleshooting
-  - Enhanced integration tests to support Docker execution
-  - Maintains full backward compatibility with existing configurations
+- **Golang Starter Package**: Removed Docker fallback support to align with split architecture pattern
+  - Now requires Go CLI installation (no automatic Docker fallback)
+  - Simplified task scripts (removed `$useDocker` variable and Docker conditional blocks)
+  - Updated error messages to remove Docker installation instructions
+  - Updated README to remove Docker fallback documentation
+  - Updated integration tests to check for Go CLI only
+  - Users wanting Docker-based builds should use `.build-golang-docker` package instead
+  - Enhanced format task to use batch processing (`go fmt ./...`) for better performance
+  - Maintains full backward compatibility with existing non-Docker configurations
+
+- **Python Starter Package**: Removed Docker fallback support to align with split architecture pattern
+  - Now requires Python 3.8+ installation (no automatic Docker fallback)
+  - Simplified task scripts (removed Docker detection and execution logic)
+  - Updated README to remove Docker fallback documentation
+  - Users wanting Docker-based builds should use `.build-python-docker` package instead
+
+- **TypeScript Starter Package**: Removed Docker fallback support to align with split architecture pattern
+  - Now requires Node.js 18+ with npm (no automatic Docker fallback)
+  - Simplified task scripts (removed Docker detection and execution logic)
+  - Updated README and tests to remove Docker references
+  - Users wanting Docker-based builds should use `.build-typescript-docker` package instead
+
+- **dotnet Starter Package**: Removed Docker fallback support to align with split architecture pattern
+  - Now requires .NET SDK 10.0+ installation (no automatic Docker fallback)
+  - Simplified task scripts (removed Docker detection and execution logic)
+  - Updated README to remove Docker fallback documentation
+  - Users wanting Docker-based builds should use `.build-dotnet-docker` package instead
+
+- **Terraform Starter Package**: Removed Docker fallback support to align with split architecture pattern
+  - Now requires Terraform CLI installation (no automatic Docker fallback)
+  - Simplified task scripts (removed Docker detection and execution logic)
+  - Updated README and tests to remove Docker references
+  - Users wanting Docker-based builds should use `.build-terraform-docker` package instead
+
+### Changed
+- **Documentation Updates**: Updated all documentation to reflect package architecture split
+  - `packages/README.md` - Added package architecture section, documented all 11 packages (6 non-Docker + 5 Docker)
+  - `docs/ecosystem.md` - Documented two package types with characteristics and benefits
+  - `IMPLEMENTATION.md` - Removed Docker fallback pattern documentation, updated examples
+  - `CONTRIBUTING.md` - Updated package starter contribution guidelines with Docker/non-Docker patterns
+  - `.github/prompts/create-package-starter.prompt.md` - Added Docker/non-Docker package creation patterns
+  - `Invoke-Tests.ps1` - Added Docker package test tags (5 new tags, 12 total package tags)
+
+### Technical Notes
+- **Design Decision**: Split architecture improves clarity and maintainability
+  - Docker fallback added complexity to every task script (~50% more code per task)
+  - Mixed fallback pattern made debugging harder (conditional execution paths)
+  - Separate packages provide clearer user intent and expectations
+  - Non-Docker packages are simpler, faster, and better for local development
+  - Docker packages provide consistent containerized environments
+  - Users can choose the workflow that best fits their needs
+- **Migration Path**: Users with Docker fallback workflows should migrate to `*-docker` packages
+  - Copy tasks from `.build-<toolchain>-docker/` to `.build/` directory
+  - No bolt.ps1 changes required (same task names and metadata)
+  - Docker-only packages require Docker with Linux containers
 
 ## [0.13.1] - 2026-02-04
 
@@ -176,9 +235,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added TypeScript build cache (`*.tsbuildinfo`)
   - Added npm and ESLint cache directories (`.npm`, `.eslintcache`)
   - Follows same pattern as other package starters with section header and comments
-- **`Invoke-Tests.ps1`**: Added `TypeScript-Tasks` tag to ValidateSet for test filtering
+- **`Invoke-Tests.ps1`**: Added `Package-Typescript-Tasks` tag to ValidateSet for test filtering
   - Added `packages/.build-typescript/tests/` to test discovery paths
-  - Added documentation and examples for TypeScript-Tasks tag
+  - Added documentation and examples for Package-Typescript-Tasks tag
 ## [0.10.2] - 2026-01-27
 
 ### Changed
@@ -226,9 +285,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`.gitattributes`**: Added `*.cs` and `*.csproj` files with `eol=lf` to ensure consistent line endings across platforms
   - Prevents `dotnet format` from modifying files after checkout on Windows
 - **`.gitignore`**: Added .NET build artifacts (bin/, obj/, *.dll, *.exe, *.pdb, *.cache, packages/, publish/)
-- **`Invoke-Tests.ps1`**: Added `DotNet-Tasks` tag to ValidateSet for test filtering
+- **`Invoke-Tests.ps1`**: Added `Package-Dotnet-Tasks` tag to ValidateSet for test filtering
   - Added `packages/.build-dotnet/tests/` to test discovery paths
-  - Added documentation and examples for DotNet-Tasks tag
+  - Added documentation and examples for Package-Dotnet-Tasks tag
 - **Package Starter Development Instructions**: Enhanced `.github/instructions/package-starter-development.instructions.md`
   - Added "Updating Test Discovery Wrappers" section with detailed requirements
   - Added "Version Bumping and Release Preparation" section
@@ -256,7 +315,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Windows: Uses Chocolatey package manager
   - Ensures consistent cross-platform testing with native Terraform CLI
 - **Test Discovery**: Added `packages/.build-terraform/tests` to test discovery paths in CI workflow
-- **Invoke-Tests.ps1**: Added `Terraform-Tasks` tag to ValidateSet for test filtering
+- **Invoke-Tests.ps1**: Added `Package-Terraform-Tasks` tag to ValidateSet for test filtering
 
 ### Fixed
 - **PowerShell Command Execution**: Fixed terraform command invocation to use call operator (`&`) and quoted parameters
@@ -478,7 +537,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Binary size reporting post-build
   - Output directory: `bin/` in project root
   - Example Go application with tests included at `tests/app/`
-  - Comprehensive test suite: 21 Pester tests (16 validation + 5 integration) tagged `Golang-Tasks`
+  - Comprehensive test suite: 21 Pester tests (16 validation + 5 integration) tagged `Package-Golang-Tasks`
   - Package-specific README with configuration examples and troubleshooting
   - Release packaging script (`Create-Release.ps1`) for GitHub releases
   - Follows Bicep starter package conventions for consistency
@@ -507,7 +566,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Invoke-Tests.ps1**: Wrapper script for comprehensive test execution with recursive discovery
   - Automatically discovers tests in both `tests/` and `packages/` directories
-  - Supports tag filtering (`-Tag Core`, `-Tag Bicep-Tasks`, `-Tag Security`)
+  - Supports tag filtering (`-Tag Core`, `-Tag Package-Bicep-Tasks`, `-Tag Security`)
   - Includes `-Output` parameter for verbosity control (None, Normal, Detailed, Diagnostic)
   - Includes `-PassThru` parameter to return result object for automation
 
@@ -901,7 +960,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Core orchestration tests (fast, no external dependencies)
   - Security validation tests
   - Bicep starter package tests (requires Bicep CLI)
-  - Test tags: `Core`, `Security`, `Bicep-Tasks`
+  - Test tags: `Core`, `Security`, `Package-Bicep-Tasks`
 - VS Code integration:
   - Pre-configured tasks (build, format, lint, test)
   - Recommended extensions

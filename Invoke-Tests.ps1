@@ -8,7 +8,7 @@
 .DESCRIPTION
     This script configures Pester to discover and run tests from multiple
     locations in the project:
-    
+
     - tests/ - Core Bolt orchestration tests
     - packages/.build-bicep/tests/ - Bicep starter package tests
     - packages/.build-golang/tests/ - Golang starter package tests
@@ -16,6 +16,11 @@
     - packages/.build-dotnet/tests/ - .NET starter package tests
     - packages/.build-typescript/tests/ - TypeScript starter package tests
     - packages/.build-python/tests/ - Python starter package tests
+    - packages/.build-golang-docker/tests/ - Golang Docker starter package tests
+    - packages/.build-terraform-docker/tests/ - Terraform Docker starter package tests
+    - packages/.build-dotnet-docker/tests/ - .NET Docker starter package tests
+    - packages/.build-typescript-docker/tests/ - TypeScript Docker starter package tests
+    - packages/.build-python-docker/tests/ - Python Docker starter package tests
 
     This allows developers to run all tests with a single command while
     maintaining test decoupling for future starter package separation.
@@ -24,12 +29,17 @@
     Run only tests with the specified tag(s). Available tags:
     - Core: Fast core orchestration tests (no external dependencies)
     - Security: Security validation tests (includes all security-related tests)
-    - Bicep-Tasks: Bicep starter package tests (requires Bicep CLI)
-    - Golang-Tasks: Golang starter package tests (requires Go CLI)
-    - Terraform-Tasks: Terraform starter package tests (requires Terraform CLI or Docker)
-    - DotNet-Tasks: .NET starter package tests (requires .NET SDK or Docker)
-    - TypeScript-Tasks: TypeScript starter package tests (requires Node.js/npm or Docker)
-    - Python-Tasks: Python starter package tests (requires Python 3.8+ or Docker)
+    - Package-Bicep-Tasks: Bicep starter package tests (requires Bicep CLI)
+    - Package-Golang-Tasks: Golang starter package tests (requires Go CLI)
+    - Package-Terraform-Tasks: Terraform starter package tests (requires Terraform CLI)
+    - Package-Dotnet-Tasks: .NET starter package tests (requires .NET SDK)
+    - Package-Typescript-Tasks: TypeScript starter package tests (requires Node.js/npm)
+    - Package-Python-Tasks: Python starter package tests (requires Python 3.8+)
+    - Package-Golang-Tasks-Docker: Golang Docker starter package tests (requires Docker)
+    - Package-Package-Terraform-Tasks-Docker: Terraform Docker starter package tests (requires Docker)
+    - Package-Dotnet-Tasks-Docker: .NET Docker starter package tests (requires Docker)
+    - Package-Typescript-Tasks-Docker: TypeScript Docker starter package tests (requires Docker)
+    - Package-Python-Tasks-Docker: Python Docker starter package tests (requires Docker)
     - SecurityLogging: Security event logging tests
     - SecurityTxt: RFC 9116 compliance tests
     - OutputValidation: Output sanitization tests
@@ -56,28 +66,32 @@
     Runs only core tests (fast, no Bicep CLI required).
 
 .EXAMPLE
-    .\Invoke-Tests.ps1 -Tag Bicep-Tasks -Output Detailed
+    .\Invoke-Tests.ps1 -Tag Package-Bicep-Tasks -Output Detailed
     Runs only Bicep starter package tests with detailed output.
 
 .EXAMPLE
-    .\Invoke-Tests.ps1 -Tag Golang-Tasks
+    .\Invoke-Tests.ps1 -Tag Package-Golang-Tasks
     Runs only Golang starter package tests (requires Go CLI).
 
 .EXAMPLE
-    .\Invoke-Tests.ps1 -Tag Terraform-Tasks
-    Runs only Terraform starter package tests (requires Terraform CLI or Docker).
+    .\Invoke-Tests.ps1 -Tag Package-Terraform-Tasks
+    Runs only Terraform starter package tests (requires Terraform CLI).
 
 .EXAMPLE
-    .\Invoke-Tests.ps1 -Tag DotNet-Tasks
-    Runs only .NET starter package tests (requires .NET SDK or Docker).
+    .\Invoke-Tests.ps1 -Tag Package-Dotnet-Tasks
+    Runs only .NET starter package tests (requires .NET SDK).
 
 .EXAMPLE
-    .\Invoke-Tests.ps1 -Tag TypeScript-Tasks
-    Runs only TypeScript starter package tests (requires Node.js/npm or Docker).
+    .\Invoke-Tests.ps1 -Tag Package-Typescript-Tasks
+    Runs only TypeScript starter package tests (requires Node.js/npm).
 
 .EXAMPLE
-    .\Invoke-Tests.ps1 -Tag Python-Tasks
-    Runs only Python starter package tests (requires Python 3.8+ or Docker).
+    .\Invoke-Tests.ps1 -Tag Package-Python-Tasks
+    Runs only Python starter package tests (requires Python 3.8+).
+
+.EXAMPLE
+    .\Invoke-Tests.ps1 -Tag Package-Typescript-Tasks-Docker
+    Runs only TypeScript Docker starter package tests (requires Docker).
 
 .EXAMPLE
     .\Invoke-Tests.ps1 -PassThru
@@ -91,11 +105,11 @@
 [CmdletBinding()]
 param(
     [Parameter()]
-    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'DotNet-Tasks', 'TypeScript-Tasks', 'Python-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
+    [ValidateSet('Core', 'Security', 'Package-Bicep-Tasks', 'Package-Golang-Tasks', 'Package-Terraform-Tasks', 'Package-Dotnet-Tasks', 'Package-Typescript-Tasks', 'Package-Python-Tasks', 'Package-Golang-Tasks-Docker', 'Package-Package-Terraform-Tasks-Docker', 'Package-Dotnet-Tasks-Docker', 'Package-Typescript-Tasks-Docker', 'Package-Python-Tasks-Docker', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$Tag,
 
     [Parameter()]
-    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'DotNet-Tasks', 'TypeScript-Tasks', 'Python-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
+    [ValidateSet('Core', 'Security', 'Package-Bicep-Tasks', 'Package-Golang-Tasks', 'Package-Terraform-Tasks', 'Package-Dotnet-Tasks', 'Package-Typescript-Tasks', 'Package-Python-Tasks', 'Package-Golang-Tasks-Docker', 'Package-Package-Terraform-Tasks-Docker', 'Package-Dotnet-Tasks-Docker', 'Package-Typescript-Tasks-Docker', 'Package-Python-Tasks-Docker', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$ExcludeTag,
 
     [Parameter()]
@@ -111,13 +125,18 @@ $config = New-PesterConfiguration
 
 # Set test discovery paths
 $config.Run.Path = @(
-    'tests'                            # Core Bolt tests
-    'packages/.build-bicep/tests'      # Bicep starter package tests
-    'packages/.build-golang/tests'     # Golang starter package tests
-    'packages/.build-terraform/tests'  # Terraform starter package tests
-    'packages/.build-dotnet/tests'     # .NET starter package tests
-    'packages/.build-typescript/tests' # TypeScript starter package tests
-    'packages/.build-python/tests'     # Python starter package tests
+    'tests'                                     # Core Bolt tests
+    'packages/.build-bicep/tests'               # Bicep starter package tests
+    'packages/.build-golang/tests'              # Golang starter package tests
+    'packages/.build-terraform/tests'           # Terraform starter package tests
+    'packages/.build-dotnet/tests'              # .NET starter package tests
+    'packages/.build-typescript/tests'          # TypeScript starter package tests
+    'packages/.build-python/tests'              # Python starter package tests
+    'packages/.build-golang-docker/tests'       # Golang Docker starter package tests
+    'packages/.build-terraform-docker/tests'    # Terraform Docker starter package tests
+    'packages/.build-dotnet-docker/tests'       # .NET Docker starter package tests
+    'packages/.build-typescript-docker/tests'   # TypeScript Docker starter package tests
+    'packages/.build-python-docker/tests'       # Python Docker starter package tests
 )
 
 # Apply tag filters if specified
@@ -144,6 +163,11 @@ Write-Host "  - packages/.build-terraform/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-dotnet/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-typescript/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-python/tests/" -ForegroundColor Gray
+Write-Host "  - packages/.build-golang-docker/tests/" -ForegroundColor Gray
+Write-Host "  - packages/.build-terraform-docker/tests/" -ForegroundColor Gray
+Write-Host "  - packages/.build-dotnet-docker/tests/" -ForegroundColor Gray
+Write-Host "  - packages/.build-typescript-docker/tests/" -ForegroundColor Gray
+Write-Host "  - packages/.build-python-docker/tests/" -ForegroundColor Gray
 Write-Host ""
 
 $result = Invoke-Pester -Configuration $config

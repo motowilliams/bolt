@@ -13,27 +13,17 @@ if ($BoltConfig.TerraformToolPath) {
         exit 1
     }
     $terraformCmd = $terraformToolPath
-    $useDocker = $false
 }
 else {
     # Fall back to PATH search
     $terraformCmdObj = Get-Command terraform -ErrorAction SilentlyContinue
-    
-    # If terraform not found, check for Docker
+
     if (-not $terraformCmdObj) {
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        if (-not $dockerCmd) {
-            Write-Error "Terraform CLI not found and Docker is not available. Please install Terraform: https://developer.hashicorp.com/terraform/downloads, Docker: https://docs.docker.com/get-docker/, or configure TerraformToolPath in bolt.config.json"
-            exit 1
-        }
-        
-        Write-Host "  Using Docker container for Terraform (local CLI not found)" -ForegroundColor Gray
-        $useDocker = $true
+        Write-Error "Terraform CLI not found. Please install Terraform: https://developer.hashicorp.com/terraform/downloads or configure TerraformToolPath in bolt.config.json"
+        exit 1
     }
-    else {
-        $terraformCmd = "terraform"
-        $useDocker = $false
-    }
+
+    $terraformCmd = "terraform"
 }
 
 # ===== Find Terraform Root Modules =====
@@ -70,45 +60,26 @@ $directories = $tfFiles | ForEach-Object { Split-Path -Path $_.FullName -Parent 
 foreach ($dir in $directories) {
     $relativePath = Resolve-Path -Relative $dir
     Write-Host "  Planning module: $relativePath" -ForegroundColor Gray
-    
+
     # Initialize and plan
     Push-Location $dir
     try {
-        if ($useDocker) {
-            # Use Docker with volume mount
-            $absolutePath = [System.IO.Path]::GetFullPath($dir)
-            
-            # Initialize
-            Write-Host "    Initializing..." -ForegroundColor Gray
-            & docker run --rm -v "${absolutePath}:/tf" -w /tf hashicorp/terraform:latest init -backend=false -upgrade 2>&1 | Out-Null
-            
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "    ✗ Initialization failed" -ForegroundColor Red
-                $planSuccess = $false
-                continue
-            }
-            
-            # Generate plan (use quoted parameter for PowerShell compatibility)
-            $output = & docker run --rm -v "${absolutePath}:/tf" -w /tf hashicorp/terraform:latest plan "-out=terraform.tfplan" -no-color 2>&1
+        # Use terraform CLI (configured path or PATH search)
+        Write-Host "    Initializing..." -ForegroundColor Gray
+        & $terraformCmd init -backend=false 2>&1 | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "    ✗ Initialization failed" -ForegroundColor Red
+            $planSuccess = $false
+            continue
         }
-        else {
-            # Use local terraform CLI (configured path or PATH search)
-            Write-Host "    Initializing..." -ForegroundColor Gray
-            & $terraformCmd init -backend=false 2>&1 | Out-Null
-            
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "    ✗ Initialization failed" -ForegroundColor Red
-                $planSuccess = $false
-                continue
-            }
-            
-            # Generate plan
-            $output = & $terraformCmd plan "-out=terraform.tfplan" -no-color 2>&1
-        }
-        
+
+        # Generate plan
+        $output = & $terraformCmd plan "-out=terraform.tfplan" -no-color 2>&1
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host "    ✓ Plan generated successfully" -ForegroundColor Green
-            
+
             # Display plan summary (look for resource changes in output)
             $changeLines = $output | Where-Object { $_ -match 'Plan:' }
             if ($changeLines) {
@@ -120,7 +91,7 @@ foreach ($dir in $directories) {
         else {
             Write-Host "    ✗ Plan generation failed" -ForegroundColor Red
             $planSuccess = $false
-            
+
             # Display errors
             $errorLines = $output | Where-Object { $_ -match 'Error:' }
             if ($errorLines) {
@@ -133,7 +104,7 @@ foreach ($dir in $directories) {
     finally {
         Pop-Location
     }
-    
+
     Write-Host ""
 }
 

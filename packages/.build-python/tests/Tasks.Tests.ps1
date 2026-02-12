@@ -1,6 +1,6 @@
 #Requires -Version 7.0
 
-Describe "Python Package Starter - Task Validation" -Tag "Python-Tasks" {
+Describe "Python Package Starter - Task Validation" -Tag "Package-Python-Tasks" {
     BeforeAll {
         $packagePath = Join-Path $PSScriptRoot ".."
         $taskFiles = Get-ChildItem -Path $packagePath -Filter "Invoke-*.ps1" -File -Force

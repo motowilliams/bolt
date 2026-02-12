@@ -19,7 +19,7 @@ BeforeAll {
     $script:ApplyTaskPath = Join-Path $moduleRoot 'Invoke-Apply.ps1'
 }
 
-Describe 'Task Validation' -Tag 'Terraform-Tasks' {
+Describe 'Task Validation' -Tag 'Package-Terraform-Tasks' {
     Context 'Format Task' {
         It 'Should exist' {
             Test-Path $script:FormatTaskPath | Should -Be $true
@@ -46,14 +46,6 @@ Describe 'Task Validation' -Tag 'Terraform-Tasks' {
                 $content | Should -Match '# TASK:.*fmt'
             }
         }
-
-        It 'Should check for Terraform or Docker' {
-            if (Test-Path $script:FormatTaskPath) {
-                $content = Get-Content $script:FormatTaskPath -Raw -ErrorAction Stop
-                $content | Should -Match 'Get-Command terraform'
-                $content | Should -Match 'Get-Command docker'
-            }
-        }
     }
 
     Context 'Validate Task' {
@@ -69,12 +61,6 @@ Describe 'Task Validation' -Tag 'Terraform-Tasks' {
             $content = Get-Content $script:ValidateTaskPath -Raw
             $content | Should -Match '# TASK: validate'
             $content | Should -Match '# DESCRIPTION:'
-        }
-
-        It 'Should check for Terraform or Docker' {
-            $content = Get-Content $script:ValidateTaskPath -Raw
-            $content | Should -Match 'Get-Command terraform'
-            $content | Should -Match 'Get-Command docker'
         }
     }
 
@@ -96,12 +82,6 @@ Describe 'Task Validation' -Tag 'Terraform-Tasks' {
         It 'Should depend on format and validate tasks' {
             $content = Get-Content $script:PlanTaskPath -Raw
             $content | Should -Match '# DEPENDS:.*format.*validate'
-        }
-
-        It 'Should check for Terraform or Docker' {
-            $content = Get-Content $script:PlanTaskPath -Raw
-            $content | Should -Match 'Get-Command terraform'
-            $content | Should -Match 'Get-Command docker'
         }
     }
 
@@ -134,12 +114,6 @@ Describe 'Task Validation' -Tag 'Terraform-Tasks' {
             $content = Get-Content $script:ApplyTaskPath -Raw
             $content | Should -Match 'WARNING'
             $content | Should -Match 'Start-Sleep'
-        }
-
-        It 'Should check for Terraform or Docker' {
-            $content = Get-Content $script:ApplyTaskPath -Raw
-            $content | Should -Match 'Get-Command terraform'
-            $content | Should -Match 'Get-Command docker'
         }
     }
 }

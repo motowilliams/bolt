@@ -8,20 +8,15 @@ Pre-built task collection for Python application development workflows with Bolt
 - **Lint**: Validates Python code using `ruff` (fast, modern linter)
 - **Test**: Runs tests using `pytest` (popular testing framework)
 - **Build**: Installs dependencies and validates package structure
-- **Docker Fallback**: Automatically uses Docker if Python is not installed locally
 - **Cross-Platform**: Works on Windows, Linux, and macOS
 
 ## Requirements
 
-**Option 1: Local Python Installation**
 - Python 3.8+ (3.12 recommended): https://www.python.org/downloads/
   - **Windows**: `winget install Python.Python.3.12`
   - **Linux**: `sudo apt install python3 python3-pip` (Ubuntu/Debian)
   - **macOS**: `brew install python@3.12`
-
-**Option 2: Docker (Automatic Fallback)**
-- Docker Engine: https://docs.docker.com/get-docker/
-- Tasks automatically use `python:3.12-slim` image when Python is not installed
+- PowerShell 7.0+
 
 ## Installation
 
@@ -210,29 +205,13 @@ Run the test suite for this package starter:
 Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
 
 # Run package tests
-Invoke-Pester -Tag Python-Tasks
+Invoke-Pester -Tag Package-Python-Tasks
 ```
 
 **Test coverage:**
 - Task structure validation (Tasks.Tests.ps1)
 - End-to-end integration tests (Integration.Tests.ps1)
 - Example Python calculator module with pytest tests
-
-## Docker Fallback
-
-If Python is not installed, tasks automatically use Docker:
-
-```powershell
-# No local Python? No problem!
-.\bolt.ps1 format    # Uses Docker: python:3.12-slim
-.\bolt.ps1 build     # Automatically falls back to Docker
-```
-
-**Docker behavior:**
-- Installs required tools (`black`, `ruff`, `pytest`) in container
-- Mounts your project directory as `/project`
-- Executes tasks inside container
-- Results appear in your local filesystem
 
 ## Troubleshooting
 
@@ -242,7 +221,6 @@ If you get "Python not found" error:
 1. **Install Python**: https://www.python.org/downloads/
 2. **Verify installation**: `python --version` or `python3 --version`
 3. **Configure explicit path**: Add `PythonToolPath` to `bolt.config.json`
-4. **Use Docker**: Install Docker for automatic fallback
 
 ### No Test Files Found
 
@@ -257,14 +235,6 @@ For package builds to work, you need either:
 - `setup.py` (legacy)
 
 If neither exists, the build task will only install dependencies from `requirements.txt`.
-
-### Docker Permission Issues (Linux/macOS)
-
-If Docker creates files with wrong permissions:
-```bash
-# Fix ownership after Docker operations
-sudo chown -R $USER:$USER .
-```
 
 ## Contributing
 

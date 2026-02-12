@@ -18,7 +18,7 @@ BeforeAll {
     $script:BuildTaskPath = Join-Path $moduleRoot 'Invoke-Build.ps1'
 }
 
-Describe 'Task Validation' -Tag 'Bicep-Tasks' {
+Describe 'Task Validation' -Tag 'Package-Bicep-Tasks' {
     Context 'Format Task' {
         It 'Should exist' {
             Test-Path $script:FormatTaskPath | Should -Be $true

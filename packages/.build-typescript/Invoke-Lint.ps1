@@ -24,27 +24,17 @@ if ($BoltConfig.NodeToolPath) {
         Write-Error "npm not found at expected path: $npmCmd. Please ensure npm is installed alongside Node.js"
         exit 1
     }
-    $useDocker = $false
 }
 else {
     # Fall back to PATH search
     $npmCmdObj = Get-Command npm -ErrorAction SilentlyContinue
-    
-    # If npm not found, check for Docker
+
     if (-not $npmCmdObj) {
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        if (-not $dockerCmd) {
-            Write-Error "Node.js/npm not found and Docker is not available. Please install Node.js: https://nodejs.org/, Docker: https://docs.docker.com/get-docker/, or configure NodeToolPath in bolt.config.json"
-            exit 1
-        }
-        
-        Write-Host "  Using Docker container for Node.js (local CLI not found)" -ForegroundColor Gray
-        $useDocker = $true
+        Write-Error "Node.js/npm not found. Please install Node.js: https://nodejs.org/ or configure NodeToolPath in bolt.config.json"
+        exit 1
     }
-    else {
-        $npmCmd = "npm"
-        $useDocker = $false
-    }
+
+    $npmCmd = "npm"
 }
 
 # ===== Find TypeScript Projects =====
@@ -81,67 +71,32 @@ $lintSuccess = $true
 
 Push-Location $projectDir
 try {
-    if ($useDocker) {
-        # Use Docker with volume mount
-        $absolutePath = [System.IO.Path]::GetFullPath($projectDir)
-        
-        Write-Host "  Installing dependencies in Docker..." -ForegroundColor Gray
-        $output = & docker run --rm -v "${absolutePath}:/project" -w /project node:22-alpine npm install 2>&1
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "    ✗ Failed to install dependencies" -ForegroundColor Red
-            $lintSuccess = $false
-            $output | ForEach-Object {
-                Write-Host "      $_" -ForegroundColor Red
-            }
-        }
-        else {
-            Write-Host "    ✓ Dependencies installed" -ForegroundColor Green
-            
-            # Run ESLint via npm
-            Write-Host "  Running ESLint..." -ForegroundColor Gray
-            $output = & docker run --rm -v "${absolutePath}:/project" -w /project node:22-alpine npm run lint 2>&1
-            
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "    ✓ Linting passed" -ForegroundColor Green
-            }
-            else {
-                Write-Host "    ✗ Linting failed" -ForegroundColor Red
-                $lintSuccess = $false
-                $output | ForEach-Object {
-                    Write-Host "      $_" -ForegroundColor Red
-                }
-            }
+    # Use local npm CLI (configured path or PATH search)
+    Write-Host "  Installing dependencies..." -ForegroundColor Gray
+    $output = & $npmCmd install 2>&1
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "    ✗ Failed to install dependencies" -ForegroundColor Red
+        $lintSuccess = $false
+        $output | ForEach-Object {
+            Write-Host "      $_" -ForegroundColor Red
         }
     }
     else {
-        # Use local npm CLI (configured path or PATH search)
-        Write-Host "  Installing dependencies..." -ForegroundColor Gray
-        $output = & $npmCmd install 2>&1
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "    ✗ Failed to install dependencies" -ForegroundColor Red
+        Write-Host "    ✓ Dependencies installed" -ForegroundColor Green
+
+        # Run ESLint via npm script
+        Write-Host "  Running ESLint..." -ForegroundColor Gray
+        $output = & $npmCmd run lint 2>&1
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "    ✓ Linting passed" -ForegroundColor Green
+        }
+        else {
+            Write-Host "    ✗ Linting failed" -ForegroundColor Red
             $lintSuccess = $false
             $output | ForEach-Object {
                 Write-Host "      $_" -ForegroundColor Red
-            }
-        }
-        else {
-            Write-Host "    ✓ Dependencies installed" -ForegroundColor Green
-            
-            # Run ESLint via npm script
-            Write-Host "  Running ESLint..." -ForegroundColor Gray
-            $output = & $npmCmd run lint 2>&1
-            
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "    ✓ Linting passed" -ForegroundColor Green
-            }
-            else {
-                Write-Host "    ✗ Linting failed" -ForegroundColor Red
-                $lintSuccess = $false
-                $output | ForEach-Object {
-                    Write-Host "      $_" -ForegroundColor Red
-                }
             }
         }
     }

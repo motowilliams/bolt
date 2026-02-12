@@ -1,19 +1,18 @@
 #Requires -Version 7.0
 
-Describe ".NET Package Starter - Integration Tests" -Tag "DotNet-Tasks" {
+Describe ".NET Package Starter - Integration Tests" -Tag "Package-Dotnet-Tasks" {
     BeforeAll {
-        # Check for dotnet CLI or Docker availability
+        # Check for dotnet CLI availability
         $dotnetCmd = Get-Command dotnet -ErrorAction SilentlyContinue
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        
-        if (-not $dotnetCmd -and -not $dockerCmd) {
-            Set-ItResult -Skipped -Because ".NET SDK or Docker not installed"
+
+        if (-not $dotnetCmd) {
+            Set-ItResult -Skipped -Because ".NET SDK not installed"
         }
 
         # Get module root (parent of tests directory)
         $moduleRoot = Resolve-Path (Split-Path -Parent $PSScriptRoot)
         $projectRoot = $moduleRoot
-        
+
         # Get project root (find .git directory)
         $currentPath = $projectRoot
         while ($currentPath -and $currentPath -ne (Split-Path -Parent $currentPath)) {
@@ -24,9 +23,9 @@ Describe ".NET Package Starter - Integration Tests" -Tag "DotNet-Tasks" {
             $currentPath = Split-Path -Parent $currentPath
         }
         $script:BoltScriptPath = Join-Path $projectRoot 'bolt.ps1'
-        
+
         $script:testProjectPath = Join-Path $PSScriptRoot "app"
-        
+
         # Helper function to invoke bolt with captured output
         function Invoke-Bolt {
             param(
@@ -63,7 +62,7 @@ Describe ".NET Package Starter - Integration Tests" -Tag "DotNet-Tasks" {
                 Success  = $exitCode -eq 0
             }
         }
-        
+
         # Store original location
         $originalLocation = Get-Location
     }
@@ -121,18 +120,6 @@ Describe ".NET Package Starter - Integration Tests" -Tag "DotNet-Tasks" {
         It "should complete full pipeline (format -> restore -> test -> build)" {
             $result = Invoke-Bolt -Arguments @('build')
             $result.ExitCode | Should -Be 0
-        }
-    }
-
-    Context "Docker Fallback Detection" {
-        It "tasks should detect dotnet or docker" {
-            $moduleRoot = Resolve-Path (Split-Path -Parent $PSScriptRoot)
-            $formatScript = Join-Path $moduleRoot "Invoke-Format.ps1"
-            $content = Get-Content -Path $formatScript -Raw
-            
-            # Should have detection logic
-            $content | Should -Match "Get-Command dotnet"
-            $content | Should -Match "Get-Command docker"
         }
     }
 }

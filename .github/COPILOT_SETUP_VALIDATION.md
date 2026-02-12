@@ -76,7 +76,7 @@
 
 8. **Testing & Validation** ⭐
    - Pester framework usage
-   - Test tags (Core, Security, Bicep-Tasks)
+   - Test tags (Core, Security, Package-Bicep-Tasks)
    - Test architecture patterns
    - Validation strategy
 

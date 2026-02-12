@@ -38,22 +38,22 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 **Bicep Starter Package** (`packages/.build-bicep/tests/` directory):
 - **`packages/.build-bicep/tests/Tasks.Tests.ps1`** - Task validation
   - Validates structure and metadata of Bicep tasks
-  - Tag: `Bicep-Tasks`
+  - Tag: `Package-Bicep-Tasks`
   
 - **`packages/.build-bicep/tests/Integration.Tests.ps1`** - Integration tests
   - Executes actual Bicep operations against real infrastructure files
   - Requires Bicep CLI to be installed
-  - Tag: `Bicep-Tasks`
+  - Tag: `Package-Bicep-Tasks`
 
 **Golang Starter Package** (`packages/.build-golang/tests/` directory):
 - **`packages/.build-golang/tests/Tasks.Tests.ps1`** - Task validation
   - Validates structure and metadata of Golang tasks
-  - Tag: `Golang-Tasks`
+  - Tag: `Package-Golang-Tasks`
   
 - **`packages/.build-golang/tests/Integration.Tests.ps1`** - Integration tests
   - Executes actual Go operations against example Go application
   - Requires Go CLI to be installed
-  - Tag: `Golang-Tasks`
+  - Tag: `Package-Golang-Tasks`
 
 ## Running Tests
 
@@ -69,7 +69,7 @@ The project includes comprehensive **Pester** tests to ensure correct behavior w
 # Run tests by tag
 .\Invoke-Tests.ps1 -Tag Core          # Fast core tests (~1s)
 .\Invoke-Tests.ps1 -Tag Security      # Security validation (~10s)
-.\Invoke-Tests.ps1 -Tag Bicep-Tasks   # Bicep starter package (~22s)
+.\Invoke-Tests.ps1 -Tag Package-Bicep-Tasks   # Bicep starter package (~22s)
 
 # Return result object for automation
 .\Invoke-Tests.ps1 -PassThru
@@ -88,7 +88,7 @@ Invoke-Pester -Path packages/.build-bicep/tests/
 # Run tests by tag
 Invoke-Pester -Tag Core
 Invoke-Pester -Tag Security
-Invoke-Pester -Tag Bicep-Tasks
+Invoke-Pester -Tag Package-Bicep-Tasks
 ```
 
 > **Note**: `Invoke-Tests.ps1` automatically discovers tests in both `tests/` and `packages/` directories, making it easier to run the complete test suite.
@@ -108,7 +108,7 @@ Tests are organized with tags for flexible execution:
   - Validates input sanitization, RFC 9116 compliance, audit logging, and output validation
   - Tests P0 security fixes for TaskDirectory, path sanitization, task name validation, and terminal injection protection
   
-- **`Bicep-Tasks`** - Tests Bicep task implementation
+- **`Package-Bicep-Tasks`** - Tests Bicep task implementation
   - Slower execution (~22 seconds)
   - Requires Bicep CLI for integration tests
   - Tests live with implementation in `packages/.build-bicep/tests/`
@@ -123,7 +123,7 @@ Invoke-Pester -Tag Core
 Invoke-Pester -Tag Security
 
 # Full task testing before commit
-Invoke-Pester -Tag Bicep-Tasks
+Invoke-Pester -Tag Package-Bicep-Tasks
 
 # Complete test suite
 Invoke-Pester

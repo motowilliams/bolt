@@ -97,7 +97,7 @@ Invoke-Pester -Tag Core -Output Detailed
 
 #### Stage 2: Bicep Tasks Tests
 ```powershell
-Invoke-Pester -Tag Bicep-Tasks -Output Detailed
+Invoke-Pester -Tag Package-Bicep-Tasks -Output Detailed
 ```
 - **Duration**: ~22 seconds
 - **Dependencies**: Requires Bicep CLI
@@ -186,7 +186,7 @@ Verifies the generated `.psd1` manifest is valid PowerShell.
 
 Tests use tags for targeted execution:
 - **`Core`** - Fast tests (~1s), no external dependencies
-- **`Bicep-Tasks`** - Slower tests (~22s), requires Bicep CLI
+- **`Package-Bicep-Tasks`** - Slower tests (~22s), requires Bicep CLI
 - **`Security`** - Security validation tests
 
 ### Test Files
@@ -239,7 +239,7 @@ winget install Microsoft.Bicep  # Windows
 Invoke-Pester -Tag Core -Output Detailed
 
 # 3. Run Bicep tasks tests
-Invoke-Pester -Tag Bicep-Tasks -Output Detailed
+Invoke-Pester -Tag Package-Bicep-Tasks -Output Detailed
 
 # 4. Run full test suite
 Invoke-Pester -Output Detailed

@@ -13,26 +13,16 @@ if ($BoltConfig.GoToolPath) {
         exit 1
     }
     $goCmd = $goToolPath
-    $useDocker = $false
 }
 else {
     # Fall back to PATH search
     $goCmdObj = Get-Command go -ErrorAction SilentlyContinue
     if (-not $goCmdObj) {
-        # If go not found, check for Docker
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        if (-not $dockerCmd) {
-            Write-Error "Go CLI not found and Docker is not available. Please install Go: https://go.dev/doc/install, Docker: https://docs.docker.com/get-docker/, or configure GoToolPath in bolt.config.json"
-            exit 1
-        }
+        Write-Error "Go CLI not found. Please install Go: https://go.dev/doc/install or configure GoToolPath in bolt.config.json"
+        exit 1
+    }
 
-        Write-Host "  Using Docker container for Go (local CLI not found)" -ForegroundColor Gray
-        $useDocker = $true
-    }
-    else {
-        $goCmd = "go"
-        $useDocker = $false
-    }
+    $goCmd = "go"
 }
 
 # ===== Find Go Module Path =====
@@ -54,30 +44,17 @@ Write-Host ""
 
 $testSuccess = $true
 
-if ($useDocker) {
-    $absolutePath = [System.IO.Path]::GetFullPath($goPath)
-    Write-Host "  Running go test in Docker..." -ForegroundColor Gray
+Push-Location $goPath
+try {
+    Write-Host "  Running go test..." -ForegroundColor Gray
     Write-Host ""
-
-    & docker run --rm -v "${absolutePath}:/project" -w /project golang:1.22-alpine go test -v ./...
+    & $goCmd test -v ./...
 
     if ($LASTEXITCODE -ne 0) {
         $testSuccess = $false
     }
 }
-else {
-    Push-Location $goPath
-    try {
-        Write-Host "  Running go test..." -ForegroundColor Gray
-        Write-Host ""
-        & $goCmd test -v ./...
-
-        if ($LASTEXITCODE -ne 0) {
-            $testSuccess = $false
-        }
-    }
-    finally { Pop-Location }
-}
+finally { Pop-Location }
 
 Write-Host ""
 

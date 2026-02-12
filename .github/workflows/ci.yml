@@ -157,10 +157,10 @@ jobs:
       - name: Run Bicep Tasks Tests (Requires Bicep)
         shell: pwsh
         run: |
-          Write-Host "Running Bicep-Tasks tests (Bicep required)..." -ForegroundColor Cyan
-          $tasksResult = Invoke-Pester -Tag Bicep-Tasks -Output Detailed -PassThru
+          Write-Host "Running Package-Bicep-Tasks tests (Bicep required)..." -ForegroundColor Cyan
+          $tasksResult = Invoke-Pester -Tag Package-Bicep-Tasks -Output Detailed -PassThru
           if ($tasksResult.FailedCount -gt 0) {
-            Write-Error "Bicep-Tasks tests failed: $($tasksResult.FailedCount) test(s)"
+            Write-Error "Package-Bicep-Tasks tests failed: $($tasksResult.FailedCount) test(s)"
             exit 1
           }
 

@@ -79,7 +79,7 @@ Describe "Variable System - Config Injection" -Tag "Variables" {
     }
 }
 
-Describe "Variable System - Integration with Bicep Tasks" -Tag "Bicep-Tasks" {
+Describe "Variable System - Integration with Bicep Tasks" -Tag "Package-Bicep-Tasks" {
 
     BeforeAll {
         Push-Location $script:BoltRoot

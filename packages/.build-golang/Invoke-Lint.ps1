@@ -13,26 +13,16 @@ if ($BoltConfig.GoToolPath) {
         exit 1
     }
     $goCmd = $goToolPath
-    $useDocker = $false
 }
 else {
     # Fall back to PATH search
     $goCmdObj = Get-Command go -ErrorAction SilentlyContinue
     if (-not $goCmdObj) {
-        # If go not found, check for Docker
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        if (-not $dockerCmd) {
-            Write-Error "Go CLI not found and Docker is not available. Please install Go: https://go.dev/doc/install, Docker: https://docs.docker.com/get-docker/, or configure GoToolPath in bolt.config.json"
-            exit 1
-        }
+        Write-Error "Go CLI not found. Please install Go: https://go.dev/doc/install or configure GoToolPath in bolt.config.json"
+        exit 1
+    }
 
-        Write-Host "  Using Docker container for Go (local CLI not found)" -ForegroundColor Gray
-        $useDocker = $true
-    }
-    else {
-        $goCmd = "go"
-        $useDocker = $false
-    }
+    $goCmd = "go"
 }
 
 # ===== Find Go Project Path =====
@@ -54,10 +44,10 @@ Write-Host ""
 
 $lintSuccess = $true
 
-if ($useDocker) {
-    $absolutePath = [System.IO.Path]::GetFullPath($goPath)
-    Write-Host "  Running go vet in Docker..." -ForegroundColor Gray
-    $output = & docker run --rm -v "${absolutePath}:/project" -w /project golang:1.22-alpine go vet ./... 2>&1
+Push-Location $goPath
+try {
+    Write-Host "  Running go vet..." -ForegroundColor Gray
+    $output = & $goCmd vet ./... 2>&1
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "    ✓ No issues found" -ForegroundColor Green
@@ -68,23 +58,7 @@ if ($useDocker) {
         $output | ForEach-Object { Write-Host "      $_" -ForegroundColor Red }
     }
 }
-else {
-    Push-Location $goPath
-    try {
-        Write-Host "  Running go vet..." -ForegroundColor Gray
-        $output = & $goCmd vet ./... 2>&1
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "    ✓ No issues found" -ForegroundColor Green
-        }
-        else {
-            Write-Host "    ✗ go vet found issues" -ForegroundColor Red
-            $lintSuccess = $false
-            $output | ForEach-Object { Write-Host "      $_" -ForegroundColor Red }
-        }
-    }
-    finally { Pop-Location }
-}
+finally { Pop-Location }
 
 Write-Host ""
 Write-Host "Lint Summary:" -ForegroundColor Cyan

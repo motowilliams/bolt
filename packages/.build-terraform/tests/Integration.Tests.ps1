@@ -6,22 +6,21 @@
     Integration tests for Terraform package starter
 .DESCRIPTION
     End-to-end tests that verify Terraform tasks work correctly
-    with actual Terraform CLI or Docker.
+    with actual Terraform CLI.
 #>
 
 BeforeAll {
-    # Check if Terraform or Docker is available
+    # Check if Terraform is available
     $script:terraformCmd = Get-Command terraform -ErrorAction SilentlyContinue
-    $script:dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-    
-    if (-not $script:terraformCmd -and -not $script:dockerCmd) {
-        Set-ItResult -Skipped -Because "Neither Terraform CLI nor Docker is installed"
+
+    if (-not $script:terraformCmd) {
+        Set-ItResult -Skipped -Because "Terraform CLI is not installed"
     }
-    
+
     # Get module root (parent of tests directory)
     $moduleRoot = Resolve-Path (Split-Path -Parent $PSScriptRoot)
     $projectRoot = $moduleRoot
-    
+
     # Get project root (find .git directory)
     $currentPath = $projectRoot
     while ($currentPath -and $currentPath -ne (Split-Path -Parent $currentPath)) {
@@ -32,9 +31,9 @@ BeforeAll {
         $currentPath = Split-Path -Parent $currentPath
     }
     $script:BoltScriptPath = Join-Path $projectRoot 'bolt.ps1'
-    
+
     $script:testProjectPath = Join-Path $PSScriptRoot "tf"
-    
+
     # Helper function to invoke bolt with captured output
     function Invoke-Bolt {
         param(
@@ -71,7 +70,7 @@ BeforeAll {
             Success  = $exitCode -eq 0
         }
     }
-    
+
     # Clean up any existing Terraform state from previous tests
     $stateFiles = Get-ChildItem -Path $script:testProjectPath -Filter ".terraform*" -Force -Recurse -ErrorAction SilentlyContinue
     foreach ($file in $stateFiles) {
@@ -82,7 +81,7 @@ BeforeAll {
             Remove-Item -Path $file.FullName -Force -ErrorAction SilentlyContinue
         }
     }
-    
+
     # Clean up any plan files
     $planFiles = Get-ChildItem -Path $script:testProjectPath -Filter "*.tfplan" -Force -ErrorAction SilentlyContinue
     foreach ($file in $planFiles) {
@@ -90,7 +89,7 @@ BeforeAll {
     }
 }
 
-Describe 'Terraform Package Starter - Integration Tests' -Tag 'Terraform-Tasks' {
+Describe 'Terraform Package Starter - Integration Tests' -Tag 'Package-Terraform-Tasks' {
     Context 'Format Task' {
         It 'Should format Terraform files successfully' {
             $result = Invoke-Bolt -Arguments @('format') -Parameters @{ Only = $true }
@@ -109,7 +108,7 @@ Describe 'Terraform Package Starter - Integration Tests' -Tag 'Terraform-Tasks' 
         It 'Should generate Terraform execution plan' {
             $result = Invoke-Bolt -Arguments @('plan') -Parameters @{ Only = $true }
             $result.ExitCode | Should -Be 0
-            
+
             # Verify plan file was created
             $planFile = Join-Path $script:testProjectPath "terraform.tfplan"
             Test-Path $planFile | Should -Be $true
@@ -122,9 +121,9 @@ Describe 'Terraform Package Starter - Integration Tests' -Tag 'Terraform-Tasks' 
         It 'Should have apply task with proper dependencies' {
             $moduleRoot = Resolve-Path (Split-Path -Parent $PSScriptRoot)
             $applyScript = Join-Path $moduleRoot "Invoke-Apply.ps1"
-            
+
             Test-Path $applyScript | Should -Be $true
-            
+
             $content = Get-Content $applyScript -Raw
             $content | Should -Match '# DEPENDS:.*format.*validate.*plan'
         }
@@ -143,7 +142,7 @@ AfterAll {
             "terraform.tfstate.backup",
             "output.txt"  # File created by example Terraform config
         )
-        
+
         foreach ($pattern in $cleanupItems) {
             $items = Get-ChildItem -Path $script:testProjectPath -Filter $pattern -Force -ErrorAction SilentlyContinue
             foreach ($item in $items) {

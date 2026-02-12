@@ -19,7 +19,7 @@ BeforeAll {
     $script:BuildTaskPath = Join-Path $moduleRoot 'Invoke-Build.ps1'
 }
 
-Describe 'Task Validation' -Tag 'Golang-Tasks' {
+Describe 'Task Validation' -Tag 'Package-Golang-Tasks' {
     Context 'Format Task' {
         It 'Should exist' {
             Test-Path $script:FormatTaskPath | Should -Be $true

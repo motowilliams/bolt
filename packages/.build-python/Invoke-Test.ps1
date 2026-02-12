@@ -15,7 +15,6 @@ if ($BoltConfig.PythonToolPath) {
         exit 1
     }
     $pythonCmd = $pythonToolPath
-    $useDocker = $false
 }
 else {
     # Fall back to PATH search
@@ -25,21 +24,12 @@ else {
         $pythonCmdObj = Get-Command python3 -ErrorAction SilentlyContinue
     }
 
-    # If python not found, check for Docker
     if (-not $pythonCmdObj) {
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        if (-not $dockerCmd) {
-            Write-Error "Python not found and Docker is not available. Please install Python: https://www.python.org/downloads/, Docker: https://docs.docker.com/get-docker/, or configure PythonToolPath in bolt.config.json"
-            exit 1
-        }
+        Write-Error "Python not found. Please install Python: https://www.python.org/downloads/ or configure PythonToolPath in bolt.config.json"
+        exit 1
+    }
 
-        Write-Host "  Using Docker container for Python (local CLI not found)" -ForegroundColor Gray
-        $useDocker = $true
-    }
-    else {
-        $pythonCmd = $pythonCmdObj.Source
-        $useDocker = $false
-    }
+    $pythonCmd = $pythonCmdObj.Source
 }
 
 # ===== Find Python Source Files =====
@@ -75,83 +65,53 @@ Write-Host ""
 # ===== Run Tests =====
 $testSuccess = $true
 
-if ($useDocker) {
-    # Use Docker with volume mount
-    $absolutePath = [System.IO.Path]::GetFullPath($pythonPath)
+# Use local Python CLI
+Write-Host "  Installing pytest..." -ForegroundColor Gray
+$output = & $pythonCmd -m pip install pytest --quiet 2>&1
 
-    # Build Docker command with dependencies if requirements.txt exists
-    $requirementsPath = Join-Path $pythonPath "requirements.txt"
-    if (Test-Path -Path $requirementsPath) {
-        Write-Host "  Running pytest in Docker (installing pytest, dependencies, and testing)..." -ForegroundColor Gray
-        # Combine all installs and execution in single container to preserve installed packages
-        $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim sh -c "pip install pytest --quiet && pip install -r requirements.txt --quiet && python -m pytest -v" 2>&1
-    }
-    else {
-        Write-Host "  Running pytest in Docker (installing and testing)..." -ForegroundColor Gray
-        # Combine install and execution in single container to preserve installed packages
-        $output = & docker run --rm -v "${absolutePath}:/project" -w /project python:3.12-slim sh -c "pip install pytest --quiet && python -m pytest -v" 2>&1
-    }
-
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "    ✓ All tests passed" -ForegroundColor Green
-    }
-    else {
-        Write-Host "    ✗ Some tests failed" -ForegroundColor Red
-        $testSuccess = $false
-        $output | ForEach-Object {
-            Write-Host "      $_" -ForegroundColor Red
-        }
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "    ✗ Failed to install pytest" -ForegroundColor Red
+    $testSuccess = $false
+    $output | ForEach-Object {
+        Write-Host "      $_" -ForegroundColor Red
     }
 }
 else {
-    # Use local Python CLI
-    Write-Host "  Installing pytest..." -ForegroundColor Gray
-    $output = & $pythonCmd -m pip install pytest --quiet 2>&1
+    Write-Host "    ✓ pytest installed" -ForegroundColor Green
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "    ✗ Failed to install pytest" -ForegroundColor Red
-        $testSuccess = $false
-        $output | ForEach-Object {
-            Write-Host "      $_" -ForegroundColor Red
+    # Install project dependencies if requirements.txt exists
+    $requirementsPath = Join-Path $pythonPath "requirements.txt"
+    if (Test-Path -Path $requirementsPath) {
+        Write-Host "  Installing dependencies from requirements.txt..." -ForegroundColor Gray
+        $output = & $pythonCmd -m pip install -r $requirementsPath --quiet 2>&1
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "    ✓ Dependencies installed" -ForegroundColor Green
+        }
+        else {
+            Write-Host "    ⚠ Failed to install some dependencies" -ForegroundColor Yellow
         }
     }
-    else {
-        Write-Host "    ✓ pytest installed" -ForegroundColor Green
 
-        # Install project dependencies if requirements.txt exists
-        $requirementsPath = Join-Path $pythonPath "requirements.txt"
-        if (Test-Path -Path $requirementsPath) {
-            Write-Host "  Installing dependencies from requirements.txt..." -ForegroundColor Gray
-            $output = & $pythonCmd -m pip install -r $requirementsPath --quiet 2>&1
+    # Run pytest
+    Write-Host "  Running pytest..." -ForegroundColor Gray
+    Push-Location $pythonPath
+    try {
+        $output = & $pythonCmd -m pytest -v 2>&1
 
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "    ✓ Dependencies installed" -ForegroundColor Green
-            }
-            else {
-                Write-Host "    ⚠ Failed to install some dependencies" -ForegroundColor Yellow
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "    ✓ All tests passed" -ForegroundColor Green
+        }
+        else {
+            Write-Host "    ✗ Some tests failed" -ForegroundColor Red
+            $testSuccess = $false
+            $output | ForEach-Object {
+                Write-Host "      $_" -ForegroundColor Red
             }
         }
-
-        # Run pytest
-        Write-Host "  Running pytest..." -ForegroundColor Gray
-        Push-Location $pythonPath
-        try {
-            $output = & $pythonCmd -m pytest -v 2>&1
-
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "    ✓ All tests passed" -ForegroundColor Green
-            }
-            else {
-                Write-Host "    ✗ Some tests failed" -ForegroundColor Red
-                $testSuccess = $false
-                $output | ForEach-Object {
-                    Write-Host "      $_" -ForegroundColor Red
-                }
-            }
-        }
-        finally {
-            Pop-Location
-        }
+    }
+    finally {
+        Pop-Location
     }
 }
 

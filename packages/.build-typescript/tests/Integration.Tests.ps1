@@ -6,14 +6,14 @@
     Integration tests for TypeScript tasks
 .DESCRIPTION
     End-to-end tests that validate task execution with the example TypeScript project.
-    These tests require npm or Docker to be available.
+    These tests require npm to be available.
 #>
 
 BeforeAll {
     # Get module root (parent of tests directory)
     $moduleRoot = Resolve-Path (Split-Path -Parent $PSScriptRoot)
     $projectRoot = $moduleRoot
-    
+
     # Get project root (find .git directory)
     $currentPath = $projectRoot
     while ($currentPath -and $currentPath -ne (Split-Path -Parent $currentPath)) {
@@ -24,9 +24,9 @@ BeforeAll {
         $currentPath = Split-Path -Parent $currentPath
     }
     $script:BoltScriptPath = Join-Path $projectRoot 'bolt.ps1'
-    
+
     $script:testAppPath = Join-Path $PSScriptRoot 'app'
-    
+
     # Helper function to invoke bolt with captured output
     function Invoke-Bolt {
         param(
@@ -63,28 +63,27 @@ BeforeAll {
             Success  = $exitCode -eq 0
         }
     }
-    
-    # Check for npm or Docker availability
+
+    # Check for npm availability
     $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
-    $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-    
-    if (-not $npmCmd -and -not $dockerCmd) {
-        Set-ItResult -Skipped -Because "Neither npm nor Docker is available"
+
+    if (-not $npmCmd) {
+        Set-ItResult -Skipped -Because "npm is not available"
     }
-    
+
     # Clean up any previous build artifacts
     $distPath = Join-Path $script:testAppPath 'dist'
     if (Test-Path -Path $distPath) {
         Remove-Item -Path $distPath -Recurse -Force
     }
-    
+
     $nodeModulesPath = Join-Path $script:testAppPath 'node_modules'
     if (Test-Path -Path $nodeModulesPath) {
         Remove-Item -Path $nodeModulesPath -Recurse -Force
     }
 }
 
-Describe 'TypeScript Package Starter - Integration Tests' -Tag 'TypeScript-Tasks' {
+Describe 'TypeScript Package Starter - Integration Tests' -Tag 'Package-Typescript-Tasks' {
     Context 'Format Task' {
         It 'Should format files successfully' {
             $result = Invoke-Bolt -Arguments @('format') -Parameters @{ Only = $true }
@@ -115,7 +114,7 @@ Describe 'TypeScript Package Starter - Integration Tests' -Tag 'TypeScript-Tasks
         It 'Should generate JavaScript files in dist/' {
             $distPath = Join-Path $script:testAppPath 'dist'
             Test-Path -Path $distPath | Should -Be $true
-            
+
             $jsFiles = Get-ChildItem -Path $distPath -Filter "*.js" -File
             $jsFiles.Count | Should -BeGreaterThan 0
         }
@@ -128,7 +127,7 @@ AfterAll {
     if (Test-Path -Path $distPath) {
         Remove-Item -Path $distPath -Recurse -Force -ErrorAction SilentlyContinue
     }
-    
+
     $nodeModulesPath = Join-Path $script:testAppPath 'node_modules'
     if (Test-Path -Path $nodeModulesPath) {
         Remove-Item -Path $nodeModulesPath -Recurse -Force -ErrorAction SilentlyContinue

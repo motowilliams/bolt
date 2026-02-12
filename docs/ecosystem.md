@@ -6,55 +6,89 @@ This document describes Bolt's package starter system, module installation, and 
 
 **Package starters** are pre-built task collections for specific toolchains and workflows. They provide ready-to-use task templates that you can install into your project's `.build/` directory.
 
+### Package Architecture
+
+Bolt provides **two types of package starters**:
+
+#### Non-Docker Packages (Local CLI Required)
+
+These packages require the toolchain CLI to be installed locally:
+- **Bicep** - Azure Bicep infrastructure tasks
+- **Golang** - Go application development tasks  
+- **Python** - Python application development tasks
+- **TypeScript** - TypeScript/JavaScript development tasks
+- **dotnet** - dotnet/C# application development tasks
+- **Terraform** - Terraform infrastructure tasks
+
+**Characteristics:**
+- ✅ Direct CLI integration (faster execution)
+- ✅ Native tool installation
+- ❌ Requires local tool installation
+
+#### Docker-Only Packages (No Local CLI Required)
+
+These packages use Docker containers exclusively:
+- **Golang-Docker** - Go development via Docker container
+- **Python-Docker** - Python development via Docker container
+- **TypeScript-Docker** - TypeScript development via Docker container
+- **dotnet-Docker** - dotnet development via Docker container
+- **Terraform-Docker** - Terraform operations via Docker container
+
+**Characteristics:**
+- ✅ No local tool installation required (only Docker)
+- ✅ Consistent environment (containerized)
+- ❌ Requires Docker Engine
+- ❌ Slower execution (container startup overhead)
+
 ### Available Package Starters
 
 #### Python Starter Package
 
-Python application development tasks for formatting, linting, testing, and building with Docker fallback support.
+Python application development tasks for formatting, linting, testing, and building.
 
 **Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
 
-**Requirements:** Python 3.8+ ([Installation](https://www.python.org/downloads/)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+**Requirements:** Python 3.8+ ([Installation](https://www.python.org/downloads/))
 
 See [packages/.build-python/README.md](../packages/.build-python/README.md) for detailed documentation, installation instructions, and usage examples.
 
 #### Golang Starter Package
 
-Go application development tasks for building, testing, and formatting Go code with Docker fallback support.
+Go application development tasks for building, testing, and formatting Go code.
 
 **Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
 
-**Requirements:** Go 1.21+ CLI ([Installation](https://go.dev/doc/install)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+**Requirements:** Go 1.21+ CLI ([Installation](https://go.dev/doc/install))
 
 See [packages/.build-golang/README.md](../packages/.build-golang/README.md) for detailed documentation, installation instructions, and usage examples.
 
 #### TypeScript Starter Package
 
-TypeScript/JavaScript application development tasks with automatic Docker fallback.
+TypeScript/JavaScript application development tasks.
 
 **Included Tasks:** `format` (alias `fmt`), `lint`, `test`, `build`
 
-**Requirements:** Node.js 18+ with npm ([Installation](https://nodejs.org/)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+**Requirements:** Node.js 18+ with npm ([Installation](https://nodejs.org/))
 
 See [packages/.build-typescript/README.md](../packages/.build-typescript/README.md) for detailed documentation, installation instructions, and usage examples.
 
 #### dotnet (C#) Starter Package
 
-dotnet/C# application development tasks with automatic Docker fallback.
+dotnet/C# application development tasks.
 
 **Included Tasks:** `format` (alias `fmt`), `restore`, `test`, `build`
 
-**Requirements:** .NET SDK 6.0+ ([Installation](https://dotnet.microsoft.com/download)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+**Requirements:** .NET SDK 6.0+ ([Installation](https://dotnet.microsoft.com/download))
 
 See [packages/.build-dotnet/README.md](../packages/.build-dotnet/README.md) for detailed documentation, installation instructions, and usage examples.
 
 #### Terraform Starter Package
 
-Infrastructure-as-Code tasks for Terraform workflows with automatic Docker fallback.
+Infrastructure-as-Code tasks for Terraform workflows.
 
 **Included Tasks:** `format` (alias `fmt`), `validate`, `plan`, `apply` (alias `deploy`)
 
-**Requirements:** Terraform CLI ([Installation](https://developer.hashicorp.com/terraform/downloads)) or Docker ([Installation](https://docs.docker.com/get-docker/))
+**Requirements:** Terraform CLI ([Installation](https://developer.hashicorp.com/terraform/downloads))
 
 See [packages/.build-terraform/README.md](../packages/.build-terraform/README.md) for detailed documentation, installation instructions, and usage examples.
 

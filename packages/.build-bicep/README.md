@@ -168,7 +168,7 @@ This package includes comprehensive tests:
 Run tests with:
 
 ```powershell
-Invoke-Pester -Path packages/.build-bicep/tests/ -Tag Bicep-Tasks
+Invoke-Pester -Path packages/.build-bicep/tests/ -Tag Package-Bicep-Tasks
 ```
 
 ## Troubleshooting

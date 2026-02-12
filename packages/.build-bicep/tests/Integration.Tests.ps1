@@ -66,7 +66,7 @@ BeforeAll {
     }
 }
 
-Describe 'Task Integration Tests' -Tag 'Bicep-Tasks' {
+Describe 'Task Integration Tests' -Tag 'Package-Bicep-Tasks' {
     Context 'Format Task Integration' {
         It 'Should format Bicep files if bicep CLI is available' {
             # Check if Bicep CLI is available

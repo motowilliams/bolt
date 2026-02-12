@@ -1,6 +1,6 @@
 #Requires -Version 7.0
 
-Describe ".NET Package Starter - Task Validation" -Tag "DotNet-Tasks" {
+Describe ".NET Package Starter - Task Validation" -Tag "Package-Dotnet-Tasks" {
     BeforeAll {
         $packagePath = Join-Path $PSScriptRoot ".."
         $taskFiles = Get-ChildItem -Path $packagePath -Filter "Invoke-*.ps1" -File -Force
@@ -78,12 +78,6 @@ Describe ".NET Package Starter - Task Validation" -Tag "DotNet-Tasks" {
             $content | Should -Match "Get-Command dotnet"
         }
 
-        It "format task should have Docker fallback" {
-            $content = Get-Content -Path "$packagePath/Invoke-Format.ps1" -Raw
-            $content | Should -Match "Get-Command docker"
-            $content | Should -Match "mcr.microsoft.com/dotnet/sdk"
-        }
-
         It "restore task should check for dotnet CLI" {
             $content = Get-Content -Path "$packagePath/Invoke-Restore.ps1" -Raw
             $content | Should -Match "Get-Command dotnet"
@@ -125,12 +119,6 @@ Describe ".NET Package Starter - Task Validation" -Tag "DotNet-Tasks" {
             $content | Should -Match "restore"
             $content | Should -Match "test"
             $content | Should -Match "build"
-        }
-
-        It "README.md should mention Docker fallback" {
-            $content = Get-Content -Path "$packagePath/README.md" -Raw
-            $content | Should -Match "Docker"
-            $content | Should -Match "fallback"
         }
     }
 

@@ -2,11 +2,47 @@
 
 This directory contains **package starters** - pre-built task collections for specific toolchains and workflows. Package starters provide ready-to-use task templates that you can install into your project's `.build/` directory.
 
+## Package Architecture
+
+Bolt provides **two types of package starters**:
+
+### Non-Docker Packages (Local CLI Required)
+
+These packages require the toolchain CLI to be installed locally on your system:
+
+- **`.build-bicep`** - Azure Bicep infrastructure tasks
+- **`.build-golang`** - Go application development tasks  
+- **`.build-python`** - Python application development tasks
+- **`.build-typescript`** - TypeScript/JavaScript development tasks
+- **`.build-dotnet`** - dotnet/C# application development tasks
+- **`.build-terraform`** - Terraform infrastructure tasks
+
+**Characteristics:**
+- ✅ Direct CLI integration (faster execution)
+- ✅ Native tool installation (no containerization overhead)
+- ❌ Requires local tool installation
+
+### Docker-Only Packages (No Local CLI Required)
+
+These packages use Docker containers exclusively and do not require local CLI installation:
+
+- **`.build-golang-docker`** - Go development via Docker container
+- **`.build-python-docker`** - Python development via Docker container
+- **`.build-typescript-docker`** - TypeScript development via Docker container
+- **`.build-dotnet-docker`** - dotnet development via Docker container
+- **`.build-terraform-docker`** - Terraform operations via Docker container
+
+**Characteristics:**
+- ✅ No local tool installation required (only Docker)
+- ✅ Consistent environment (containerized)
+- ❌ Requires Docker Engine
+- ❌ Slower execution (container startup overhead)
+
 ## Available Package Starters
 
 ### `.build-python` - Python Starter Package
 
-Python application development tasks for formatting, linting, testing, and building with Docker fallback support.
+Python application development tasks for formatting, linting, testing, and building.
 
 **Included Tasks:**
 - **`format`** - Formats Python files using `black` (alias: `fmt`)
@@ -16,8 +52,7 @@ Python application development tasks for formatting, linting, testing, and build
 
 **Requirements:**
 - Python 3.8+ (3.12 recommended): https://www.python.org/downloads/
-  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
-- Tasks automatically use Docker if Python is not installed
+- Python CLI must be installed locally
 
 **Installation:**
 
@@ -48,25 +83,17 @@ Copy-Item -Path "packages/.build-python/Invoke-*.ps1" -Destination ".build/" -Fo
 .\bolt.ps1 build
 ```
 
-**Docker Fallback:**
-If Python is not installed, tasks automatically use Docker:
-```powershell
-# No local Python? No problem!
-.\bolt.ps1 format    # Uses Docker: python:3.12-slim
-.\bolt.ps1 build     # Automatically falls back to Docker
-```
-
 **Testing:**
 The Python starter package includes comprehensive tests:
 - `packages/.build-python/tests/Tasks.Tests.ps1` - Task structure validation
 - `packages/.build-python/tests/Integration.Tests.ps1` - End-to-end integration tests
 - `packages/.build-python/tests/app/` - Example Python application with pytest tests
 
-Run tests with: `Invoke-Pester -Tag Python-Tasks`
+Run tests with: `Invoke-Pester -Tag Package-Python-Tasks`
 
 ### `.build-golang` - Golang Starter Package
 
-Go application development tasks for building, testing, and formatting Go code with Docker fallback support.
+Go application development tasks for building, testing, and formatting Go code.
 
 **Included Tasks:**
 - **`format`** - Formats Go files using `go fmt` (alias: `fmt`)
@@ -76,8 +103,7 @@ Go application development tasks for building, testing, and formatting Go code w
 
 **Requirements:**
 - Go 1.21+ CLI: https://go.dev/doc/install
-  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
-- Tasks automatically use Docker if Go is not installed
+- Go CLI must be installed locally
 
 **Installation:**
 
@@ -114,11 +140,11 @@ The Golang starter package includes comprehensive tests:
 - `packages/.build-golang/tests/Integration.Tests.ps1` - End-to-end integration tests
 - `packages/.build-golang/tests/app/` - Example Go application
 
-Run tests with: `Invoke-Pester -Tag Golang-Tasks`
+Run tests with: `Invoke-Pester -Tag Package-Golang-Tasks`
 
 ### `.build-typescript` - TypeScript Starter Package
 
-TypeScript/JavaScript application development tasks for building, testing, linting, and formatting with Docker fallback support.
+TypeScript/JavaScript application development tasks for building, testing, linting, and formatting.
 
 **Included Tasks:**
 - **`format`** - Formats TypeScript files using Prettier (alias: `fmt`)
@@ -128,8 +154,7 @@ TypeScript/JavaScript application development tasks for building, testing, linti
 
 **Requirements:**
 - Node.js 18+ with npm: https://nodejs.org/
-  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
-- Tasks automatically use Docker if Node.js/npm is not installed
+- Node.js/npm must be installed locally
 
 **Installation:**
 
@@ -160,25 +185,17 @@ Copy-Item -Path "packages/.build-typescript/Invoke-*.ps1" -Destination ".build/"
 .\bolt.ps1 build
 ```
 
-**Docker Fallback:**
-If Node.js/npm is not installed, tasks automatically use Docker:
-```powershell
-# No local Node.js? No problem!
-.\bolt.ps1 format    # Uses Docker: node:22-alpine
-.\bolt.ps1 build     # Automatically falls back to Docker
-```
-
 **Testing:**
 The TypeScript starter package includes comprehensive tests:
 - `packages/.build-typescript/tests/Tasks.Tests.ps1` - Task structure validation
 - `packages/.build-typescript/tests/Integration.Tests.ps1` - End-to-end integration tests
 - `packages/.build-typescript/tests/app/` - Example TypeScript application with Jest tests
 
-Run tests with: `Invoke-Pester -Tag TypeScript-Tasks`
+Run tests with: `Invoke-Pester -Tag Package-Typescript-Tasks`
 
 ### `.build-dotnet` - dotnet (C#) Starter Package
 
-dotnet/C# application development tasks for building, testing, formatting, and restoring packages with Docker fallback support.
+dotnet/C# application development tasks for building, testing, formatting, and restoring packages.
 
 **Included Tasks:**
 - **`format`** - Formats C# files using `dotnet format` (alias: `fmt`)
@@ -188,8 +205,7 @@ dotnet/C# application development tasks for building, testing, formatting, and r
 
 **Requirements:**
 - .NET SDK 6.0+ (8.0+ recommended): https://dotnet.microsoft.com/download
-  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
-- Tasks automatically use Docker if dotnet SDK is not installed
+- dotnet SDK must be installed locally
 
 **Installation:**
 
@@ -220,25 +236,17 @@ Copy-Item -Path "packages/.build-dotnet/Invoke-*.ps1" -Destination ".build/" -Fo
 .\bolt.ps1 build
 ```
 
-**Docker Fallback:**
-If dotnet SDK is not installed, tasks automatically use Docker:
-```powershell
-# No local dotnet SDK? No problem!
-.\bolt.ps1 format    # Uses Docker: mcr.microsoft.com/dotnet/sdk:10.0
-.\bolt.ps1 build     # Automatically falls back to Docker
-```
-
 **Testing:**
 The dotnet starter package includes comprehensive tests:
 - `packages/.build-dotnet/tests/Tasks.Tests.ps1` - Task structure validation
 - `packages/.build-dotnet/tests/Integration.Tests.ps1` - End-to-end integration tests
 - `packages/.build-dotnet/tests/app/` - Example dotnet application with xUnit tests
 
-Run tests with: `Invoke-Pester -Tag DotNet-Tasks`
+Run tests with: `Invoke-Pester -Tag Package-Dotnet-Tasks`
 
 ### `.build-terraform` - Terraform Starter Package
 
-Infrastructure-as-Code tasks for Terraform workflows with Docker fallback support.
+Infrastructure-as-Code tasks for Terraform workflows.
 
 **Included Tasks:**
 - **`format`** - Formats Terraform files using `terraform fmt` (alias: `fmt`)
@@ -248,8 +256,7 @@ Infrastructure-as-Code tasks for Terraform workflows with Docker fallback suppor
 
 **Requirements:**
 - Terraform 1.0+ CLI: https://developer.hashicorp.com/terraform/downloads
-  - **OR** Docker Engine: https://docs.docker.com/get-docker/ (automatic fallback)
-- Tasks automatically use Docker if Terraform CLI is not installed
+- Terraform CLI must be installed locally
 
 **Installation:**
 
@@ -280,21 +287,13 @@ Copy-Item -Path "packages/.build-terraform/Invoke-*.ps1" -Destination ".build/" 
 .\bolt.ps1 apply
 ```
 
-**Docker Fallback:**
-If Terraform CLI is not installed, tasks automatically use Docker:
-```powershell
-# No local Terraform? No problem!
-.\bolt.ps1 format    # Uses Docker: hashicorp/terraform:latest
-.\bolt.ps1 validate  # Automatically falls back to Docker
-```
-
 **Testing:**
 The Terraform starter package includes comprehensive tests:
 - `packages/.build-terraform/tests/Tasks.Tests.ps1` - Task structure validation
 - `packages/.build-terraform/tests/Integration.Tests.ps1` - End-to-end integration tests
 - `packages/.build-terraform/tests/tf/` - Example Terraform configuration
 
-Run tests with: `Invoke-Pester -Tag Terraform-Tasks`
+Run tests with: `Invoke-Pester -Tag Package-Terraform-Tasks`
 
 ### `.build-bicep` - Bicep Starter Package
 
@@ -340,7 +339,7 @@ The Bicep starter package includes comprehensive tests:
 - `packages/.build-bicep/tests/Integration.Tests.ps1` - End-to-end integration tests
 - `packages/.build-bicep/tests/iac/` - Example infrastructure templates
 
-Run tests with: `Invoke-Pester -Tag Bicep-Tasks`
+Run tests with: `Invoke-Pester -Tag Package-Bicep-Tasks`
 
 ## Using Multiple Package Starters (Multi-Namespace)
 
@@ -500,7 +499,7 @@ When present, your package will be automatically built and included in GitHub re
 
 ## External Tool Dependency Pattern
 
-Package starters should check for required external tools before executing:
+**Non-Docker package starters** should check for required external tools before executing:
 
 ```powershell
 # Example: Check for external CLI tool
@@ -511,7 +510,18 @@ if (-not $toolCmd) {
 }
 ```
 
-See `packages/.build-bicep/Invoke-Build.ps1` for a real-world example of this pattern.
+**Docker-only package starters** should check for Docker availability:
+
+```powershell
+# Example: Check for Docker
+$dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+if (-not $dockerCmd) {
+    Write-Error "Docker not found. Please install: https://docs.docker.com/get-docker/"
+    exit 1
+}
+```
+
+See `packages/.build-bicep/Invoke-Build.ps1` for a real-world example of CLI tool checking.
 
 ## Contributing
 

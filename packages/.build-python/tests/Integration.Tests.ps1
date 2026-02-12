@@ -6,7 +6,7 @@
     Integration tests for Python tasks
 .DESCRIPTION
     End-to-end tests that validate task execution with the example Python project.
-    These tests require Python or Docker to be available.
+    These tests require Python to be available.
 #>
 
 BeforeAll {
@@ -64,15 +64,14 @@ BeforeAll {
         }
     }
 
-    # Check for Python or Docker availability
+    # Check for Python availability
     $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
     if (-not $pythonCmd) {
         $pythonCmd = Get-Command python3 -ErrorAction SilentlyContinue
     }
-    $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
 
-    if (-not $pythonCmd -and -not $dockerCmd) {
-        Set-ItResult -Skipped -Because "Neither Python nor Docker is available"
+    if (-not $pythonCmd) {
+        Set-ItResult -Skipped -Because "Python is not available"
     }
 
     # Clean up any previous build artifacts
@@ -87,7 +86,7 @@ BeforeAll {
     }
 }
 
-Describe "Python Package Starter - Integration Tests" -Tag "Python-Tasks" {
+Describe "Python Package Starter - Integration Tests" -Tag "Package-Python-Tasks" {
     Context "Format Task" {
         It "should format Python files successfully" {
             $result = Invoke-Bolt -Arguments @('format')

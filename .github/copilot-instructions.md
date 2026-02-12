@@ -901,6 +901,46 @@ All tasks use consistent color coding:
 
 ## Example Package Integration Pattern
 
+### ⚠️ MANDATORY: Package Starter Testing Requirements
+
+**CRITICAL: ALL package starters MUST include comprehensive test suites. No exceptions.**
+
+When creating or modifying package starters, you MUST:
+
+1. **Create `tests/Tasks.Tests.ps1`** - Task structure validation (minimum 15+ assertions):
+   - File existence for every task
+   - PowerShell syntax validation
+   - Metadata validation (TASK, DESCRIPTION, DEPENDS)
+   - Alias validation
+   - Tag with `[Toolchain]-Tasks` or `[Toolchain]-Docker-Tasks`
+
+2. **Create `tests/Integration.Tests.ps1`** - End-to-end execution tests (minimum 5+ assertions):
+   - Tool/Docker availability detection
+   - Graceful test skipping when tools not installed (`Set-ItResult -Skipped`)
+   - Each task executed with `$LASTEXITCODE` verification
+   - Output artifact validation
+   - Full pipeline dependency test
+
+3. **Create `tests/[example-project]/`** - Real sample application files:
+   - NOT empty placeholder files
+   - Actual files that tasks will process
+   - Demonstrates common patterns (e.g., `tests/app/hello.ts` for TypeScript)
+
+**Anti-Patterns to Avoid:**
+- ❌ Creating package starters without tests
+- ❌ Adding placeholder test files with zero assertions
+- ❌ Planning to "add tests later" (they won't get added)
+- ❌ Copying test structure without updating file paths or assertions
+
+**Validation:**
+- Run tests during development: `Invoke-Pester -Path "packages/.build-[toolchain]/tests"`
+- Tests MUST pass before submitting PR
+- Code without tests WILL NOT be merged
+
+**See `.github/instructions/package-starter-development.instructions.md` for complete testing guidelines.**
+
+---
+
 ### External Tool CLI Pattern
 
 Package starters should check for required external tools before executing. This pattern is demonstrated in the Bicep starter package:
@@ -1069,7 +1109,7 @@ This project includes a CI workflow at `.github/workflows/ci.yml`:
    - Ubuntu: Azure CLI (includes Bicep) via `curl -sL https://aka.ms/InstallAzureCLIDeb`
    - Windows: Bicep via `winget install Microsoft.Bicep`
 3. **Core Tests**: Fast tests (~1s, no Bicep required) - `Invoke-Pester -Tag Core`
-4. **Bicep Starter Package Tests**: Bicep-dependent tests (~22s) - `Invoke-Pester -Tag Bicep-Tasks`
+4. **Bicep Starter Package Tests**: Bicep-dependent tests (~22s) - `Invoke-Pester -Tag Package-Bicep-Tasks`
 5. **Test Report**: Generate NUnit XML - `Invoke-Pester -Configuration $config`
 6. **Build Pipeline**: Run full pipeline - `pwsh -File bolt.ps1 build`
 7. **Verify Artifacts**: Check compiled ARM JSON templates exist
@@ -1312,13 +1352,13 @@ Invoke-Pester -Path tests/bolt.Tests.ps1  # Run specific test file
 # Use tags for targeted testing
 Invoke-Pester -Tag Core            # Only core orchestration tests (fast, ~1s)
 Invoke-Pester -Tag Security        # Only security validation tests (fast, ~1s)
-Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (slower, ~22s)
+Invoke-Pester -Tag Package-Bicep-Tasks     # Only Bicep task tests (slower, ~22s)
 ```
 
 **Test Tags**:
 - **`Core`** - Tests bolt.ps1 orchestration, fast, no external dependencies
 - **`Security`** - Tests all security features (security validation + RFC 9116 + logging + output validation)
-- **`Bicep-Tasks`** - Tests Bicep task implementation, slower, requires Bicep CLI
+- **`Package-Bicep-Tasks`** - Tests Bicep task implementation, slower, requires Bicep CLI
 
 **Test Coverage**:
 
@@ -1719,7 +1759,7 @@ Add a **`### Technical Notes`** subsection within relevant changelog entries to 
 Invoke-Pester                      # Run all tests (~15s)
 Invoke-Pester -Tag Core            # Only orchestration tests (~1s)
 Invoke-Pester -Tag Security        # Only security tests (~10s)
-Invoke-Pester -Tag Bicep-Tasks     # Only Bicep task tests (~22s)
+Invoke-Pester -Tag Package-Bicep-Tasks     # Only Bicep task tests (~22s)
 Invoke-Pester -Output Detailed     # With detailed output
 
 # Creating new tasks
@@ -1768,8 +1808,8 @@ Ctrl+Shift+P > Tasks: Run Test Task # Select test task
 - `tests/security/SecurityTxt.Tests.ps1` - RFC 9116 compliance tests (tag: `SecurityTxt`, `Operational`)
 - `tests/security/SecurityLogging.Tests.ps1` - Security event logging tests (tag: `SecurityLogging`, `Operational`)
 - `tests/security/OutputValidation.Tests.ps1` - Output sanitization tests (tag: `OutputValidation`, `Security`)
-- `packages/.build-bicep/tests/Tasks.Tests.ps1` - Bicep task validation tests (tag: `Bicep-Tasks`)
-- `packages/.build-bicep/tests/Integration.Tests.ps1` - End-to-end Bicep integration tests (tag: `Bicep-Tasks`)
+- `packages/.build-bicep/tests/Tasks.Tests.ps1` - Bicep task validation tests (tag: `Package-Bicep-Tasks`)
+- `packages/.build-bicep/tests/Integration.Tests.ps1` - End-to-end Bicep integration tests (tag: `Package-Bicep-Tasks`)
 - `tests/fixtures/Invoke-Mock*.ps1` - Mock tasks for testing Bolt without external dependencies
 
 ### Infrastructure
