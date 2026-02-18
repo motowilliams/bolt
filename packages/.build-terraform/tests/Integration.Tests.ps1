@@ -128,6 +128,18 @@ Describe 'Terraform Package Starter - Integration Tests' -Tag 'Package-Terraform
             $content | Should -Match '# DEPENDS:.*format.*validate.*plan'
         }
     }
+
+    Context 'Full Pipeline' {
+        It 'Should complete full pipeline (format -> validate -> plan)' {
+            # Run plan which should execute format -> validate -> plan chain
+            $result = Invoke-Bolt -Arguments @('plan')
+            $result.ExitCode | Should -Be 0
+
+            # Verify plan file was created
+            $planFile = Join-Path $script:testProjectPath "terraform.tfplan"
+            Test-Path $planFile | Should -Be $true
+        }
+    }
 }
 
 AfterAll {

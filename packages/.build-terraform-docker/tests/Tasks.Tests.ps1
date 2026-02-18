@@ -7,7 +7,7 @@
 .DESCRIPTION
     Tests the format, validate, plan, and apply tasks.
     These tests verify task structure, metadata, and dependencies.
-    Tagged with Package-Package-Terraform-Tasks-Docker to differentiate from non-Docker variant.
+    Tagged with Package-Terraform-Tasks-Docker to differentiate from non-Docker variant.
 #>
 
 BeforeAll {
@@ -21,7 +21,7 @@ BeforeAll {
     $script:DockerfilePath = Join-Path $moduleRoot 'Dockerfile'
 }
 
-Describe 'Task Validation' -Tag 'Package-Package-Terraform-Tasks-Docker' {
+Describe 'Task Validation' -Tag 'Package-Terraform-Tasks-Docker' {
     Context 'Format Task' {
         It 'Should exist' {
             Test-Path $script:FormatTaskPath | Should -Be $true

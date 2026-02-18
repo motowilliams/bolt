@@ -2,7 +2,6 @@
 
 # TASK: restore
 # DESCRIPTION: Restores NuGet packages for .NET projects (Docker)
-# DEPENDS:
 
 Write-Host "Restoring NuGet packages (Docker)..." -ForegroundColor Cyan
 
@@ -33,54 +32,51 @@ Write-Host "Found $($projectFiles.Count) .NET project(s)" -ForegroundColor Gray
 Write-Host ""
 
 # ===== Docker Image Selection =====
-$dockerImage = "mcr.microsoft.com/dotnet/sdk:10.0"
+$dockerfilePath = Join-Path -Path $PSScriptRoot -ChildPath "Dockerfile"
+$imageName = "bolt-dotnet:latest"
 
-$rebuildEnvVar = $env:BOLT_DOTNET_DOCKER_REBUILD
-if ($rebuildEnvVar -eq "1" -or $rebuildEnvVar -eq "true") {
-    $dockerfilePath = Join-Path -Path $PSScriptRoot -ChildPath "Dockerfile"
-    if (Test-Path -Path $dockerfilePath) {
-        Write-Host "  Building custom Docker image (BOLT_DOTNET_DOCKER_REBUILD=1)..." -ForegroundColor Gray
-        $imageName = "bolt-dotnet:latest"
-        $buildOutput = & docker build -t $imageName -f $dockerfilePath $PSScriptRoot 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "    ✓ Custom image built: $imageName" -ForegroundColor Green
-            $dockerImage = $imageName
-        }
-        else {
-            Write-Host "    ✗ Failed to build custom image, using default" -ForegroundColor Yellow
-            $buildOutput | ForEach-Object { Write-Host "      $_" -ForegroundColor Gray }
-        }
-    }
+# Build args with optional cache invalidation
+$buildArgs = @("-t", $imageName, "-f", $dockerfilePath, $PSScriptRoot)
+if ($env:BOLT_DOTNET_DOCKER_REBUILD -eq "1" -or $env:BOLT_DOTNET_DOCKER_REBUILD -eq "true") {
+    Write-Host "  Building Docker image with --no-cache (BOLT_DOTNET_DOCKER_REBUILD=1)..." -ForegroundColor Gray
+    $buildArgs = @("--no-cache") + $buildArgs
 }
+else {
+    Write-Host "  Building Docker image (using cache)..." -ForegroundColor Gray
+}
+
+$buildOutput = & docker build @buildArgs 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to build Docker image. Output: $buildOutput"
+    exit 1
+}
+
+Write-Host "    ✓ Docker image ready: $imageName" -ForegroundColor Green
+$dockerImage = $imageName
 
 # ===== Restore Projects =====
 $restoreSuccess = $true
 
+# Mount the parent directory (dotnetPath) so project references work
+$absolutePath = [System.IO.Path]::GetFullPath($dotnetPath)
+
 foreach ($project in $projectFiles) {
-    $projectDir = Split-Path -Path $project.FullName -Parent
-    $relativePath = Resolve-Path -Relative $project.FullName
+    $relativePath = $project.FullName.Substring($dotnetPath.Length).TrimStart('\', '/')
+    $containerPath = "/project/$relativePath" -replace '\\', '/'
 
     Write-Host "  Restoring: $relativePath" -ForegroundColor Gray
 
-    Push-Location $projectDir
-    try {
-        $absolutePath = [System.IO.Path]::GetFullPath($projectDir)
+    $output = & docker run --rm -v "${absolutePath}:/project" -w /project $dockerImage dotnet restore $containerPath --nologo --verbosity quiet 2>&1
 
-        $output = & docker run --rm -v "${absolutePath}:/project" -w /project $dockerImage dotnet restore --nologo --verbosity quiet 2>&1
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "    ✓ Restore succeeded" -ForegroundColor Green
-        }
-        else {
-            Write-Host "    ✗ Restore failed" -ForegroundColor Red
-            $restoreSuccess = $false
-            $output | ForEach-Object {
-                Write-Host "      $_" -ForegroundColor Red
-            }
-        }
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "    ✓ Restore succeeded" -ForegroundColor Green
     }
-    finally {
-        Pop-Location
+    else {
+        Write-Host "    ✗ Restore failed" -ForegroundColor Red
+        $restoreSuccess = $false
+        $output | ForEach-Object {
+            Write-Host "      $_" -ForegroundColor Red
+        }
     }
 }
 

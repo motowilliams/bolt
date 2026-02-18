@@ -39,26 +39,27 @@ Write-Host "Found TypeScript project in: $projectDir" -ForegroundColor Gray
 Write-Host ""
 
 # ===== Docker Image Selection =====
-$dockerImage = "node:22-alpine"
+$dockerfilePath = Join-Path -Path $PSScriptRoot -ChildPath "Dockerfile"
+$imageName = "bolt-typescript:latest"
 
-# Check if custom image should be built
-$rebuildEnvVar = $env:BOLT_TYPESCRIPT_DOCKER_REBUILD
-if ($rebuildEnvVar -eq "1" -or $rebuildEnvVar -eq "true") {
-    $dockerfilePath = Join-Path -Path $PSScriptRoot -ChildPath "Dockerfile"
-    if (Test-Path -Path $dockerfilePath) {
-        Write-Host "  Building custom Docker image (BOLT_TYPESCRIPT_DOCKER_REBUILD=1)..." -ForegroundColor Gray
-        $imageName = "bolt-typescript:latest"
-        $buildOutput = & docker build -t $imageName -f $dockerfilePath $PSScriptRoot 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "    ✓ Custom image built: $imageName" -ForegroundColor Green
-            $dockerImage = $imageName
-        }
-        else {
-            Write-Host "    ✗ Failed to build custom image, using default" -ForegroundColor Yellow
-            $buildOutput | ForEach-Object { Write-Host "      $_" -ForegroundColor Gray }
-        }
-    }
+# Build args with optional cache invalidation
+$buildArgs = @("-t", $imageName, "-f", $dockerfilePath, $PSScriptRoot)
+if ($env:BOLT_TYPESCRIPT_DOCKER_REBUILD -eq "1" -or $env:BOLT_TYPESCRIPT_DOCKER_REBUILD -eq "true") {
+    Write-Host "  Building Docker image with --no-cache (BOLT_TYPESCRIPT_DOCKER_REBUILD=1)..." -ForegroundColor Gray
+    $buildArgs = @("--no-cache") + $buildArgs
 }
+else {
+    Write-Host "  Building Docker image (using cache)..." -ForegroundColor Gray
+}
+
+$buildOutput = & docker build @buildArgs 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to build Docker image. Output: $buildOutput"
+    exit 1
+}
+
+Write-Host "    ✓ Docker image ready: $imageName" -ForegroundColor Green
+$dockerImage = $imageName
 
 # ===== Format Files =====
 $formatSuccess = $true
@@ -68,7 +69,7 @@ try {
     $absolutePath = [System.IO.Path]::GetFullPath($projectDir)
 
     Write-Host "  Installing dependencies in Docker..." -ForegroundColor Gray
-    $output = & docker run --rm -v "${absolutePath}:/project" -w /project $dockerImage npm install 2>&1
+    $output = & docker run --rm -e CI=true -v "${absolutePath}:/project" -w /project $dockerImage npm install 2>&1
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "    ✗ Failed to install dependencies" -ForegroundColor Red
@@ -81,7 +82,7 @@ try {
         Write-Host "    ✓ Dependencies installed" -ForegroundColor Green
 
         Write-Host "  Running Prettier..." -ForegroundColor Gray
-        $output = & docker run --rm -v "${absolutePath}:/project" -w /project $dockerImage npm run format 2>&1
+        $output = & docker run --rm -e CI=true -v "${absolutePath}:/project" -w /project $dockerImage npm run format 2>&1
 
         if ($LASTEXITCODE -eq 0) {
             Write-Host "    ✓ Formatting completed" -ForegroundColor Green

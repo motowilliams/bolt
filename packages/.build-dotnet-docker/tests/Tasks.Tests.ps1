@@ -57,6 +57,33 @@ Describe 'Task Validation' -Tag 'Package-Dotnet-Tasks-Docker' {
         }
     }
 
+    Context 'Restore Task' {
+        It 'Should exist' {
+            Test-Path $script:RestoreTaskPath | Should -Be $true
+        }
+
+        It 'Should have valid PowerShell syntax' {
+            $content = Get-Content $script:RestoreTaskPath -Raw -ErrorAction Stop
+            { $null = [System.Management.Automation.PSParser]::Tokenize($content, [ref]$null) } | Should -Not -Throw
+        }
+
+        It 'Should have proper task metadata' {
+            $content = Get-Content $script:RestoreTaskPath -Raw -ErrorAction Stop
+            $content | Should -Match '# TASK: restore'
+            $content | Should -Match '# DESCRIPTION:'
+        }
+
+        It 'Should have no dependencies' {
+            $content = Get-Content $script:RestoreTaskPath -Raw -ErrorAction Stop
+            $content | Should -Not -Match '# DEPENDS:'
+        }
+
+        It 'Should reference Docker' {
+            $content = Get-Content $script:RestoreTaskPath -Raw -ErrorAction Stop
+            $content | Should -Match 'docker'
+        }
+    }
+
     Context 'Test Task' {
         It 'Should exist' {
             Test-Path $script:TestTaskPath | Should -Be $true

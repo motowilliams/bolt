@@ -105,11 +105,11 @@
 [CmdletBinding()]
 param(
     [Parameter()]
-    [ValidateSet('Core', 'Security', 'Package-Bicep-Tasks', 'Package-Golang-Tasks', 'Package-Terraform-Tasks', 'Package-Dotnet-Tasks', 'Package-Typescript-Tasks', 'Package-Python-Tasks', 'Package-Golang-Tasks-Docker', 'Package-Package-Terraform-Tasks-Docker', 'Package-Dotnet-Tasks-Docker', 'Package-Typescript-Tasks-Docker', 'Package-Python-Tasks-Docker', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
+    [ValidateSet('Core', 'Security', 'Package-Bicep-Tasks', 'Package-Golang-Tasks', 'Package-Terraform-Tasks', 'Package-Dotnet-Tasks', 'Package-Typescript-Tasks', 'Package-Python-Tasks', 'Package-Golang-Tasks-Docker', 'Package-Terraform-Tasks-Docker', 'Package-Dotnet-Tasks-Docker', 'Package-Typescript-Tasks-Docker', 'Package-Python-Tasks-Docker', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$Tag,
 
     [Parameter()]
-    [ValidateSet('Core', 'Security', 'Package-Bicep-Tasks', 'Package-Golang-Tasks', 'Package-Terraform-Tasks', 'Package-Dotnet-Tasks', 'Package-Typescript-Tasks', 'Package-Python-Tasks', 'Package-Golang-Tasks-Docker', 'Package-Package-Terraform-Tasks-Docker', 'Package-Dotnet-Tasks-Docker', 'Package-Typescript-Tasks-Docker', 'Package-Python-Tasks-Docker', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
+    [ValidateSet('Core', 'Security', 'Package-Bicep-Tasks', 'Package-Golang-Tasks', 'Package-Terraform-Tasks', 'Package-Dotnet-Tasks', 'Package-Typescript-Tasks', 'Package-Python-Tasks', 'Package-Golang-Tasks-Docker', 'Package-Terraform-Tasks-Docker', 'Package-Dotnet-Tasks-Docker', 'Package-Typescript-Tasks-Docker', 'Package-Python-Tasks-Docker', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$ExcludeTag,
 
     [Parameter()]

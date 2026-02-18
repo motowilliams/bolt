@@ -103,6 +103,24 @@ Describe 'Docker Task Integration Tests' -Tag 'Package-Dotnet-Tasks-Docker' {
         }
     }
 
+    Context 'Restore Task Integration' {
+        It 'Should restore .NET packages in Docker container' {
+            if (-not $script:hasDocker) {
+                Set-ItResult -Skipped -Because "Docker CLI is not installed"
+                return
+            }
+
+            if (-not $script:dockerRunning) {
+                Set-ItResult -Skipped -Because "Docker daemon is not running"
+                return
+            }
+
+            Test-Path $script:DotNetAppPath | Should -Be $true
+            $result = Invoke-Bolt -Arguments @('restore') -Parameters @{ Only = $true }
+            $result.ExitCode | Should -Be 0
+        }
+    }
+
     Context 'Test Task Integration' {
         It 'Should run .NET tests in Docker container' {
             if (-not $script:hasDocker) {

@@ -1,6 +1,6 @@
 # TASK: lint
 # DESCRIPTION: Validates Go code using go vet
-# DEPENDS:
+# DEPENDS: format
 
 Write-Host "Linting Go files..." -ForegroundColor Cyan
 

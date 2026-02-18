@@ -36,25 +36,27 @@ Write-Host "Found $($tfFiles.Count) Terraform file(s)" -ForegroundColor Gray
 Write-Host ""
 
 # ===== Docker Image Selection =====
-$dockerImage = "hashicorp/terraform:latest"
+$dockerfilePath = Join-Path -Path $PSScriptRoot -ChildPath "Dockerfile"
+$imageName = "bolt-terraform:latest"
 
-$rebuildEnvVar = $env:BOLT_TERRAFORM_DOCKER_REBUILD
-if ($rebuildEnvVar -eq "1" -or $rebuildEnvVar -eq "true") {
-    $dockerfilePath = Join-Path -Path $PSScriptRoot -ChildPath "Dockerfile"
-    if (Test-Path -Path $dockerfilePath) {
-        Write-Host "  Building custom Docker image (BOLT_TERRAFORM_DOCKER_REBUILD=1)..." -ForegroundColor Gray
-        $imageName = "bolt-terraform:latest"
-        $buildOutput = & docker build -t $imageName -f $dockerfilePath $PSScriptRoot 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "    ✓ Custom image built: $imageName" -ForegroundColor Green
-            $dockerImage = $imageName
-        }
-        else {
-            Write-Host "    ✗ Failed to build custom image, using default" -ForegroundColor Yellow
-            $buildOutput | ForEach-Object { Write-Host "      $_" -ForegroundColor Gray }
-        }
-    }
+# Build args with optional cache invalidation
+$buildArgs = @("-t", $imageName, "-f", $dockerfilePath, $PSScriptRoot)
+if ($env:BOLT_TERRAFORM_DOCKER_REBUILD -eq "1" -or $env:BOLT_TERRAFORM_DOCKER_REBUILD -eq "true") {
+    Write-Host "  Building Docker image with --no-cache (BOLT_TERRAFORM_DOCKER_REBUILD=1)..." -ForegroundColor Gray
+    $buildArgs = @("--no-cache") + $buildArgs
 }
+else {
+    Write-Host "  Building Docker image (using cache)..." -ForegroundColor Gray
+}
+
+$buildOutput = & docker build @buildArgs 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to build Docker image. Output: $buildOutput"
+    exit 1
+}
+
+Write-Host "    ✓ Docker image ready: $imageName" -ForegroundColor Green
+$dockerImage = $imageName
 
 # ===== Format Files =====
 $formatIssues = 0

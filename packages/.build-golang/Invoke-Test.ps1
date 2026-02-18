@@ -1,6 +1,6 @@
 # TASK: test
 # DESCRIPTION: Runs Go tests using go test
-# DEPENDS:
+# DEPENDS: format, lint
 
 Write-Host "Running Go tests..." -ForegroundColor Cyan
 

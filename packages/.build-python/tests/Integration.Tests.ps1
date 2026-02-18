@@ -114,4 +114,12 @@ Describe "Python Package Starter - Integration Tests" -Tag "Package-Python-Tasks
             $result.ExitCode | Should -Be 0 -Because "Build task should succeed"
         }
     }
+
+    Context "Full Pipeline" {
+        It "should complete full pipeline (format -> lint -> test -> build)" {
+            # Run build which executes the full dependency chain
+            $result = Invoke-Bolt -Arguments @('build')
+            $result.ExitCode | Should -Be 0 -Because "Full pipeline should succeed"
+        }
+    }
 }

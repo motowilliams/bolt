@@ -113,7 +113,7 @@ Describe 'Task Integration Tests' -Tag 'Package-Bicep-Tasks' {
     }
 
     Context 'Full Build Pipeline' {
-        It 'Should execute complete build pipeline with dependencies' {
+        It 'Should execute complete build pipeline (format -> lint -> build)' {
             # Check if Bicep CLI is available
             $bicepCmd = Get-Command bicep -ErrorAction SilentlyContinue
             if (-not $bicepCmd) {
@@ -125,6 +125,24 @@ Describe 'Task Integration Tests' -Tag 'Package-Bicep-Tasks' {
             # Run build without -Only flag to test full dependency chain
             $result = Invoke-Bolt -Arguments @('build')
             $result.ExitCode | Should -Be 0
+        }
+
+        It 'Should verify compiled ARM templates exist' {
+            # Check if Bicep CLI is available
+            $bicepCmd = Get-Command bicep -ErrorAction SilentlyContinue
+            if (-not $bicepCmd) {
+                Set-ItResult -Skipped -Because "Bicep CLI not installed"
+                return
+            }
+
+            Test-Path $script:IacPath | Should -Be $true
+            # Run build to ensure files are compiled
+            $result = Invoke-Bolt -Arguments @('build') -Parameters @{ Only = $true }
+            $result.ExitCode | Should -Be 0
+
+            # Check for compiled JSON files
+            $jsonFiles = Get-ChildItem -Path $script:IacPath -Filter "main*.json" -File -ErrorAction SilentlyContinue
+            $jsonFiles | Should -Not -BeNullOrEmpty -Because "Build should create compiled ARM template JSON files"
         }
     }
 }

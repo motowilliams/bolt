@@ -7,7 +7,7 @@
 .DESCRIPTION
     End-to-end tests that actually execute format, validate, plan, and apply tasks
     in Docker containers. Requires Docker to be installed and running.
-    Tagged with Package-Package-Terraform-Tasks-Docker to differentiate from non-Docker variant.
+    Tagged with Package-Terraform-Tasks-Docker to differentiate from non-Docker variant.
 #>
 
 BeforeAll {
@@ -84,7 +84,7 @@ BeforeAll {
     }
 }
 
-Describe 'Docker Task Integration Tests' -Tag 'Package-Package-Terraform-Tasks-Docker' {
+Describe 'Docker Task Integration Tests' -Tag 'Package-Terraform-Tasks-Docker' {
     Context 'Format Task Integration' {
         It 'Should format Terraform files in Docker container' {
             if (-not $script:hasDocker) {

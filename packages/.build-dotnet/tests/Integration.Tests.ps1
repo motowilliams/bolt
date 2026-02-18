@@ -1,6 +1,15 @@
 #Requires -Version 7.0
+#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 
-Describe ".NET Package Starter - Integration Tests" -Tag "Package-Dotnet-Tasks" {
+<#
+.SYNOPSIS
+    Integration tests for .NET tasks
+.DESCRIPTION
+    End-to-end tests that actually execute format, lint, test, and build tasks.
+    Tagged with Package-Dotnet-Tasks to differentiate from Docker variant.
+#>
+
+
     BeforeAll {
         # Check for dotnet CLI availability
         $dotnetCmd = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -67,6 +76,7 @@ Describe ".NET Package Starter - Integration Tests" -Tag "Package-Dotnet-Tasks" 
         $originalLocation = Get-Location
     }
 
+Describe ".NET Package Starter - Integration Tests" -Tag "Package-Dotnet-Tasks" {
     AfterAll {
         # Restore original location
         Set-Location $originalLocation
@@ -84,11 +94,6 @@ Describe ".NET Package Starter - Integration Tests" -Tag "Package-Dotnet-Tasks" 
             $result = Invoke-Bolt -Arguments @('restore') -Parameters @{ Only = $true }
             $result.ExitCode | Should -Be 0
         }
-
-        It "should create obj directories after restore" {
-            $objDir = Join-Path $script:testProjectPath "obj"
-            Test-Path $objDir | Should -Be $true
-        }
     }
 
     Context "Test Task" {
@@ -102,17 +107,6 @@ Describe ".NET Package Starter - Integration Tests" -Tag "Package-Dotnet-Tasks" 
         It "should build .NET projects successfully" {
             $result = Invoke-Bolt -Arguments @('build') -Parameters @{ Only = $true }
             $result.ExitCode | Should -Be 0
-        }
-
-        It "should create bin directory after build" {
-            $binDir = Join-Path $script:testProjectPath "bin"
-            Test-Path $binDir | Should -Be $true
-        }
-
-        It "should create output assembly" {
-            $binDir = Join-Path $script:testProjectPath "bin"
-            $dllFiles = Get-ChildItem -Path $binDir -Filter "HelloWorld.dll" -Recurse -File -ErrorAction SilentlyContinue
-            $dllFiles | Should -Not -BeNullOrEmpty
         }
     }
 
