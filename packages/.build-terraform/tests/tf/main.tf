@@ -12,6 +12,10 @@ terraform {
   }
 }
 
+provider "local" {
+  # Local provider doesn't require configuration
+}
+
 variable "content" {
   description = "Content for the file"
   type        = string
