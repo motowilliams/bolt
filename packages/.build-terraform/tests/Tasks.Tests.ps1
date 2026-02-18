@@ -23,8 +23,8 @@ BeforeAll {
     if ($env:BOLT_TERRAFORM_PATH) {
         $script:TestProjectPath = $env:BOLT_TERRAFORM_PATH
     }
-    elseif (Test-Path (Join-Path $moduleRoot 'tests' 'app')) {
-        $script:TestProjectPath = Join-Path $moduleRoot 'tests' 'app'
+    elseif (Test-Path (Join-Path $moduleRoot 'tests' 'tf')) {
+        $script:TestProjectPath = Join-Path $moduleRoot 'tests' 'tf'
     }
 }
 

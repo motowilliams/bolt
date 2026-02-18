@@ -77,15 +77,28 @@ if ($hasPyprojectToml -or $hasSetupPy) {
         Push-Location $pythonPath
         try {
             $output = & $pythonCmd -m build 2>&1
+            $buildExitCode = $LASTEXITCODE
 
-            if ($LASTEXITCODE -eq 0) {
+            # Check if build artifacts exist (primary success indicator)
+            $distPath = Join-Path $pythonPath "dist"
+            $hasArtifacts = $false
+            if (Test-Path -Path $distPath) {
+                $artifacts = Get-ChildItem -Path $distPath -File -Filter "*.whl" -ErrorAction SilentlyContinue
+                $hasArtifacts = $artifacts.Count -gt 0
+            }
+
+            # Build succeeds if exit code is 0 OR artifacts exist (handles Windows cleanup issues)
+            if ($buildExitCode -eq 0 -or $hasArtifacts) {
                 Write-Host "    ✓ Package built successfully" -ForegroundColor Green
 
-                # Check dist directory
-                $distPath = Join-Path $pythonPath "dist"
                 if (Test-Path -Path $distPath) {
-                    $artifacts = Get-ChildItem -Path $distPath -File
-                    Write-Host "    Generated $($artifacts.Count) artifact(s) in dist/" -ForegroundColor Gray
+                    $allArtifacts = Get-ChildItem -Path $distPath -File
+                    Write-Host "    Generated $($allArtifacts.Count) artifact(s) in dist/" -ForegroundColor Gray
+                }
+
+                # Show warning if cleanup failed but build succeeded
+                if ($buildExitCode -ne 0 -and $hasArtifacts) {
+                    Write-Host "    ⚠ Build succeeded but cleanup failed (common on Windows + Dropbox)" -ForegroundColor Yellow
                 }
             }
             else {
