@@ -35,6 +35,7 @@ Note that bicep does not have a vendor or official project supported docker cont
 - Environment variable pattern: `BOLT_<TOOLCHAIN>_DOCKER_REBUILD=1` forces `docker build --no-cache`.
 - Without env var set, Docker build uses cache for faster builds.
 - On Windows, docker-only starters require Linux containers.
+- **CRITICAL: The test and sample applications for the non-docker and docker start packages should be identical. This will prove the architecture of the starter. The docker versions will have an extra test file to cover the docker specific features. Another way to think about this is from a OO perspective the docker starter is a super-class of the non-docker version.
 
 ## Implementation Outline
 
@@ -43,6 +44,7 @@ Note that bicep does not have a vendor or official project supported docker cont
 - Non-docker starters should have zero references to docker.
 - Non-docker do not need to implement any fall back patterns
 - Add per-starter Dockerfiles for docker-only starters and reference them from task scripts.
+- Think about the docker version as setting up the docker image and configuring a tool command that represents the installed tool of that respective package.
 - Add documented, tool-specific env vars to force docker image rebuilds.
 - Update Invoke-Tests.ps1 to have tags for the new set of tests
 - update create-package-starter.prompt.md to handle creating future non-docker and docker supported packages
@@ -100,6 +102,23 @@ if ($env:BOLT_<TOOLCHAIN>_DOCKER_REBUILD -eq "1" -or $env:BOLT_<TOOLCHAIN>_DOCKE
 
 & docker build @buildArgs 2>&1
 $dockerImage = $imageName
+```
+
+```powershell
+# tool execution example
+
+$toolCmd = {
+    param([string[]]$Arguments)
+    & docker run --rm `
+        --volume "${pwd}:/workspace" `
+        --workdir /workspace `
+        mcr.microsoft.com/dotnet/sdk:10.0 `
+        dotnet @Arguments
+}
+
+& $toolCmd build HelloWorld.csproj
+
+
 ```
 
 ### Issues Encountered
