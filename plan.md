@@ -77,6 +77,195 @@ Note that bicep does not have a vendor or official project supported docker cont
 - Update ecosystem docs in [docs/ecosystem.md](docs/ecosystem.md).
 - Update implementation notes that describe docker fallback in [IMPLEMENTATION.md](IMPLEMENTATION.md).
 
+## Implementation Checklist
+
+Process packages in order. Run Phase 3 validation before ticking any package complete.
+
+### DotNet
+
+**Phase 1 - Non-Docker (`packages/.build-dotnet`)**
+- [ ] Remove `$useDocker` variable and all references from all task scripts
+- [ ] Remove Docker container execution blocks (`docker run --rm -v ...`) from all task scripts
+- [ ] Remove Docker-related error/info messages from all task scripts
+- [ ] Verify ZERO Docker references: `Select-String -Path "packages/.build-dotnet/*.ps1" -Pattern "docker"`
+- [ ] Verify syntax: `PSParser::Tokenize` on all `Invoke-*.ps1` files
+- [ ] Run tests: `Invoke-Pester -Path "packages/.build-dotnet/tests"`
+
+**Phase 2 - Docker (`packages/.build-dotnet-docker`)**
+- [ ] Copy `tests/app` directory EXACTLY from non-Docker (no modifications)
+- [ ] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [ ] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [ ] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [ ] Create `Dockerfile` (FROM mcr.microsoft.com/dotnet/sdk, WORKDIR /project)
+- [ ] Create all `Invoke-*.ps1` task scripts using Docker execution pattern
+- [ ] Create `tests/Docker.Tests.ps1` (SEPARATE file, not added to existing tests)
+- [ ] Copy and update `README.md` (add Docker installation requirements)
+- [ ] Verify `bolt.config.json` path points to `packages/.build-dotnet-docker/tests` (not `/tests/app`)
+
+**Phase 3 - Validation**
+- [ ] Run Phase 3 validation script - ALL 6 checks pass
+
+---
+
+### Golang
+
+**Phase 1 - Non-Docker (`packages/.build-golang`)**
+- [ ] Remove `$useDocker` variable and all references from all task scripts
+- [ ] Remove Docker container execution blocks from all task scripts
+- [ ] Remove Docker-related error/info messages from all task scripts
+- [ ] Verify ZERO Docker references: `Select-String -Path "packages/.build-golang/*.ps1" -Pattern "docker"`
+- [ ] Verify syntax: check all `Invoke-*.ps1` files
+- [ ] Run tests: `Invoke-Pester -Path "packages/.build-golang/tests"`
+
+**Phase 2 - Docker (`packages/.build-golang-docker`)**
+- [ ] Copy `tests/app` directory EXACTLY from non-Docker (no modifications)
+- [ ] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [ ] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [ ] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [ ] Create `Dockerfile` (FROM golang, WORKDIR /project)
+- [ ] Create all `Invoke-*.ps1` task scripts using Docker execution pattern (`BOLT_GOLANG_DOCKER_REBUILD`)
+- [ ] Create `tests/Docker.Tests.ps1` (SEPARATE file)
+- [ ] Copy and update `README.md`
+- [ ] Verify `bolt.config.json` path points to `packages/.build-golang-docker/tests`
+
+**Phase 3 - Validation**
+- [ ] Run Phase 3 validation script - ALL 6 checks pass
+
+---
+
+### TypeScript
+
+**Phase 1 - Non-Docker (`packages/.build-typescript`)**
+- [ ] Remove `$useDocker` variable and all references from all task scripts
+- [ ] Remove Docker container execution blocks from all task scripts
+- [ ] Remove Docker-related error/info messages from all task scripts
+- [ ] Verify ZERO Docker references: `Select-String -Path "packages/.build-typescript/*.ps1" -Pattern "docker"`
+- [ ] Verify syntax: check all `Invoke-*.ps1` files
+- [ ] Run tests: `Invoke-Pester -Path "packages/.build-typescript/tests"`
+
+**Phase 2 - Docker (`packages/.build-typescript-docker`)**
+- [ ] Copy `tests/app` directory EXACTLY from non-Docker (no modifications)
+- [ ] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [ ] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [ ] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [ ] Create `Dockerfile` (FROM node, WORKDIR /project)
+- [ ] Create all `Invoke-*.ps1` task scripts using Docker execution pattern (`BOLT_TYPESCRIPT_DOCKER_REBUILD`)
+- [ ] Create `tests/Docker.Tests.ps1` (SEPARATE file)
+- [ ] Copy and update `README.md`
+- [ ] Verify `bolt.config.json` path points to `packages/.build-typescript-docker/tests`
+
+**Phase 3 - Validation**
+- [ ] Run Phase 3 validation script - ALL 6 checks pass
+
+---
+
+### Python
+
+**Phase 1 - Non-Docker (`packages/.build-python`)**
+- [ ] Remove `$useDocker` variable and all references from all task scripts
+- [ ] Remove Docker container execution blocks from all task scripts
+- [ ] Remove Docker-related error/info messages from all task scripts
+- [ ] Verify ZERO Docker references: `Select-String -Path "packages/.build-python/*.ps1" -Pattern "docker"`
+- [ ] Verify syntax: check all `Invoke-*.ps1` files
+- [ ] Run tests: `Invoke-Pester -Path "packages/.build-python/tests"`
+
+**Phase 2 - Docker (`packages/.build-python-docker`)**
+- [ ] Copy `tests/app` directory EXACTLY from non-Docker (no modifications)
+- [ ] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [ ] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [ ] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [ ] Create `Dockerfile` (FROM python, WORKDIR /project)
+- [ ] Create all `Invoke-*.ps1` task scripts using Docker execution pattern (`BOLT_PYTHON_DOCKER_REBUILD`)
+- [ ] Create `tests/Docker.Tests.ps1` (SEPARATE file)
+- [ ] Copy and update `README.md`
+- [ ] Verify `bolt.config.json` path points to `packages/.build-python-docker/tests`
+
+**Phase 3 - Validation**
+- [ ] Run Phase 3 validation script - ALL 6 checks pass
+
+---
+
+### Terraform
+
+**Phase 1 - Non-Docker (`packages/.build-terraform`)**
+- [ ] Remove `$useDocker` variable and all references from all task scripts
+- [ ] Remove Docker container execution blocks from all task scripts
+- [ ] Remove Docker-related error/info messages from all task scripts
+- [ ] Verify ZERO Docker references: `Select-String -Path "packages/.build-terraform/*.ps1" -Pattern "docker"`
+- [ ] Verify syntax: check all `Invoke-*.ps1` files
+- [ ] Run tests: `Invoke-Pester -Path "packages/.build-terraform/tests"`
+
+**Phase 2 - Docker (`packages/.build-terraform-docker`)**
+- [ ] Copy `tests/iac` directory EXACTLY from non-Docker (no modifications) - note: iac not app
+- [ ] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [ ] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [ ] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [ ] Create `Dockerfile` (FROM hashicorp/terraform, WORKDIR /project)
+- [ ] Create all `Invoke-*.ps1` task scripts using Docker execution pattern (`BOLT_TERRAFORM_DOCKER_REBUILD`)
+- [ ] Create `tests/Docker.Tests.ps1` (SEPARATE file)
+- [ ] Copy and update `README.md`
+- [ ] Verify `bolt.config.json` path points to `packages/.build-terraform-docker/tests`
+
+**Phase 3 - Validation**
+- [ ] Run Phase 3 validation script - ALL 6 checks pass
+
+---
+
+### Cross-Cutting Concerns (after all packages complete)
+
+**Testing**
+- [ ] Update `Invoke-Tests.ps1` to add tags for all new Docker package test files
+
+**Documentation**
+- [ ] Update [packages/README.md](packages/README.md) - list all 11 packages, explain Docker vs non-Docker split
+- [ ] Update [docs/ecosystem.md](docs/ecosystem.md) - remove Docker fallback references, describe split pattern
+- [ ] Update [IMPLEMENTATION.md](IMPLEMENTATION.md) - replace Docker fallback docs with split architecture docs
+- [ ] Update [CONTRIBUTING.md](CONTRIBUTING.md) - explain split pattern for contributors/PRs
+
+**Prompts**
+- [ ] Update `.github/prompts/create-package-starter.prompt.md` - cover both non-Docker and Docker variants
+
+**Release**
+- [ ] Update `CHANGELOG.md` with new minor version entry
+
+---
+
+### Final All-Packages Validation
+
+Run this after all packages and cross-cutting concerns are complete:
+
+```powershell
+$packages = @('dotnet', 'golang', 'typescript', 'python', 'terraform')
+$allPass = $true
+
+foreach ($pkg in $packages) {
+    Write-Host "`n=== $pkg ===" -ForegroundColor Cyan
+
+    $dockerRefs = Select-String -Path "packages/.build-$pkg/*.ps1" -Pattern "docker" -AllMatches
+    $ndTests = .\Get-PesterTests.ps1 -Path "packages/.build-$pkg/tests" |
+               Where-Object { $_.FilePath -notmatch "Docker\.Tests\.ps1" } |
+               Select-Object TestName | Sort-Object TestName
+    $dTests = .\Get-PesterTests.ps1 -Path "packages/.build-$pkg-docker/tests" |
+              Where-Object { $_.FilePath -notmatch "Docker\.Tests\.ps1" } |
+              Select-Object TestName | Sort-Object TestName
+    $diff = Compare-Object $ndTests $dTests -Property TestName
+
+    $c1 = $dockerRefs.Count -eq 0
+    $c2 = $null -eq $diff
+    $c3 = Test-Path "packages/.build-$pkg-docker/tests/Docker.Tests.ps1"
+    $c4 = Test-Path "packages/.build-$pkg-docker/Dockerfile"
+
+    Write-Host "$(if ($c1){'✅'}else{'❌'}) Non-Docker has zero Docker refs" -ForegroundColor $(if ($c1){'Green'}else{'Red'})
+    Write-Host "$(if ($c2){'✅'}else{'❌'}) Core tests identical" -ForegroundColor $(if ($c2){'Green'}else{'Red'})
+    Write-Host "$(if ($c3){'✅'}else{'❌'}) Docker.Tests.ps1 exists" -ForegroundColor $(if ($c3){'Green'}else{'Red'})
+    Write-Host "$(if ($c4){'✅'}else{'❌'}) Dockerfile exists" -ForegroundColor $(if ($c4){'Green'}else{'Red'})
+
+    $allPass = $allPass -and $c1 -and $c2 -and $c3 -and $c4
+}
+
+Write-Host "`n$(if ($allPass){'✅ ALL PACKAGES COMPLETE'}else{'❌ SOME PACKAGES NEED WORK'})" -ForegroundColor $(if ($allPass){'Green'}else{'Red'})
+```
+
 ## Step-by-Step Implementation Workflow
 
 **Execute these steps EXACTLY in order for EACH package. Do ONE package completely before starting the next.**
