@@ -8,12 +8,13 @@
 .DESCRIPTION
     This script configures Pester to discover and run tests from multiple
     locations in the project:
-    
+
     - tests/ - Core Bolt orchestration tests
     - packages/.build-bicep/tests/ - Bicep starter package tests
     - packages/.build-golang/tests/ - Golang starter package tests
     - packages/.build-terraform/tests/ - Terraform starter package tests
     - packages/.build-dotnet/tests/ - .NET starter package tests
+    - packages/.build-dotnet-docker/tests/ - .NET Docker starter package tests
     - packages/.build-typescript/tests/ - TypeScript starter package tests
     - packages/.build-python/tests/ - Python starter package tests
 
@@ -27,7 +28,8 @@
     - Bicep-Tasks: Bicep starter package tests (requires Bicep CLI)
     - Golang-Tasks: Golang starter package tests (requires Go CLI)
     - Terraform-Tasks: Terraform starter package tests (requires Terraform CLI or Docker)
-    - DotNet-Tasks: .NET starter package tests (requires .NET SDK or Docker)
+    - DotNet-Tasks: .NET starter package tests (requires .NET SDK)
+    - DotNet-Docker: .NET Docker starter package tests (requires Docker)
     - TypeScript-Tasks: TypeScript starter package tests (requires Node.js/npm or Docker)
     - Python-Tasks: Python starter package tests (requires Python 3.8+ or Docker)
     - SecurityLogging: Security event logging tests
@@ -69,7 +71,11 @@
 
 .EXAMPLE
     .\Invoke-Tests.ps1 -Tag DotNet-Tasks
-    Runs only .NET starter package tests (requires .NET SDK or Docker).
+    Runs only .NET starter package tests (requires .NET SDK).
+
+.EXAMPLE
+    .\Invoke-Tests.ps1 -Tag DotNet-Docker
+    Runs only .NET Docker starter package tests (requires Docker).
 
 .EXAMPLE
     .\Invoke-Tests.ps1 -Tag TypeScript-Tasks
@@ -91,11 +97,11 @@
 [CmdletBinding()]
 param(
     [Parameter()]
-    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'DotNet-Tasks', 'TypeScript-Tasks', 'Python-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
+    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'DotNet-Tasks', 'DotNet-Docker', 'TypeScript-Tasks', 'Python-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$Tag,
 
     [Parameter()]
-    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'DotNet-Tasks', 'TypeScript-Tasks', 'Python-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
+    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'DotNet-Tasks', 'DotNet-Docker', 'TypeScript-Tasks', 'Python-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$ExcludeTag,
 
     [Parameter()]
@@ -111,13 +117,14 @@ $config = New-PesterConfiguration
 
 # Set test discovery paths
 $config.Run.Path = @(
-    'tests'                            # Core Bolt tests
-    'packages/.build-bicep/tests'      # Bicep starter package tests
-    'packages/.build-golang/tests'     # Golang starter package tests
-    'packages/.build-terraform/tests'  # Terraform starter package tests
-    'packages/.build-dotnet/tests'     # .NET starter package tests
-    'packages/.build-typescript/tests' # TypeScript starter package tests
-    'packages/.build-python/tests'     # Python starter package tests
+    'tests'                                   # Core Bolt tests
+    'packages/.build-bicep/tests'             # Bicep starter package tests
+    'packages/.build-golang/tests'            # Golang starter package tests
+    'packages/.build-terraform/tests'         # Terraform starter package tests
+    'packages/.build-dotnet/tests'            # .NET starter package tests
+    'packages/.build-dotnet-docker/tests'     # .NET Docker starter package tests
+    'packages/.build-typescript/tests'        # TypeScript starter package tests
+    'packages/.build-python/tests'            # Python starter package tests
 )
 
 # Apply tag filters if specified
@@ -142,6 +149,7 @@ Write-Host "  - packages/.build-bicep/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-golang/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-terraform/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-dotnet/tests/" -ForegroundColor Gray
+Write-Host "  - packages/.build-dotnet-docker/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-typescript/tests/" -ForegroundColor Gray
 Write-Host "  - packages/.build-python/tests/" -ForegroundColor Gray
 Write-Host ""

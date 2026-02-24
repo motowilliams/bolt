@@ -214,7 +214,12 @@ Process packages in order. Run Phase 3 validation before ticking any package com
 ### Cross-Cutting Concerns (after all packages complete)
 
 **Testing**
-- [ ] Update `Invoke-Tests.ps1` to add tags for all new Docker package test files
+- [-] Update `Invoke-Tests.ps1` to add tags for all new Docker package test files
+  - [x] `DotNet-Docker` tag added, `packages/.build-dotnet-docker/tests` path added
+  - [ ] `Golang-Docker` tag — add when Golang Phase 2 complete
+  - [ ] `TypeScript-Docker` tag — add when TypeScript Phase 2 complete
+  - [ ] `Python-Docker` tag — add when Python Phase 2 complete
+  - [ ] `Terraform-Docker` tag — add when Terraform Phase 2 complete
 
 **Documentation**
 - [ ] Update [packages/README.md](packages/README.md) - list all 11 packages, explain Docker vs non-Docker split
