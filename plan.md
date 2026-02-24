@@ -84,26 +84,26 @@ Process packages in order. Run Phase 3 validation before ticking any package com
 ### DotNet
 
 **Phase 1 - Non-Docker (`packages/.build-dotnet`)**
-- [ ] Remove `$useDocker` variable and all references from all task scripts
-- [ ] Remove Docker container execution blocks (`docker run --rm -v ...`) from all task scripts
-- [ ] Remove Docker-related error/info messages from all task scripts
-- [ ] Verify ZERO Docker references: `Select-String -Path "packages/.build-dotnet/*.ps1" -Pattern "docker"`
-- [ ] Verify syntax: `PSParser::Tokenize` on all `Invoke-*.ps1` files
-- [ ] Run tests: `Invoke-Pester -Path "packages/.build-dotnet/tests"`
+- [x] Remove `$useDocker` variable and all references from all task scripts
+- [x] Remove Docker container execution blocks (`docker run --rm -v ...`) from all task scripts
+- [x] Remove Docker-related error/info messages from all task scripts
+- [x] Verify ZERO Docker references: `Select-String -Path "packages/.build-dotnet/*.ps1" -Pattern "docker"`
+- [x] Verify syntax: `PSParser::Tokenize` on all `Invoke-*.ps1` files
+- [x] Run tests: `Invoke-Pester -Path "packages/.build-dotnet/tests"`
 
 **Phase 2 - Docker (`packages/.build-dotnet-docker`)**
-- [ ] Copy `tests/app` directory EXACTLY from non-Docker (no modifications)
-- [ ] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [ ] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [ ] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
-- [ ] Create `Dockerfile` (FROM mcr.microsoft.com/dotnet/sdk, WORKDIR /project)
-- [ ] Create all `Invoke-*.ps1` task scripts using Docker execution pattern
-- [ ] Create `tests/Docker.Tests.ps1` (SEPARATE file, not added to existing tests)
-- [ ] Copy and update `README.md` (add Docker installation requirements)
-- [ ] Verify `bolt.config.json` path points to `packages/.build-dotnet-docker/tests` (not `/tests/app`)
+- [x] Copy `tests/app` directory EXACTLY from non-Docker (no modifications)
+- [x] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [x] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
+- [x] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [x] Create `Dockerfile` (FROM mcr.microsoft.com/dotnet/sdk, WORKDIR /project)
+- [x] Create all `Invoke-*.ps1` task scripts using Docker execution pattern
+- [x] Create `tests/Docker.Tests.ps1` (SEPARATE file, not added to existing tests)
+- [x] Copy and update `README.md` (add Docker installation requirements)
+- [x] Verify `bolt.config.json` path points to `packages/.build-dotnet-docker/tests` (not `/tests/app`)
 
 **Phase 3 - Validation**
-- [ ] Run Phase 3 validation script - ALL 6 checks pass
+- [x] Run Phase 3 validation script - ALL 6 checks pass
 
 ---
 

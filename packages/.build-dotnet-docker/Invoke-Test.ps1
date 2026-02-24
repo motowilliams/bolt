@@ -4,30 +4,35 @@
 
 Write-Host "Running .NET tests..." -ForegroundColor Cyan
 
-# ===== .NET Command Detection =====
-# Check for configured tool path first
-if ($BoltConfig.DotNetToolPath) {
-    $dotnetToolPath = $BoltConfig.DotNetToolPath
-    if (-not (Test-Path -Path $dotnetToolPath -PathType Leaf)) {
-        Write-Error ".NET SDK not found at configured path: $dotnetToolPath. Please check DotNetToolPath in bolt.config.json or install .NET SDK: https://dotnet.microsoft.com/download"
-        exit 1
-    }
-    $dotnetCmd = $dotnetToolPath
+# ===== Docker Check =====
+$dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+if (-not $dockerCmd) {
+    Write-Error "Docker not found. Install from: https://www.docker.com/get-started"
+    exit 1
+}
+
+# ===== Build Image from Dockerfile =====
+$dockerfilePath = Join-Path -Path $PSScriptRoot -ChildPath "Dockerfile"
+$imageName = "bolt-dotnet:latest"
+$buildContext = Split-Path -Path $dockerfilePath -Parent
+
+$buildArgs = @("build", "-t", $imageName, "-f", $dockerfilePath, $buildContext)
+if ($env:BOLT_DOTNET_DOCKER_REBUILD -eq "1" -or $env:BOLT_DOTNET_DOCKER_REBUILD -eq "true") {
+    Write-Host "  Rebuilding Docker image from scratch (cache disabled)" -ForegroundColor Gray
+    $buildArgs = @("build", "--no-cache", "-t", $imageName, "-f", $dockerfilePath, $buildContext)
 }
 else {
-    # Fall back to PATH search
-    $dotnetCmdObj = Get-Command dotnet -ErrorAction SilentlyContinue
-    if (-not $dotnetCmdObj) {
-        Write-Error ".NET SDK not found. Please install .NET SDK: https://dotnet.microsoft.com/download or configure DotNetToolPath in bolt.config.json"
-        exit 1
-    }
-    $dotnetCmd = "dotnet"
+    Write-Host "  Building Docker image (using cache if available)" -ForegroundColor Gray
+}
+
+& docker @buildArgs 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Docker build failed"
+    exit 1
 }
 
 # ===== Find .NET Test Projects =====
-# Find directories containing .csproj files (using configured path)
 if ($BoltConfig -and $BoltConfig.DotNetPath) {
-    # Use configured path (relative to project root)
     $dotnetPath = Join-Path $BoltConfig.ProjectRoot $BoltConfig.DotNetPath
 }
 else {
@@ -35,13 +40,11 @@ else {
     exit 1
 }
 
-# Look for test projects (typically named *.Tests.csproj or in Tests directory)
 $allProjects = Get-ChildItem -Path $dotnetPath -Filter "*.csproj" -Recurse -File -Force -ErrorAction SilentlyContinue
 $testProjects = $allProjects | Where-Object {
     $_.Name -match '\.Tests\.csproj$' -or $_.Directory.Name -eq 'Tests' -or $_.Directory.Name -eq 'tests'
 }
 
-# If no explicit test projects, use all projects (dotnet test will skip non-test projects)
 if ($testProjects.Count -eq 0) {
     $testProjects = $allProjects
 }
@@ -63,21 +66,18 @@ foreach ($project in $testProjects) {
 
     Write-Host "  Testing: $relativePath" -ForegroundColor Gray
 
-    Push-Location $projectDir
-    try {
-            & $dotnetCmd test --nologo --verbosity normal
-            Write-Host ""
+    $absolutePath = [System.IO.Path]::GetFullPath($projectDir)
 
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "    ✓ Tests passed" -ForegroundColor Green
-        }
-        else {
-            Write-Host "    ✗ Tests failed" -ForegroundColor Red
-            $testSuccess = $false
-        }
+    Write-Host ""
+    & docker run --rm -v "${absolutePath}:/project" -w /project $imageName test --nologo --verbosity normal
+    Write-Host ""
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "    ✓ Tests passed" -ForegroundColor Green
     }
-    finally {
-        Pop-Location
+    else {
+        Write-Host "    ✗ Tests failed" -ForegroundColor Red
+        $testSuccess = $false
     }
 
     Write-Host ""

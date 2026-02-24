@@ -13,27 +13,15 @@ if ($BoltConfig.DotNetToolPath) {
         exit 1
     }
     $dotnetCmd = $dotnetToolPath
-    $useDocker = $false
 }
 else {
     # Fall back to PATH search
     $dotnetCmdObj = Get-Command dotnet -ErrorAction SilentlyContinue
-    
-    # If dotnet not found, check for Docker
     if (-not $dotnetCmdObj) {
-        $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
-        if (-not $dockerCmd) {
-            Write-Error ".NET SDK not found and Docker is not available. Please install .NET SDK: https://dotnet.microsoft.com/download, Docker: https://docs.docker.com/get-docker/, or configure DotNetToolPath in bolt.config.json"
-            exit 1
-        }
-        
-        Write-Host "  Using Docker container for .NET SDK (local CLI not found)" -ForegroundColor Gray
-        $useDocker = $true
+        Write-Error ".NET SDK not found. Please install .NET SDK: https://dotnet.microsoft.com/download or configure DotNetToolPath in bolt.config.json"
+        exit 1
     }
-    else {
-        $dotnetCmd = "dotnet"
-        $useDocker = $false
-    }
+    $dotnetCmd = "dotnet"
 }
 
 # ===== Find .NET Projects =====
@@ -63,34 +51,24 @@ $buildSuccess = $true
 foreach ($project in $projectFiles) {
     $projectDir = Split-Path -Path $project.FullName -Parent
     $relativePath = Resolve-Path -Relative $project.FullName
-    
+
     Write-Host "  Building: $relativePath" -ForegroundColor Gray
-    
+
     Push-Location $projectDir
     try {
-        if ($useDocker) {
-            # Use Docker with volume mount
-            $absolutePath = [System.IO.Path]::GetFullPath($projectDir)
-            
-            # Run dotnet build in Docker container
-            $output = & docker run --rm -v "${absolutePath}:/project" -w /project mcr.microsoft.com/dotnet/sdk:10.0 dotnet build --nologo --verbosity quiet 2>&1
-        }
-        else {
-            # Use local dotnet CLI (configured path or PATH search)
-            $output = & $dotnetCmd build --nologo --verbosity quiet 2>&1
-        }
-        
+        $output = & $dotnetCmd build --nologo --verbosity quiet 2>&1
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host "    ✓ Build succeeded" -ForegroundColor Green
-            
+
             # Try to find and report output assembly information
             $binPath = Join-Path $projectDir "bin"
             if (Test-Path $binPath) {
-                $assemblies = Get-ChildItem -Path $binPath -Filter "*.dll" -Recurse -File -ErrorAction SilentlyContinue | 
+                $assemblies = Get-ChildItem -Path $binPath -Filter "*.dll" -Recurse -File -ErrorAction SilentlyContinue |
                               Where-Object { $_.FullName -notmatch '\\ref\\' } |
                               Sort-Object LastWriteTime -Descending |
                               Select-Object -First 1
-                
+
                 if ($assemblies) {
                     $sizeKB = [math]::Round($assemblies.Length / 1KB, 2)
                     Write-Host "      Output: $($assemblies.Name) ($sizeKB KB)" -ForegroundColor Gray
@@ -100,7 +78,7 @@ foreach ($project in $projectFiles) {
         else {
             Write-Host "    ✗ Build failed" -ForegroundColor Red
             $buildSuccess = $false
-            
+
             # Display build errors
             $output | ForEach-Object {
                 if ($_ -match 'error|Error|ERROR') {
@@ -112,7 +90,7 @@ foreach ($project in $projectFiles) {
     finally {
         Pop-Location
     }
-    
+
     Write-Host ""
 }
 

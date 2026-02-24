@@ -1,6 +1,6 @@
 # .NET (C#) Starter Package for Bolt
 
-.NET/C# application development tasks for building, testing, formatting, and restoring packages with Docker fallback support.
+.NET/C# application development tasks for building, testing, formatting, and restoring packages.
 
 ## Included Tasks
 
@@ -11,18 +11,10 @@
 
 ## Requirements
 
-**Option 1: Local .NET SDK** (Recommended)
 - .NET SDK 6.0+ (10.0+ recommended): https://dotnet.microsoft.com/download
   - **Windows**: `winget install Microsoft.DotNet.SDK.10`
   - **macOS**: `brew install dotnet-sdk`
   - **Linux**: See https://dotnet.microsoft.com/download/linux
-
-**Option 2: Docker Fallback**
-- Docker Engine: https://docs.docker.com/get-docker/
-- If .NET SDK is not found, tasks automatically use `mcr.microsoft.com/dotnet/sdk:10.0` Docker image
-- Requires Docker volume mount support for working directory
-
-**Additional Requirements:**
 - PowerShell 7.0+
 
 ## Installation
@@ -94,30 +86,6 @@ Runs format → restore → test → build:
 
 ```powershell
 .\bolt.ps1 build -Outline  # Show dependency tree without executing
-```
-
-## Docker Fallback Mode
-
-If .NET SDK is not installed locally, tasks automatically detect and use Docker:
-
-```powershell
-# No local .NET SDK? No problem!
-# Tasks will automatically use: docker run mcr.microsoft.com/dotnet/sdk:10.0
-
-.\bolt.ps1 format    # Uses Docker: mcr.microsoft.com/dotnet/sdk:10.0
-.\bolt.ps1 build     # Uses Docker if dotnet command not found
-```
-
-**Docker Requirements:**
-- Docker must be running
-- Tasks use volume mounts to access project files
-- Cross-platform path handling is automatic
-
-**Example output when using Docker:**
-```
-Building .NET projects...
-  Using Docker container for .NET SDK (local CLI not found)
-Found 1 .NET project(s)
 ```
 
 ## Task Details
@@ -203,7 +171,7 @@ If .NET SDK is installed in a non-standard location, configure the executable pa
 }
 ```
 
-If `DotNetToolPath` is not configured, Bolt searches for `dotnet` in your system PATH or falls back to Docker.
+If `DotNetToolPath` is not configured, Bolt searches for `dotnet` in your system PATH.
 
 ## Example Project Structure
 
@@ -238,7 +206,7 @@ This package includes comprehensive tests:
 Run tests with:
 
 ```powershell
-# Requires Pester 5.0+ and either .NET SDK or Docker
+# Requires Pester 5.0+ and .NET SDK
 Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
 
 # Run all .NET tests
@@ -247,17 +215,15 @@ Invoke-Pester -Path packages/.build-dotnet/tests/ -Tag DotNet-Tasks
 
 ## Troubleshooting
 
-### .NET SDK not found and Docker not available
+### .NET SDK not found
 
-Error: `.NET SDK not found and Docker is not available. Please install...`
+Error: `.NET SDK not found. Please install...`
 
-**Solution**: Install either .NET SDK or Docker:
+**Solution**: Install .NET SDK:
 - .NET SDK: https://dotnet.microsoft.com/download
-- Docker: https://docs.docker.com/get-docker/
 
 Verify installation:
 - .NET SDK: `dotnet --version`
-- Docker: `docker --version`
 
 ### No .NET projects found
 
@@ -283,26 +249,9 @@ If you see errors:
   - Missing project references
   - SDK version mismatches
 
-### Docker volume mount issues
-
-If using Docker fallback and getting path errors:
-- Ensure Docker has access to your project directory
-- On Windows: Check Docker Desktop file sharing settings
-- On Linux/macOS: Verify Docker has permission to mount paths
-
 ### Tests not showing output
 
 .NET test output may be buffered in PowerShell. The task will still report success/failure correctly with exit codes.
-
-## Security Considerations
-
-### Docker Security
-
-When using Docker fallback:
-- Docker container runs with current user permissions
-- Volume mounts grant container access to project files
-- Uses official Microsoft .NET SDK image
-- Container is removed after execution (--rm flag)
 
 ## Contributing
 
