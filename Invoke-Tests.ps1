@@ -14,17 +14,14 @@
     - packages/.build-golang/tests/ - Golang starter package tests
     - packages/.build-terraform/tests/ - Terraform starter package tests
     - packages/.build-dotnet/tests/ - .NET starter package tests
-    - packages/.build-dotnet-docker/tests/ - .NET Docker starter package tests
     - packages/.build-typescript/tests/ - TypeScript starter package tests
     - packages/.build-python/tests/ - Python starter package tests
 
-    This allows developers to run all tests with a single command while
-    maintaining test decoupling for future starter package separation.
-
-.PARAMETER Tag
-    Run only tests with the specified tag(s). Available tags:
-    - Core: Fast core orchestration tests (no external dependencies)
-    - Security: Security validation tests (includes all security-related tests)
+    Docker package test directories are conditionally included: they are only
+    added to the discovery path when the corresponding Docker tag is explicitly
+    requested (e.g. -Tag DotNet-Docker), or when no -Tag filter is specified at
+    all. This prevents Docker package test files from running under non-Docker
+    tags such as DotNet-Tasks.
     - Bicep-Tasks: Bicep starter package tests (requires Bicep CLI)
     - Golang-Tasks: Golang starter package tests (requires Go CLI)
     - Terraform-Tasks: Terraform starter package tests (requires Terraform CLI or Docker)
@@ -115,17 +112,43 @@ param(
 # Configure Pester to discover tests in multiple locations
 $config = New-PesterConfiguration
 
-# Set test discovery paths
-$config.Run.Path = @(
-    'tests'                                   # Core Bolt tests
-    'packages/.build-bicep/tests'             # Bicep starter package tests
-    'packages/.build-golang/tests'            # Golang starter package tests
-    'packages/.build-terraform/tests'         # Terraform starter package tests
-    'packages/.build-dotnet/tests'            # .NET starter package tests
-    'packages/.build-dotnet-docker/tests'     # .NET Docker starter package tests
-    'packages/.build-typescript/tests'        # TypeScript starter package tests
-    'packages/.build-python/tests'            # Python starter package tests
+# Base paths — always included
+$testPaths = [System.Collections.Generic.List[string]]@(
+    'tests'                            # Core Bolt tests
+    'packages/.build-bicep/tests'      # Bicep starter package tests
+    'packages/.build-golang/tests'     # Golang starter package tests
+    'packages/.build-terraform/tests'  # Terraform starter package tests
+    'packages/.build-dotnet/tests'     # .NET starter package tests
+    'packages/.build-typescript/tests' # TypeScript starter package tests
+    'packages/.build-python/tests'     # Python starter package tests
 )
+
+# Docker package paths — only included when a Docker tag is requested (or no tag filter at all).
+# This prevents Tasks.Tests.ps1 copies in docker packages from running under non-docker tags.
+$dockerTagMap = @{
+    'DotNet-Docker'     = 'packages/.build-dotnet-docker/tests'
+    'Golang-Docker'     = 'packages/.build-golang-docker/tests'
+    'TypeScript-Docker' = 'packages/.build-typescript-docker/tests'
+    'Python-Docker'     = 'packages/.build-python-docker/tests'
+    'Terraform-Docker'  = 'packages/.build-terraform-docker/tests'
+}
+
+if (-not $Tag) {
+    # No tag filter — include all docker paths that exist
+    foreach ($path in $dockerTagMap.Values) {
+        if (Test-Path -Path $path) { $testPaths.Add($path) }
+    }
+} else {
+    # Tag filter active — only include docker paths whose tag was requested
+    foreach ($dockerTag in $dockerTagMap.Keys) {
+        if ($Tag -contains $dockerTag) {
+            $path = $dockerTagMap[$dockerTag]
+            if (Test-Path -Path $path) { $testPaths.Add($path) }
+        }
+    }
+}
+
+$config.Run.Path = $testPaths.ToArray()
 
 # Apply tag filters if specified
 if ($Tag) {
@@ -144,14 +167,9 @@ $config.Run.PassThru = $true
 
 # Run tests
 Write-Host "Discovering tests in:" -ForegroundColor Cyan
-Write-Host "  - tests/" -ForegroundColor Gray
-Write-Host "  - packages/.build-bicep/tests/" -ForegroundColor Gray
-Write-Host "  - packages/.build-golang/tests/" -ForegroundColor Gray
-Write-Host "  - packages/.build-terraform/tests/" -ForegroundColor Gray
-Write-Host "  - packages/.build-dotnet/tests/" -ForegroundColor Gray
-Write-Host "  - packages/.build-dotnet-docker/tests/" -ForegroundColor Gray
-Write-Host "  - packages/.build-typescript/tests/" -ForegroundColor Gray
-Write-Host "  - packages/.build-python/tests/" -ForegroundColor Gray
+foreach ($path in $testPaths) {
+    Write-Host "  - $path/" -ForegroundColor Gray
+}
 Write-Host ""
 
 $result = Invoke-Pester -Configuration $config
