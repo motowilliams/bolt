@@ -1,6 +1,6 @@
 #Requires -Version 7.0
 
-Describe ".NET Package Starter - Integration Tests" -Tag "DotNet-Tasks" {
+Describe ".NET Package Starter - Integration Tests" -Tag "DotNet-Docker" {
     BeforeAll {
         # Check for dotnet CLI availability
         $dotnetCmd = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -12,7 +12,7 @@ Describe ".NET Package Starter - Integration Tests" -Tag "DotNet-Tasks" {
         # Get module root (parent of tests directory)
         $moduleRoot = Resolve-Path (Split-Path -Parent $PSScriptRoot)
         $projectRoot = $moduleRoot
-        
+
         # Get project root (find .git directory)
         $currentPath = $projectRoot
         while ($currentPath -and $currentPath -ne (Split-Path -Parent $currentPath)) {
@@ -23,9 +23,9 @@ Describe ".NET Package Starter - Integration Tests" -Tag "DotNet-Tasks" {
             $currentPath = Split-Path -Parent $currentPath
         }
         $script:BoltScriptPath = Join-Path $projectRoot 'bolt.ps1'
-        
+
         $script:testProjectPath = Join-Path $PSScriptRoot "app"
-        
+
         # Helper function to invoke bolt with captured output
         function Invoke-Bolt {
             param(
@@ -62,7 +62,7 @@ Describe ".NET Package Starter - Integration Tests" -Tag "DotNet-Tasks" {
                 Success  = $exitCode -eq 0
             }
         }
-        
+
         # Store original location
         $originalLocation = Get-Location
     }

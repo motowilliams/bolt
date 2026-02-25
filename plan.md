@@ -39,10 +39,14 @@ Note that bicep does not have a vendor or official project supported docker cont
 
 ## Core Architecture Principle (CRITICAL)
 
-**Docker and non-Docker packages must share IDENTICAL:**
+**Each package is self-contained and atomic.** You must be able to run `-Tag DotNet-Docker` and get the full picture for that package with zero dependency on the non-Docker variant.
+
+**Docker and non-Docker packages share IDENTICAL test content:**
 1. **Sample application/IaC code** - exact file-by-file copy (tests/app/ or tests/iac/)
-2. **Tasks.Tests.ps1** - copied verbatim from non-Docker version, no modifications
-3. **Integration.Tests.ps1** - copied verbatim from non-Docker version, no modifications
+2. **Tasks.Tests.ps1** - same test names and assertions as non-Docker, but ALL tags updated to the Docker variant tag (e.g. `DotNet-Docker` instead of `DotNet-Tasks`)
+3. **Integration.Tests.ps1** - same test names and assertions as non-Docker, but ALL tags updated to the Docker variant tag
+
+**Tags are the only permitted difference** between the non-Docker and Docker test files. Every other line must be identical.
 
 **Docker packages add ONLY:**
 1. **Dockerfile** - new file defining container environment
@@ -50,10 +54,11 @@ Note that bicep does not have a vendor or official project supported docker cont
 3. **Modified task scripts** - different tool invocation pattern (Docker execution)
 4. **Updated README.md** - note Docker-specific requirements
 
-**Validation requirement:** Use `Get-PesterTests.ps1` to programmatically prove identity before marking package complete.
+**Validation requirement:** Use `Get-PesterTests.ps1` to programmatically prove identity before marking package complete. Compare test NAMES (not tags) — they must be identical. Tags will differ by design.
 
 **OO Analogy:** Think of Docker package as a subclass/extension of the non-Docker base class:
-- Inherits all functionality (sample app + tests are unchanged)
+- Inherits all test logic (same test names, same assertions)
+- Operates under its own tag namespace (DotNet-Docker, not DotNet-Tasks)
 - Adds specialized behavior (Dockerfile + Docker.Tests.ps1 + Docker task execution)
 - Proves architecture correctness (same codebase works with both toolchain approaches)
 
@@ -93,9 +98,9 @@ Process packages in order. Run Phase 3 validation before ticking any package com
 
 **Phase 2 - Docker (`packages/.build-dotnet-docker`)**
 - [x] Copy `tests/app` directory EXACTLY from non-Docker (no modifications)
-- [x] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [x] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [x] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [x] Copy `tests/Tasks.Tests.ps1` from non-Docker, update ALL tags from `DotNet-Tasks` → `DotNet-Docker`
+- [x] Copy `tests/Integration.Tests.ps1` from non-Docker, update ALL tags from `DotNet-Tasks` → `DotNet-Docker`
+- [x] Verify test name identity: `Get-PesterTests.ps1` comparison of test NAMES shows ZERO differences
 - [x] Create `Dockerfile` (FROM mcr.microsoft.com/dotnet/sdk, WORKDIR /project)
 - [x] Create all `Invoke-*.ps1` task scripts using Docker execution pattern
 - [x] Create `tests/Docker.Tests.ps1` (SEPARATE file, not added to existing tests)
@@ -119,9 +124,9 @@ Process packages in order. Run Phase 3 validation before ticking any package com
 
 **Phase 2 - Docker (`packages/.build-golang-docker`)**
 - [ ] Copy `tests/app` directory EXACTLY from non-Docker (no modifications)
-- [ ] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [ ] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [ ] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [ ] Copy `tests/Tasks.Tests.ps1` from non-Docker, update ALL tags from `Golang-Tasks` → `Golang-Docker`
+- [ ] Copy `tests/Integration.Tests.ps1` from non-Docker, update ALL tags from `Golang-Tasks` → `Golang-Docker`
+- [ ] Verify test name identity: `Get-PesterTests.ps1` comparison of test NAMES shows ZERO differences
 - [ ] Create `Dockerfile` (FROM golang, WORKDIR /project)
 - [ ] Create all `Invoke-*.ps1` task scripts using Docker execution pattern (`BOLT_GOLANG_DOCKER_REBUILD`)
 - [ ] Create `tests/Docker.Tests.ps1` (SEPARATE file)
@@ -145,9 +150,9 @@ Process packages in order. Run Phase 3 validation before ticking any package com
 
 **Phase 2 - Docker (`packages/.build-typescript-docker`)**
 - [ ] Copy `tests/app` directory EXACTLY from non-Docker (no modifications)
-- [ ] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [ ] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [ ] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [ ] Copy `tests/Tasks.Tests.ps1` from non-Docker, update ALL tags from `TypeScript-Tasks` → `TypeScript-Docker`
+- [ ] Copy `tests/Integration.Tests.ps1` from non-Docker, update ALL tags from `TypeScript-Tasks` → `TypeScript-Docker`
+- [ ] Verify test name identity: `Get-PesterTests.ps1` comparison of test NAMES shows ZERO differences
 - [ ] Create `Dockerfile` (FROM node, WORKDIR /project)
 - [ ] Create all `Invoke-*.ps1` task scripts using Docker execution pattern (`BOLT_TYPESCRIPT_DOCKER_REBUILD`)
 - [ ] Create `tests/Docker.Tests.ps1` (SEPARATE file)
@@ -171,9 +176,9 @@ Process packages in order. Run Phase 3 validation before ticking any package com
 
 **Phase 2 - Docker (`packages/.build-python-docker`)**
 - [ ] Copy `tests/app` directory EXACTLY from non-Docker (no modifications)
-- [ ] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [ ] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [ ] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [ ] Copy `tests/Tasks.Tests.ps1` from non-Docker, update ALL tags from `Python-Tasks` → `Python-Docker`
+- [ ] Copy `tests/Integration.Tests.ps1` from non-Docker, update ALL tags from `Python-Tasks` → `Python-Docker`
+- [ ] Verify test name identity: `Get-PesterTests.ps1` comparison of test NAMES shows ZERO differences
 - [ ] Create `Dockerfile` (FROM python, WORKDIR /project)
 - [ ] Create all `Invoke-*.ps1` task scripts using Docker execution pattern (`BOLT_PYTHON_DOCKER_REBUILD`)
 - [ ] Create `tests/Docker.Tests.ps1` (SEPARATE file)
@@ -197,9 +202,9 @@ Process packages in order. Run Phase 3 validation before ticking any package com
 
 **Phase 2 - Docker (`packages/.build-terraform-docker`)**
 - [ ] Copy `tests/iac` directory EXACTLY from non-Docker (no modifications) - note: iac not app
-- [ ] Copy `tests/Tasks.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [ ] Copy `tests/Integration.Tests.ps1` EXACTLY from non-Docker (no modifications)
-- [ ] Verify test identity: `Get-PesterTests.ps1` comparison shows ZERO differences
+- [ ] Copy `tests/Tasks.Tests.ps1` from non-Docker, update ALL tags from `Terraform-Tasks` → `Terraform-Docker`
+- [ ] Copy `tests/Integration.Tests.ps1` from non-Docker, update ALL tags from `Terraform-Tasks` → `Terraform-Docker`
+- [ ] Verify test name identity: `Get-PesterTests.ps1` comparison of test NAMES shows ZERO differences
 - [ ] Create `Dockerfile` (FROM hashicorp/terraform, WORKDIR /project)
 - [ ] Create all `Invoke-*.ps1` task scripts using Docker execution pattern (`BOLT_TERRAFORM_DOCKER_REBUILD`)
 - [ ] Create `tests/Docker.Tests.ps1` (SEPARATE file)
@@ -710,16 +715,20 @@ Compare-Object `
 
 **Problem:** Agents add Docker-specific tests to Tasks.Tests.ps1 or Integration.Tests.ps1
 
-**Impact:** Test files differ between variants, breaks identity validation
+**Impact:** Test content diverges between variants, breaks identity validation
 
-**Solution:** Create SEPARATE `Docker.Tests.ps1` file for all Docker-specific tests
+**Solution:** Create SEPARATE `Docker.Tests.ps1` file for all Docker-specific tests. The only permitted difference between non-Docker and Docker `Tasks.Tests.ps1` is the tag values.
 
 **Validation:**
 ```powershell
-# Tasks.Tests.ps1 should be byte-for-byte identical
-$nd = Get-FileHash "packages/.build-<pkg>/tests/Tasks.Tests.ps1"
-$d = Get-FileHash "packages/.build-<pkg>-docker/tests/Tasks.Tests.ps1"
-$nd.Hash -eq $d.Hash  # Should be: True
+# Test NAMES must match exactly (tags will differ by design)
+$nd = .\.Get-PesterTests.ps1 -Path "packages/.build-<pkg>/tests/Tasks.Tests.ps1" | Select-Object -ExpandProperty TestName | Sort-Object
+$d  = .\Get-PesterTests.ps1 -Path "packages/.build-<pkg>-docker/tests/Tasks.Tests.ps1" | Select-Object -ExpandProperty TestName | Sort-Object
+Compare-Object $nd $d  # Should return: no output (identical names)
+
+# Tags must differ — docker file should have zero non-docker tags
+.\Get-PesterTests.ps1 -Path "packages/.build-<pkg>-docker/tests/Tasks.Tests.ps1" |
+    Where-Object { $_.Tags -contains "<Pkg>-Tasks" }  # Should return: 0 results
 ```
 
 ---

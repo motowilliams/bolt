@@ -52,6 +52,7 @@ Write-Host ""
 
 # ===== Build Projects =====
 $buildSuccess = $true
+$absoluteDotnetPath = [System.IO.Path]::GetFullPath($dotnetPath)
 
 foreach ($project in $projectFiles) {
     $projectDir = Split-Path -Path $project.FullName -Parent
@@ -59,8 +60,9 @@ foreach ($project in $projectFiles) {
 
     Write-Host "  Building: $relativePath" -ForegroundColor Gray
 
-    $absolutePath = [System.IO.Path]::GetFullPath($projectDir)
-    $output = & docker run --rm -v "${absolutePath}:/project" -w /project $imageName build --nologo --verbosity quiet 2>&1
+    $relativeProjectDir = [System.IO.Path]::GetRelativePath($absoluteDotnetPath, $projectDir)
+    $workDir = "/project/$($relativeProjectDir -replace '\\', '/')"
+    $output = & docker run --rm -v "${absoluteDotnetPath}:/project" -w $workDir $imageName build --nologo --verbosity quiet 2>&1
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "    ✓ Build succeeded" -ForegroundColor Green

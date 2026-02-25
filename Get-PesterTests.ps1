@@ -52,6 +52,7 @@
 [CmdletBinding()]
 param(
     [string]$Path = $PWD,
+    [ValidateSet('Core', 'Security', 'Bicep-Tasks', 'Golang-Tasks', 'Terraform-Tasks', 'DotNet-Tasks', 'DotNet-Docker', 'TypeScript-Tasks', 'Python-Tasks', 'SecurityLogging', 'SecurityTxt', 'OutputValidation', 'Variables', 'Perf', 'Release')]
     [string[]]$Tag,
     [switch]$Report
 )
@@ -207,6 +208,18 @@ else {
                 $testTagMap[$test.Name]
             } else {
                 @()
+            }
+
+            # Apply tag filter if specified (Pester SkipRun tag filtering is unreliable)
+            if ($Tag) {
+                $hasMatchingTag = $false
+                foreach ($requestedTag in $Tag) {
+                    if ($testTags -contains $requestedTag) {
+                        $hasMatchingTag = $true
+                        break
+                    }
+                }
+                if (-not $hasMatchingTag) { continue }
             }
 
             [PSCustomObject]@{

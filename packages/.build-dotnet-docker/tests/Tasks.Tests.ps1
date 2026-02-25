@@ -1,6 +1,6 @@
 #Requires -Version 7.0
 
-Describe ".NET Package Starter - Task Validation" -Tag "DotNet-Tasks" {
+Describe ".NET Package Starter - Task Validation" -Tag "DotNet-Docker" {
     BeforeAll {
         $packagePath = Join-Path $PSScriptRoot ".."
         $taskFiles = Get-ChildItem -Path $packagePath -Filter "Invoke-*.ps1" -File -Force

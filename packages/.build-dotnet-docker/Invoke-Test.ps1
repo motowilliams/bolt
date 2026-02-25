@@ -59,6 +59,7 @@ Write-Host ""
 
 # ===== Run Tests =====
 $testSuccess = $true
+$absoluteDotnetPath = [System.IO.Path]::GetFullPath($dotnetPath)
 
 foreach ($project in $testProjects) {
     $projectDir = Split-Path -Path $project.FullName -Parent
@@ -66,10 +67,11 @@ foreach ($project in $testProjects) {
 
     Write-Host "  Testing: $relativePath" -ForegroundColor Gray
 
-    $absolutePath = [System.IO.Path]::GetFullPath($projectDir)
+    $relativeProjectDir = [System.IO.Path]::GetRelativePath($absoluteDotnetPath, $projectDir)
+    $workDir = "/project/$($relativeProjectDir -replace '\\', '/')"
 
     Write-Host ""
-    & docker run --rm -v "${absolutePath}:/project" -w /project $imageName test --nologo --verbosity normal
+    & docker run --rm -v "${absoluteDotnetPath}:/project" -w $workDir $imageName test --nologo --verbosity normal
     Write-Host ""
 
     if ($LASTEXITCODE -eq 0) {
